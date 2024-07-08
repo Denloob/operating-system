@@ -1,5 +1,5 @@
 EMU := qemu-system-i386
-BOOTLOADER := bootloader/bin/boot.bin
+BOOTLOADER := bootloader/bootloader.bin
 IMAGE_NAME := floppy
 
 all: $(IMAGE_NAME).img

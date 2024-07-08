@@ -1,14 +1,21 @@
-ASM := nasm
+IMAGE_NAME := bootloader
+STAGE_ONE := stage1/bin/boot.bin
+STAGE_TWO := stage2/bin/boot2.bin
 
-IMAGE_NAME := boot
+all: $(IMAGE_NAME).bin
 
-NASM_SOURCE := src/boot.asm
+$(IMAGE_NAME).bin: $(STAGE_ONE) $(STAGE_TWO)
+	rm -f $@
+	dd if=$(STAGE_ONE) of=$@ bs=1 seek=0 count=$$(stat -c %s $(STAGE_ONE)) conv=notrunc
+	dd if=$(STAGE_TWO) of=$@ bs=1 seek=512 conv=notrunc
 
-all: bin/$(IMAGE_NAME).bin
+.PHONY: $(STAGE_ONE)
+$(STAGE_ONE):
+	$(MAKE) -C stage1
 
-bin/$(IMAGE_NAME).bin: $(NASM_SOURCE)
-	mkdir -p bin
-	$(ASM) $< -o $@ -f bin # nasm the source into the target i.e. `bin/$(IMAGE_NAME)`
+.PHONY: $(STAGE_TWO)
+$(STAGE_TWO):
+	$(MAKE) -C stage2
 
 clean:
 	rm -rf bin

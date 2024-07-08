@@ -12,14 +12,11 @@ _start:
 
     mov byte [drive_number], dl ; The BIOS sets the drive number in dl
 
-    mov ax, 1                   ; LBA=1, second sector from the disk
+    mov ax, 1                   ; LBA=1, that is the second sector
     mov cl, 1                   ; Read one sector
-    mov bx, 0x7E00              ; Into memory after our boot loader
+    mov bx, 0xC000              ; Load into the higher half of the address space
     call read_disk
-    mov si, 0x7E00
-    call puts
-
-    jmp halt
+    jmp 0xC000                  ; Transfer execution to the loaded module
 
 ; Completely halt execution
 halt:
@@ -197,6 +194,3 @@ disk_fail_msg db "Disk failed. Press any key to reboot", ENDL, 0
 times 510-($-$$) db 0
 db 0x55
 db 0xAA
-db "Demo of reading data from the disk. This text will not be loaded with the "
-db "bootloader. Thus, we are not actually limited in space! The text here can span "
-db "many lines and it won't affect the 520 byte limit of the boot segment :D", ENDL, 0
