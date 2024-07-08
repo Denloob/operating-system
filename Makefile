@@ -1,13 +1,21 @@
 EMU := qemu-system-i386
 BOOTLOADER := bootloader/bin/boot.bin
+IMAGE_NAME := floppy
 
-all: $(BOOTLOADER)
+all: $(IMAGE_NAME).img
 
-$(BOOTLOADER):
+$(IMAGE_NAME).img: $(BOOTLOADER)
+	cp $< $@
+
+.PHONY: $(BOOTLOADER)
+$(BOOTLOADER): 
 	$(MAKE) -C bootloader
 
-run: $(BOOTLOADER)
-	$(EMU) -hda $<
+run: $(IMAGE_NAME).img
+	$(EMU) -fda $<
+
+debug: $(IMAGE_NAME).img
+	bochs -f bochs_config.txt -q
 
 clean:
 	$(MAKE) clean -C bootloader
