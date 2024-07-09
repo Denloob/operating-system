@@ -9,12 +9,12 @@ LD16 := wlink
 CFLAGS16 := -d3 -s -wx -ms -zl -zq
 
 GCC := gcc
-DEPFLAGS = -MT $@ -MMD -MP -MF $(DEP_DIR)/$*.d -E
+DEPFLAGS = -MT $@ -MMD -MP -MF $(DEP_DIR)/obj/$*.d -E
 
 CFILES := $(shell cd $(SRC_DIR) && find -L * -type f -name '*.c')
 NASMFILES := $(shell cd $(SRC_DIR) && find -L * -type f -name '*.asm')
 OBJS := $(addprefix $(BIN_DIR)/obj/,$(CFILES:.c=.c.o) $(NASMFILES:.asm=.asm.o))
-DEPS := $(addprefix $(DEP_DIR)/obj/,$(CFILES:.c=.c.d))
+DEPS := $(addprefix $(DEP_DIR)/obj/,$(CFILES:.c=.d))
 
 IMAGE_NAME := boot2
 
