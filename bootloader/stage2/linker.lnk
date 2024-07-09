@@ -3,8 +3,7 @@ OPTION QUIET,
         NODEFAULTLIBS,
         START=entry,
         VERBOSE,
-        OFFSET=0xC000,
-        STACK=0x200
+        OFFSET=0xC000
 ORDER
     CLNAME CODE
         SEGMENT _ENTRY
