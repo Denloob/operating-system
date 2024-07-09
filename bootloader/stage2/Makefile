@@ -20,7 +20,7 @@ IMAGE_NAME := boot2
 
 all: $(BIN_DIR)/$(IMAGE_NAME).bin
 
-$(BIN_DIR)/$(IMAGE_NAME).bin: $(OBJS)
+$(BIN_DIR)/$(IMAGE_NAME).bin: $(OBJS) linker.lnk
 	$(LD16) NAME $@ FILE \{ $(OBJS) \} OPTION MAP=$(BIN_DIR)/$(IMAGE_NAME).map @linker.lnk
 
 $(BIN_DIR)/obj/%.c.o: $(SRC_DIR)/%.c
