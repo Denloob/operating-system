@@ -18,6 +18,8 @@ $(STAGE_TWO):
 	$(MAKE) -C stage2
 
 clean:
-	rm -rf bin
+	$(MAKE) clean -C stage1
+	$(MAKE) clean -C stage2
+	rm bootloader.bin
 
 .PHONY: all clean
