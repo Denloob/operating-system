@@ -32,3 +32,12 @@ typedef enum KeycodeType
  * @see KeycodeType
  */
 int get_key_type(int keycode);
+
+/**
+ * @brief Converts a (set 1) keycode to an ascii character. If there's no ascii
+ *          character for the given keycode, '\0' is returned.
+ *
+ * @param keycode
+ * @return Corresponding ascii character or '\0'
+ */
+char key_to_char(int keycode);
