@@ -8,15 +8,15 @@ _start:
     mov es, ax
     mov ss, ax
 
-    mov sp, 0x7C00 ; The stack will grow down from where we are
+    mov sp, 0x500 ; The stack will grow down from where we are
 
     mov byte [drive_number], dl ; The BIOS sets the drive number in dl
 
     mov ax, 1                   ; LBA=1, that is the second sector
-    mov cl, 1                   ; Read one sector
-    mov bx, 0xC000              ; Load into the higher half of the address space
+    mov cl, 8                   ; Read eight sectors
+    mov bx, 0x500               ; Load into the higher half of the address space
     call read_disk
-    jmp 0xC000                  ; Transfer execution to the loaded module
+    jmp 0x500                   ; Transfer execution to the loaded module
 
 ; Completely halt execution
 halt:

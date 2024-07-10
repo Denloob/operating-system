@@ -1,6 +1,6 @@
 #include "io.h"
 
-void _cdecl cstart_(short param)
+void start(short param)
 {
-    puts("Hello, World!\r\n");
+    puts("Hello, World!");
 }

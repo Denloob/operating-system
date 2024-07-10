@@ -1,18 +1,18 @@
 #include "io.h"
 
-#pragma aux putc =       \
-    "mov ah, 0x0E"       \
-    "xor bh, bh"         \
-    "int 0x10"           \
-    modify [ ax bx ]     \
-    parm  [ al ];
+#define VGA_ADDR (volatile char *)0xb8000
+#define VGA_WIDTH 160
+#define VGA_COLOR_WHITE 7
+volatile char *g_vga_it = VGA_ADDR;
 
 void puts(char *str)
 {
     while (*str)
     {
-        putc(*str);
-        str++;
+        *g_vga_it++ = *str++;
+        *g_vga_it++ = VGA_COLOR_WHITE;
     }
-}
 
+    // Move g_vga_it to the next line
+    g_vga_it += VGA_WIDTH - (g_vga_it - VGA_ADDR) % VGA_WIDTH;
+}
