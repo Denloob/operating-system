@@ -2,5 +2,8 @@
 
 void start(short param)
 {
-    puts("Hello, World!");
+    while (1) {
+        wait_key();
+        puts("You pressed a key!");
+    }
 }

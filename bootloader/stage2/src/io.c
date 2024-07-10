@@ -16,3 +16,35 @@ void puts(char *str)
     // Move g_vga_it to the next line
     g_vga_it += VGA_WIDTH - (g_vga_it - VGA_ADDR) % VGA_WIDTH;
 }
+
+// @see https://wiki.osdev.org/PS/2_Keyboard
+#define KEYBOARD_PORT 0x60
+#define KEYBOARD_PRESS_RELEASE_DELIMETER 0x80
+
+int get_key_type(int keycode)
+{
+    int res = 0;
+    if (keycode < KEYBOARD_PRESS_RELEASE_DELIMETER)
+    {
+        res |= KCT_IS_PRESS;
+    }
+
+    return res;
+}
+
+int wait_key()
+{
+    int k = 0;
+
+    // key press
+    while (!(get_key_type(k = in_byte(KEYBOARD_PORT)) & KCT_IS_PRESS))
+    {
+    }
+
+    // key release
+    while (get_key_type(in_byte(KEYBOARD_PORT)) & KCT_IS_PRESS)
+    {
+    }
+
+    return k;
+}
