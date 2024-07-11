@@ -20,4 +20,7 @@ debug: $(IMAGE_NAME).img
 clean:
 	$(MAKE) clean -C bootloader
 
-.PHONY: all run clean
+toolchain:
+	$(MAKE) -C toolchain
+
+.PHONY: all run clean toolchain
