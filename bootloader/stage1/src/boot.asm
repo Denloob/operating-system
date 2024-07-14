@@ -197,8 +197,8 @@ read_drive:
     stc             ; Set the carry flag (indicates if the read succeeded)
     int 13h
 
-    jnc .done       ; Break if the interrupt succeeded (by checking the carry flag)
     popa            ; Restore
+    jnc .done       ; Break if the interrupt succeeded (by checking the carry flag)
 
                     ; Read failed, so
     call drive_reset ; Reset the drive
@@ -212,8 +212,6 @@ read_drive:
     jmp drive_fail
 
 .done:
-    popa            ; Restore
-
     pop di
     pop dx
     pop cx
