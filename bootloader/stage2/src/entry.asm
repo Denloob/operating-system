@@ -93,7 +93,7 @@ g_GDT:
     dw 0xFFFF           ; limit (bits 0-15) = 0xFFFF_FFFF (full 32 bit range)
     dw 0                ; base (bits 0-15) = 0
     db 0                ; base (bits 16-23) = 0
-    db 0b10010011       ; access (present, ring 0, data segment, direction 0, writable)
+    db 0b10011011       ; access (present, ring 0, code, allow only ring 0 to execute it, readable)
     db 0b00001111       ; flags (1-byte granuality, 16-bit protected mode) + limit (bits 16-19)
     db 0                ; base (24-31)
 
