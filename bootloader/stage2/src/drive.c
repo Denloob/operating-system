@@ -26,4 +26,13 @@ bool drive_init(Drive *drive, uint16_t drive_id)
 
     return success;
 }
+
+bool drive_read(Drive *drive, uint32_t address, uint8_t *buffer, uint32_t size)
+{
+    assert(size % SECTOR_SIZE == 0 && "size must be a multiple of SECTOR_SIZE");
+
+    drive_CHS chs;
+    drive_lba_to_chs(drive, address, &chs);
+
+    return bios_drive_read(drive->id, &chs, buffer, size / SECTOR_SIZE);
 }

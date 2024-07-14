@@ -86,6 +86,14 @@ bios_drive_get_drive_params:
     param32 3, .sectors   ; uint8_t *
     param32 4, .heads     ; uint8_t *
 
+    %macro un_param 0
+        %undef .drive
+        %undef .driveType
+        %undef .cylinders
+        %undef .sectors
+        %undef .heads
+    %endmacro
+
     push ebx    ; Store ebx and edi
     push edi
 
@@ -138,6 +146,135 @@ bios_drive_get_drive_params:
 
     pop edi     ; Restore ebx and edi
     pop ebx
+
+    un_param
+    %undef un_param
+
+    leave
+    ret
+
+; Loads the drive_CHS struct into the correct registers
+; @params:
+;   es:di - The pointer to struct drive_CHS
+; @return
+;   cx [bits 0-5]   - sector number
+;   cx [bits 6-15]  - cylinder
+;   dh              - head
+load_chs_into_registers:
+    [bits 16]
+%define .drive_CHS.cylinder es:[di]
+%define .drive_CHS.head es:[di + 2]
+%define .drive_CHS.sector es:[di + 3]
+    push ax
+
+    mov dh, .drive_CHS.head
+    mov cl, .drive_CHS.sector
+
+    ;
+    ; CX =       ---CH--- ---CL---
+    ; cylinder : 76543210 98
+    ; sector   :            543210
+    ;
+    ; @source https://en.wikipedia.org/wiki/INT_13H#INT_13h_AH=02h:_Read_Sectors_From_Drive
+
+    mov ax, .drive_CHS.cylinder
+    mov ch, al
+    shl ah, 6
+    or  cl, ah
+
+    pop ax
+    ret
+
+; Reset the drive controller
+;
+; @params:
+;  dl: drive number
+;
+drive_reset:
+    [bits 16]
+    pusha
+
+    stc             ; Set the carry flag (will be used to check for errors)
+    xor ah, ah
+    int 13h         ; Reset the drive
+
+    popa
+    ret
+
+global bios_drive_read
+bios_drive_read:
+    [bits 32]
+    push ebp
+    mov ebp, esp
+
+    param32 0, .drive           ; uint8_t
+    param32 1, .chs             ; drive_CHS *
+    param32 2, .buffer          ; uint8_t *
+    param32 3, .sector_count    ; uint8_t
+
+    %macro un_param 0
+        %undef .drive
+        %undef .chs
+    %endmacro
+
+    push edi                ; Store registers
+    push ebx
+
+    mov al, .drive
+    push eax
+
+    enter_real_mode
+
+    pop edx                 ; dl = .drive
+
+    linear_to_segmented_offset .chs, es, edi, di  ; es:di = .chs
+    call load_chs_into_registers    ; Load the .chs struct into cx and dh for the interrupt
+
+    lea eax, .sector_count
+    linear_to_segmented_offset eax, es, edi, di ; es:di = &.sector_count
+    mov al, es:[di] ; al = .sector_count
+
+    linear_to_segmented_offset .buffer, es, ebx, bx ; es:di = .buffer
+
+    mov ah, 0x2     ; interrupt code
+
+
+    mov di, 3       ; Retry the read 3 times
+
+.retry:
+    pusha           ; Store all registers before call to BIOS
+    stc             ; Set the carry flag (indicates if the read succeeded)
+    int 0x13
+    popa            ; Restore
+
+    jnc .success
+
+    call drive_reset
+    jc .fail        ; if carry is set, drive_reset failed, and then there's no point in retrying
+
+    dec di
+    test di, di
+    jnz .retry      ; if (--di != 0) goto .retry
+                    ; else goto .fail
+.fail:
+    xor eax, eax  ; return false
+    push eax
+    jmp .end
+
+.success:
+
+    mov eax, 1  ; return true
+    push eax
+.end:
+    enter_protected_mode
+
+    pop eax     ; get the return value
+
+    pop ebx     ; Restore registers
+    pop edi
+
+    un_param
+    %undef un_param
 
     leave
     ret

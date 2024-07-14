@@ -1,13 +1,20 @@
+#include "bios.h"
+#include "drive.h"
 #include "io.h"
 
-void start(short param)
+void start(uint16_t drive_id)
 {
-    while (1) {
-        int key = wait_key();
-        #define MSG "You pressed a key! That key was: "
-        char msg[sizeof(MSG)+1] = MSG;
-        msg[sizeof(MSG)-1] = key_to_char(key);
-        msg[sizeof(MSG)] = '\0';
-        puts(msg);
+    Drive drive;
+    drive_init(&drive, drive_id);
+
+    #define TARGET_STRING "Hello, World"
+    uint8_t buf[512] = {0};
+    uint32_t physical_address_of_target = ((int)TARGET_STRING - 0x500 + SECTOR_SIZE);
+
+    if (!drive_read(&drive, physical_address_of_target / SECTOR_SIZE, buf, 512))
+    {
+        puts("Read failed");
     }
+
+    puts((char *)buf + physical_address_of_target % SECTOR_SIZE);
 }
