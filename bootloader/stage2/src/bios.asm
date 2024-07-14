@@ -74,8 +74,8 @@
     and %3, 0xf     ; eax &= 0xf (= 0xe)
 %endmacro
 
-global bios_disk_get_drive_params
-bios_disk_get_drive_params:
+global bios_drive_get_drive_params
+bios_drive_get_drive_params:
     [bits 32]
     push ebp
     mov ebp, esp

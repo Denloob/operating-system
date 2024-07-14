@@ -14,6 +14,6 @@
  * @return               true on success, false on failure.
  */
 bool __attribute__((cdecl))
-bios_disk_get_drive_params(uint8_t drive, uint8_t *driveType,
+bios_drive_get_drive_params(uint8_t drive, uint8_t *driveType,
                            uint16_t *cylinders, uint8_t *sectors,
                            uint8_t *heads);

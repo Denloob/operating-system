@@ -16,7 +16,7 @@ _start:
     mov ax, 1                   ; LBA=1, that is the second sector
     mov cl, 8                   ; Read eight sectors
     mov bx, 0x500               ; Load into the higher half of the address space
-    call read_disk
+    call read_drive
     jmp 0x500                   ; Transfer execution to the loaded module
 
 ; Completely halt execution
@@ -25,10 +25,10 @@ halt:
     hlt
     jmp halt
 
-; A function to call when the disk fails
+; A function to call when the drive fails
 ; Will print a message and reboot after a key press
-disk_fail:
-    mov si, disk_fail_msg
+drive_fail:
+    mov si, drive_fail_msg
     call puts
 
     mov ah, 0
@@ -66,7 +66,7 @@ puts:
 
     ret
 
-; Gets the disk params
+; Gets the drive params
 ;
 ; @params   drive_number
 ; @returns  number_of_heads, sectors_per_track
@@ -84,7 +84,7 @@ get_drive_params:
     xor di, di  ; es:di = 0x0000:0x0000
     stc
     int 0x13
-    jc disk_fail
+    jc drive_fail
 
     xor dl, dl
     inc dh
@@ -153,18 +153,18 @@ lba_to_chs:
 
     ret
 
-; Reset the disk controller
+; Reset the drive controller
 ;
 ; @params:
 ;  dl: drive number
 ;
-disk_reset:
+drive_reset:
     pusha
 
     stc             ; Set the carry flag (will be used to check for errors)
     xor ah, ah
-    int 13h         ; Reset the disk
-    jc disk_fail  ; If failed, jump to disk_fail
+    int 13h         ; Reset the drive
+    jc drive_fail  ; If failed, jump to drive_fail
 
     popa
     ret
@@ -177,7 +177,7 @@ disk_reset:
 ;   dl      - the number of the drive
 ;   es:[bx] - where to store the read data
 ;
-read_disk:
+read_drive:
     push ax
     push bx
     push cx
@@ -201,7 +201,7 @@ read_disk:
     popa            ; Restore
 
                     ; Read failed, so
-    call disk_reset ; Reset the disk
+    call drive_reset ; Reset the drive
 
     dec di
     test di, di
@@ -209,7 +209,7 @@ read_disk:
                     ; else goto .fail
 .fail:
     ; All the attempts failed
-    jmp disk_fail
+    jmp drive_fail
 
 .done:
     popa            ; Restore
@@ -228,7 +228,7 @@ drive_number      db 0
 
 %define ENDL 0x0D, 0x0A
 
-disk_fail_msg db "Disk failed. Press any key to reboot", ENDL, 0
+drive_fail_msg db "Drive failed. Press any key to reboot", ENDL, 0
 
 times 510-($-$$) db 0
 db 0x55
