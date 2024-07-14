@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdint.h>
+#include <stdbool.h>
 
 typedef struct Drive {
     uint8_t id;
@@ -12,11 +13,12 @@ typedef struct Drive {
 } Drive;
 
 
+// WARNING: Do not change the offsets or size of struct's members without changing the bios.asm load_chs_into_registers procedure.
 typedef struct drive_CHS {
     uint16_t cylinder;
     uint8_t head;
     uint8_t sector;
-} drive_CHS;
+} __attribute__((packed)) drive_CHS;
 
 void drive_lba_to_chs(Drive *drive, uint32_t lba, drive_CHS *ret);
 
