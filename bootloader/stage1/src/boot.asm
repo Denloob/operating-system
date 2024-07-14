@@ -11,6 +11,7 @@ _start:
     mov sp, 0x500 ; The stack will grow down from where we are
 
     mov byte [drive_number], dl ; The BIOS sets the drive number in dl
+    call get_drive_params       ; Query the BIOS for number_of_heads and sectors_per_track
 
     mov ax, 1                   ; LBA=1, that is the second sector
     mov cl, 8                   ; Read eight sectors
@@ -63,6 +64,44 @@ puts:
     pop ax
     pop si
 
+    ret
+
+; Gets the disk params
+;
+; @params   drive_number
+; @returns  number_of_heads, sectors_per_track
+get_drive_params:
+    push di
+    push ax
+    push bx
+    push di
+    push cx
+    push dx
+    push es
+
+    mov dl, [drive_number]
+    mov ah, 0x8 ; Get drive parameters interrupt
+    xor di, di  ; es:di = 0x0000:0x0000
+    stc
+    int 0x13
+    jc disk_fail
+
+    xor dl, dl
+    inc dh
+    xchg dh, dl
+    mov [number_of_heads], dx
+
+    xor ch, ch
+    and cl, 0x3f
+    mov [sectors_per_track], cx
+
+    pop es
+    pop dx
+    pop cx
+    pop di
+    pop bx
+    pop ax
+    pop di
     ret
 
 ; Converts an LBA address to CHS
@@ -183,8 +222,8 @@ read_disk:
 
     ret
 
-number_of_heads   dw 2
-sectors_per_track dw 16
+number_of_heads   dw 0
+sectors_per_track dw 0
 drive_number      db 0
 
 %define ENDL 0x0D, 0x0A
