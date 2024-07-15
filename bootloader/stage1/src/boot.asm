@@ -8,7 +8,7 @@ _start:
     mov es, ax
     mov ss, ax
 
-    mov sp, 0x500 ; The stack will grow down from where we are
+    mov sp, 0x7c00 ; The stack will grow down from where we are
 
     mov byte [drive_number], dl ; The BIOS sets the drive number in dl
     call get_drive_params       ; Query the BIOS for number_of_heads and sectors_per_track
