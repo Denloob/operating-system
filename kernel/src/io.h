@@ -11,6 +11,12 @@ static inline void out_byte(uint16_t port, uint8_t val)
     __asm__ volatile("out %1, %0" : : "a"(val), "Nd"(port) : "memory");
 }
 
+static inline void out_word(uint16_t port, uint16_t val)
+{
+    __asm__ volatile("out %1, %0" : : "a"(val), "Nd"(port) : "memory");
+}
+
+
 static inline uint8_t in_byte(uint16_t port)
 {
     uint8_t ret;
