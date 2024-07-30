@@ -2,6 +2,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <stddef.h>
 
 void puts(char *str);
 
@@ -41,3 +42,4 @@ int get_key_type(int keycode);
  * @return Corresponding ascii character or '\0'
  */
 char key_to_char(int keycode);
+void get_string(char *buffer, size_t max_size);

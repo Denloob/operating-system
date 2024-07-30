@@ -119,3 +119,42 @@ char key_to_char(int keycode)
         case 0x39: return ' ';
     }
 }
+
+void get_string(char *buffer, size_t max_size)
+{
+    char *ptr = buffer;
+    char ch;
+    int keycode;
+
+    // While loop till "Enter" is pressed
+    while (1)
+    {
+
+        keycode = wait_key();
+        ch = key_to_char(keycode);
+
+        // If the key is a newline character, break the loop
+        if (ch == '\n')
+        {
+            *ptr = '\0'; 
+            break;
+        }
+        // backspace handle
+        else if (ch == '\b')
+        {
+            if (ptr > buffer) //not the first key (checks that the ptr is not the buffer so that we dont go before the buffer limit)
+            {
+                --ptr;
+                puts("\b \b"); // Erase the character on the screen
+            }
+        }
+        else if (ch) //a case where everything went by normal
+        {
+            if ((ptr - buffer) < max_size - 1) // making sure we are still in the buffer limits
+            {
+                *ptr++ = ch;
+                puts(&ch);
+            }
+        }
+    }
+}

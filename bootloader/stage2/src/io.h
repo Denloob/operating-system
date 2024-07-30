@@ -3,6 +3,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+
 void puts(char *str);
 
 static inline void out_byte(uint16_t port, uint8_t val)
@@ -41,3 +42,7 @@ int get_key_type(int keycode);
  * @return Corresponding ascii character or '\0'
  */
 char key_to_char(int keycode);
+/* Function to get a string from the keyboard and write it into the provided array
+  input: pointer to array , array max size
+*/
+

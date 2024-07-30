@@ -3,6 +3,7 @@
 #define VGA_ADDR (volatile char *)0xb8000
 #define VGA_WIDTH 160
 #define VGA_COLOR_WHITE 7
+
 volatile char *g_vga_it = VGA_ADDR;
 
 void puts(char *str)
@@ -109,3 +110,4 @@ char key_to_char(int keycode)
         case 0x39: return ' ';
     }
 }
+

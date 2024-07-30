@@ -19,7 +19,6 @@ void start(uint16_t drive_id)
     if (!drive_read(&drive, KERNEL_SEGMENT, KERNEL_BASE_ADDRESS, 512*3))
     {
         assert(false && "Read failed");
-    }
-
+    }    
     ((kernel_main)KERNEL_BASE_ADDRESS)(drive);
 }
