@@ -1,13 +1,20 @@
 #include "shell.h"
 
 #define ACPI_SHUTDOWN 0x2000
-/*
+
 void shutdown()
 {
   out_word(0x604, 0x2000);
 }
-*/
 
+void reboot()
+{
+    uint8_t good = 0x02;
+    while (good & 0x02)
+        good = in_byte(0x64);
+    out_byte(0x64, 0xFE);
+    __asm__ volatile("hlt");
+}
 int compare_strings(char *option, char *command)
 {
     while (*option && *command)
@@ -43,11 +50,11 @@ void parse_command(char* command , int max_size)
 {
   if(compare_strings("shutdown" , command))
   {
-    puts("shutdown");
+    shutdown();
   }
   else if(compare_strings("reboot" , command))
   {
-    puts("reboot");
+    reboot();
   }
   else if(compare_strings("echo" , command))
   {

@@ -145,7 +145,7 @@ void get_string(char *buffer, size_t max_size)
             if (ptr > buffer) //not the first key (checks that the ptr is not the buffer so that we dont go before the buffer limit)
             {
                 --ptr;
-                puts("\b \b"); // Erase the character on the screen
+                
             }
         }
         else if (ch) //a case where everything went by normal
@@ -153,7 +153,7 @@ void get_string(char *buffer, size_t max_size)
             if ((ptr - buffer) < max_size - 1) // making sure we are still in the buffer limits
             {
                 *ptr++ = ch;
-                puts(&ch);
+                putc(ch);
             }
         }
     }
