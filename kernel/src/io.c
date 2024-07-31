@@ -7,6 +7,24 @@ volatile char *g_vga_it = VGA_ADDR;
 
 void putc(char ch)
 {
+    if (ch == '\b')
+    {
+        if (g_vga_it - 2 < VGA_ADDR)
+        {
+            return;
+        }
+        g_vga_it -= 2;
+        *g_vga_it = ' ';
+        return;
+    }
+
+    if (ch == '\n')
+    {
+        // Move g_vga_it to the next line
+        g_vga_it += VGA_WIDTH - (g_vga_it - VGA_ADDR) % VGA_WIDTH;
+        return;
+    }
+
     *g_vga_it++ = ch;
     *g_vga_it++ = VGA_COLOR_WHITE;
 }
@@ -22,9 +40,7 @@ void put(char *str)
 void puts(char *str)
 {
     put(str);
-
-    // Move g_vga_it to the next line
-    g_vga_it += VGA_WIDTH - (g_vga_it - VGA_ADDR) % VGA_WIDTH;
+    putc('\n');
 }
 
 // @see https://wiki.osdev.org/PS/2_Keyboard
@@ -129,7 +145,6 @@ void get_string(char *buffer, size_t max_size)
     // While loop till "Enter" is pressed
     while (1)
     {
-
         keycode = wait_key();
         ch = key_to_char(keycode);
 
@@ -137,6 +152,7 @@ void get_string(char *buffer, size_t max_size)
         if (ch == '\n')
         {
             *ptr = '\0'; 
+            putc('\n');
             break;
         }
         // backspace handle
@@ -145,7 +161,7 @@ void get_string(char *buffer, size_t max_size)
             if (ptr > buffer) //not the first key (checks that the ptr is not the buffer so that we dont go before the buffer limit)
             {
                 --ptr;
-                
+                putc(ch);
             }
         }
         else if (ch) //a case where everything went by normal
