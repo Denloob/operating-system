@@ -5,7 +5,6 @@
 
 void __attribute__((section(".entry"))) kernel_main(uint16_t drive_id)
 {
-    puts("Hello, World!");
     while(true)
     {
       char input_buffer[INPUT_BUFFER_SIZE];
