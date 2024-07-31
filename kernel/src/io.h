@@ -8,6 +8,8 @@ void put(char *str);
 void putc(char ch);
 void puts(char *str);
 
+void io_clear_vga();
+
 static inline void out_byte(uint16_t port, uint8_t val)
 {
     __asm__ volatile("out %1, %0" : : "a"(val), "Nd"(port) : "memory");

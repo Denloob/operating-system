@@ -2,8 +2,18 @@
 
 #define VGA_ADDR (volatile char *)0xb8000
 #define VGA_WIDTH 160
+#define VGA_HEIGHT 24
 #define VGA_COLOR_WHITE 7
 volatile char *g_vga_it = VGA_ADDR;
+
+void io_clear_vga()
+{
+    g_vga_it = VGA_ADDR + VGA_HEIGHT * VGA_WIDTH;
+    while (g_vga_it > VGA_ADDR)
+    {
+        *g_vga_it-- = 0;
+    }
+}
 
 void putc(char ch)
 {

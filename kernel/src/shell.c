@@ -46,6 +46,12 @@ void echo_command(char *command, int max_size)
     
     puts(new_command);
 }
+
+void clean_command(char *command, int max_size)
+{
+    io_clear_vga();
+}
+
 void parse_command(char* command , int max_size)
 {
   if(compare_strings("shutdown" , command))
@@ -59,6 +65,10 @@ void parse_command(char* command , int max_size)
   else if(compare_strings("echo" , command))
   {
     echo_command(command , max_size);
+  }
+  else if(compare_strings("clean" , command))
+  {
+    clean_command(command , max_size);
   }
   else
   {
