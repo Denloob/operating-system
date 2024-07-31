@@ -9,11 +9,9 @@ void __attribute__((section(".entry"))) kernel_main(uint16_t drive_id)
     while(true)
     {
       char input_buffer[INPUT_BUFFER_SIZE];
-      puts("Enter a string: ");
+      put("$ ");
       get_string(input_buffer, INPUT_BUFFER_SIZE);
 
-      puts("You entered: ");
-      puts(input_buffer);
-      parse_command(input_buffer , INPUT_BUFFER_SIZE);
+      parse_command(input_buffer, INPUT_BUFFER_SIZE);
     }
 }

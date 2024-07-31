@@ -4,6 +4,8 @@
 #include <stdint.h>
 #include <stddef.h>
 
+void put(char *str);
+void putc(char ch);
 void puts(char *str);
 
 static inline void out_byte(uint16_t port, uint8_t val)
