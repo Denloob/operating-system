@@ -3,7 +3,7 @@
 
 #define VGA_ADDR ((volatile char *)0xb8000)
 #define VGA_WIDTH 160
-#define VGA_HEIGHT 24
+#define VGA_HEIGHT 25
 #define VGA_COLOR_WHITE 7
 #define VGA_SIZE (VGA_WIDTH*VGA_HEIGHT)
 volatile char *g_vga_it = VGA_ADDR;
@@ -22,12 +22,12 @@ void scroll_up()
 {
     memmove((void *)VGA_ADDR, (const void *)(VGA_ADDR + VGA_WIDTH), VGA_WIDTH * (VGA_HEIGHT-1)); 
     memset((void *)(VGA_ADDR + VGA_WIDTH * (VGA_HEIGHT - 1)), 0, VGA_WIDTH); 
-    g_vga_it = VGA_ADDR + VGA_WIDTH * (VGA_HEIGHT - 1);
+    g_vga_it -= VGA_WIDTH;
 }
 
 void putc(char ch)
 {
-    if(g_vga_it > VGA_ADDR + VGA_SIZE)
+    if(g_vga_it >= VGA_ADDR + VGA_SIZE)
     {
 	scroll_up();
     }
