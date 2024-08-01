@@ -1,8 +1,8 @@
 #pragma once
 
 #include <stdbool.h>
-#include <stdint.h>
 #include <stddef.h>
+#include <stdint.h>
 
 void put(char *str);
 void putc(char ch);
@@ -19,7 +19,6 @@ static inline void out_word(uint16_t port, uint16_t val)
 {
     __asm__ volatile("out %1, %0" : : "a"(val), "Nd"(port) : "memory");
 }
-
 
 static inline uint8_t in_byte(uint16_t port)
 {
