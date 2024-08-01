@@ -45,7 +45,7 @@ void echo_command(char *command)
     puts(command + ECHO_COMMAND_LEN + 1);
 }
 
-void clean_command()
+void clear_command()
 {
     io_clear_vga();
 }
@@ -64,9 +64,9 @@ void parse_command(char* command , int max_size)
   {
     echo_command(command);
   }
-  else if(compare_strings("clean" , command))
+  else if(compare_strings("clear" , command))
   {
-    clean_command();
+    clear_command();
   }
   else
   {
