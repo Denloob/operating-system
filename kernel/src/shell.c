@@ -1,3 +1,4 @@
+#include "string.h"
 #include "shell.h"
 
 #define ACPI_SHUTDOWN 0x2000
@@ -33,21 +34,18 @@ int compare_strings(char *option, char *command)
     return 0; 
 }
 
-void echo_command(char *command, int max_size)
+void echo_command(char *command)
 {
-    int new_size = max_size - 5;
-    char new_command[new_size];
-
-    for (int i = 4; i < max_size && command[i] != '\0'; i++)
+#define ECHO_COMMAND_LEN 4
+    if (strlen(command) <= ECHO_COMMAND_LEN + 1 && command[ECHO_COMMAND_LEN] != ' ')
     {
-        new_command[i - 4] = command[i];
+        puts("Usage: echo <string>");
+        return;
     }
-    new_command[new_size - 1] = '\0'; 
-    
-    puts(new_command);
+    puts(command + ECHO_COMMAND_LEN + 1);
 }
 
-void clean_command(char *command, int max_size)
+void clean_command()
 {
     io_clear_vga();
 }
@@ -64,11 +62,11 @@ void parse_command(char* command , int max_size)
   }
   else if(compare_strings("echo" , command))
   {
-    echo_command(command , max_size);
+    echo_command(command);
   }
   else if(compare_strings("clean" , command))
   {
-    clean_command(command , max_size);
+    clean_command();
   }
   else
   {

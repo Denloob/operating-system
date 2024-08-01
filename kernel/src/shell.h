@@ -5,7 +5,7 @@ void shutdown();
 
 void reboot();
 
-void echo_command(char *command , int max_size);
+void echo_command(char *command);
 
 int compare_strings(char *option , char* command);
 
