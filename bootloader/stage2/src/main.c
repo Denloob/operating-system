@@ -4,7 +4,7 @@
 #include "assert.h"
 
 #define KERNEL_BASE_ADDRESS (uint8_t *)0x7e00
-#define KERNEL_SEGMENT 7
+#define KERNEL_SEGMENT 9
 
 typedef void (*kernel_main)(Drive drive);
 
