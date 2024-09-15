@@ -215,6 +215,8 @@ bios_drive_read:
     %macro un_param 0
         %undef .drive
         %undef .chs
+        %undef .buffer
+        %undef .sector_count
     %endmacro
 
     push edi                ; Store registers
