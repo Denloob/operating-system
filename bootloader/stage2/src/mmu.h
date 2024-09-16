@@ -49,7 +49,8 @@ typedef struct
 
 extern mmu_PageMapEntry *pml4;
 
-void mmu_page_map_init(mmu_PageMapEntry *address);
+void mmu_init();
+void mmu_table_init(void *address);
 void mmu_tlb_flush(size_t virtual_address);
 mmu_PageMapEntry *mmu_page_map_get_address_from(mmu_PageMapEntry *page_map);
 mmu_PageTableEntry *mmu_page(void *address);
