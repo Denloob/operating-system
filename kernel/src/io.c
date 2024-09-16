@@ -1,4 +1,6 @@
 #include "io.h"
+#include "assert.h"
+#include <stdarg.h>
 #include "memory.h"
 
 #define VGA_ADDR ((volatile char *)0xb8000)
@@ -65,6 +67,105 @@ void puts(char *str)
 {
     put(str);
     putc('\n');
+}
+
+char *itoa(long value_tmp, char *str, size_t size, int base)
+{
+    long long value = value_tmp;
+    assert(size != 0 && "size cannot be 0");
+
+    // Check if base is supported
+    if ( base < 2 || base > 36 )
+    {
+        *str = '\0';
+        return str;
+    }
+
+    char *ptr = str;
+    //
+    if ( value < 0 && base == 10 )
+    {
+        value = -value;
+        *ptr++ = '-';
+        size--;
+    }
+    char *number_start = ptr;
+
+    do
+    {
+        if (size == 0)
+        {
+            return NULL;
+        }
+
+        *ptr++ = "0123456789abcdefghijklmnopqrstuvwxyz"[value % base];
+        size--;
+
+        value /= base;
+    } while (value);
+
+    if (size == 0)
+    {
+        return NULL;
+    }
+    *ptr-- = '\0';
+
+    // Reverse the string (the numbers are reversed)
+    while ( number_start < ptr )
+    {
+        char tmp = *number_start;
+        *number_start++ = *ptr;
+        *ptr-- = tmp;
+    }
+    return str;
+}
+
+void printf(char *fmt, ...)
+{
+    va_list args;
+    va_start(args, fmt);
+
+    for (; *fmt; fmt++)
+    {
+        if (*fmt != '%')
+        {
+            putc(*fmt);
+            continue;
+        }
+
+        fmt++;
+        char ch = *fmt;
+        switch (ch)
+        {
+            default:
+                putc(ch);
+                break;
+            case 's':
+            {
+                char *str = va_arg(args, char *);
+                put(str);
+                break;
+            }
+            case 'd':
+            case 'x':
+            {
+                int num = va_arg(args, int);
+
+#define MAX_INT_LENGTH 12
+                char buf[MAX_INT_LENGTH] = {0};
+                itoa(num, buf, sizeof(buf), ch == 'd' ? 10 : 0x10);
+
+                put(buf);
+                break;
+            }
+            case 'c':
+            {
+                int chr = va_arg(args, int);
+                putc(chr);
+                break;
+            }
+        }
+    }
 }
 
 // @see https://wiki.osdev.org/PS/2_Keyboard

@@ -8,6 +8,9 @@ void put(char *str);
 void putc(char ch);
 void puts(char *str);
 
+char *itoa(long value, char *str, size_t size, int base);
+void printf(char *fmt, ...);
+
 void io_clear_vga();
 
 static inline void out_byte(uint16_t port, uint8_t val)

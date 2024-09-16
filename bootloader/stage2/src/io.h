@@ -2,6 +2,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <stddef.h>
 
 
 void puts(char *str);
@@ -17,6 +18,9 @@ static inline uint8_t in_byte(uint16_t port)
     __asm__ volatile("in %0, %1" : "=a"(ret) : "Nd"(port) : "memory");
     return ret;
 }
+
+char *itoa(long value, char *str, size_t size, int base);
+void printf(char *fmt, ...);
 
 int wait_key();
 
