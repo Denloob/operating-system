@@ -12,7 +12,7 @@
 #define TABLE_SIZE_BYTES (TABLE_SIZE * sizeof(mmu_PageMapEntry))
 
 #define MMU_TABLE_COUNT 512
-#define MMU_BITMAP_SIZE (MMU_TABLE_COUNT / 8) 
+#define MMU_BITMAP_SIZE (MMU_TABLE_COUNT / 8)
 
 #define MMU_BITMAP_BASE 0x100000
 #define MMU_MAP_BASE (MMU_BITMAP_BASE + MMU_BITMAP_SIZE)
@@ -36,10 +36,10 @@ Bitmap *mmu_tables_bitmap = (Bitmap *)MMU_BITMAP_BASE;
 
 void *mmu_map_allocate()
 {
-    for (int i = 0; i < MMU_BITMAP_SIZE; i++) 
+    for (int i = 0; i < MMU_BITMAP_SIZE; i++)
     {
-        if (!bitmap_test(mmu_tables_bitmap, i)) 
-        { 
+        if (!bitmap_test(mmu_tables_bitmap, i))
+        {
             bitmap_set(mmu_tables_bitmap, i);
             return (void *)(MMU_MAP_BASE + i * TABLE_SIZE);
         }
