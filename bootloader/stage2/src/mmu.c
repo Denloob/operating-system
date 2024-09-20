@@ -90,6 +90,13 @@ void mmu_init()
         page->read_write = true;
     }
 
+#define EFER_MSR 0xC0000080
+    __asm__ volatile("rdmsr\n"
+                     "or eax, 1 << 8\n"
+                     "wrmsr"
+                     :
+                     : "c"(EFER_MSR)
+                     : "eax", "cc");
 
     __asm__ volatile("mov cr3, %0\n" : : "a"(g_pml4));
     __asm__ volatile("mov eax, cr0\n"
