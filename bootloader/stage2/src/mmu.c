@@ -118,7 +118,7 @@ mmu_PageMapEntry *mmu_page_map_get_address_of(mmu_PageMapEntry *entry)
 
 mmu_PageMapEntry *mmu_page_map_get_or_allocate_of(mmu_PageMapEntry *entry)
 {
-    if (entry->present)
+    if (!entry->present)
     {
         entry->address = (uint64_t)mmu_map_allocate();
         mmu_table_init((void *)entry->address);
