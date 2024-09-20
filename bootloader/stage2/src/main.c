@@ -22,7 +22,7 @@ void start(uint16_t drive_id)
         assert(false && "Read failed");
     }
 
-    //mmu_init();
+    mmu_init();
 
     ((kernel_main)KERNEL_BASE_ADDRESS)(drive);
 }
