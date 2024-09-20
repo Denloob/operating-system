@@ -5,11 +5,12 @@
 
 typedef struct
 {
-    uint64_t offset : 9;
+    uint64_t offset : 12;
     uint64_t page : 9;
     uint64_t level2 : 9;
     uint64_t level3 : 9;
     uint64_t level4 : 9;
+    uint64_t pad : 16;
 } mmu_PageIndexes;
 
 typedef struct
@@ -52,5 +53,5 @@ extern mmu_PageMapEntry *pml4;
 void mmu_init();
 void mmu_table_init(void *address);
 void mmu_tlb_flush(size_t virtual_address);
-mmu_PageMapEntry *mmu_page_map_get_address_from(mmu_PageMapEntry *page_map);
+mmu_PageMapEntry *mmu_page_map_get_address_of(mmu_PageMapEntry *entry);
 mmu_PageTableEntry *mmu_page(void *address);

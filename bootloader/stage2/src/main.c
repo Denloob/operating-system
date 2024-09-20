@@ -1,10 +1,11 @@
 #include "bios.h"
 #include "drive.h"
 #include "io.h"
+#include "mmu.h"
 #include "assert.h"
 
 #define KERNEL_BASE_ADDRESS (uint8_t *)0x7e00
-#define KERNEL_SEGMENT 14
+#define KERNEL_SEGMENT 15
 
 typedef void (*kernel_main)(Drive drive);
 
@@ -19,6 +20,11 @@ void start(uint16_t drive_id)
     if (!drive_read(&drive, KERNEL_SEGMENT, KERNEL_BASE_ADDRESS, 512*11))
     {
         assert(false && "Read failed");
-    }    
+    }
+
+    //mmu_init();
+    asm volatile ("xchg bx, bx");
+    asm volatile ("nop");
+
     ((kernel_main)KERNEL_BASE_ADDRESS)(drive);
 }
