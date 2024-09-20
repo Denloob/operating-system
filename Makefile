@@ -1,4 +1,4 @@
-EMU := qemu-system-i386
+EMU := qemu-system-x86_64
 BOOTLOADER := bootloader/bootloader.bin
 KERNEL := kernel/bin/kernel.bin
 IMAGE_NAME := floppy
