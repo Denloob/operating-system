@@ -23,8 +23,6 @@ void start(uint16_t drive_id)
     }
 
     //mmu_init();
-    asm volatile ("xchg bx, bx");
-    asm volatile ("nop");
 
     ((kernel_main)KERNEL_BASE_ADDRESS)(drive);
 }

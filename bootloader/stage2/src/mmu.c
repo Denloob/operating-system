@@ -72,24 +72,17 @@ void mmu_init()
     g_pml4 = mmu_map_allocate();
     mmu_table_init(g_pml4);
 
-    asm volatile ("xchg bx, bx");
-    asm volatile ("xchg bx, bx");
-
     for (uint64_t it = MMU_STRUCTURES_START; it < MMU_STRUCTURES_END; it += KILOBYTE)
     {
         mmu_PageTableEntry *page = mmu_page_allocate(it, it);
         page->read_write = true;
     }
-    asm volatile ("xchg bx, bx");
-    asm volatile ("xchg bx, bx");
 
     for (uint64_t it = BOOTLOADER_STAGE2_BEGIN; it < (uint64_t)BOOTLOADER_STAGE2_END; it += KILOBYTE)
     {
         mmu_PageTableEntry *page = mmu_page_allocate(it, it);
         page->read_write = true;
     }
-    asm volatile ("xchg bx, bx");
-    asm volatile ("xchg bx, bx");
 
     for (uint64_t it = KERNEL_BEGIN; it < (uint64_t)KERNEL_END; it += KILOBYTE)
     {
@@ -97,9 +90,6 @@ void mmu_init()
         page->read_write = true;
     }
 
-    asm volatile ("xchg bx, bx");
-    asm volatile ("xchg bx, bx");
-    asm volatile ("xchg bx, bx");
 
     __asm__ volatile("mov cr3, %0\n" : : "a"(g_pml4));
     __asm__ volatile("mov eax, cr0\n"
