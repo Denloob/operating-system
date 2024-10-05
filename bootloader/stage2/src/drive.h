@@ -14,7 +14,8 @@ typedef struct Drive {
 
 
 // WARNING: Do not change the offsets or size of struct's members without changing the bios.asm load_chs_into_registers procedure.
-typedef struct drive_CHS {
+typedef struct drive_CHS
+{
     uint16_t cylinder;
     uint8_t head;
     uint8_t sector;
