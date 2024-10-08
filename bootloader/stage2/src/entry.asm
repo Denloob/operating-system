@@ -57,7 +57,7 @@ entry:
     push eax
     call start  ; start(boot_drive)
 
-.halt
+.halt:
     cli
     hlt
     jmp .halt
