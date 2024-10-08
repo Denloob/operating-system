@@ -14,7 +14,7 @@ _start:
     call get_drive_params       ; Query the BIOS for number_of_heads and sectors_per_track
 
     mov ax, 1                   ; LBA=1, that is the second sector
-    mov cl, 14                  ; Read the bootloader sectors
+    mov cl, 15                  ; Read the bootloader sectors
     mov bx, 0x500               ; Load into the higher half of the address space
     call read_drive
     jmp 0x500                   ; Transfer execution to the loaded module

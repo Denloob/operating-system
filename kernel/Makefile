@@ -6,11 +6,11 @@ IMAGE_NAME := kernel
 
 ASM := nasm
 
-CC := i386-elf-gcc
-LD := i386-elf-ld
+CC := x86_64-elf-gcc
+LD := x86_64-elf-ld
 CFLAGS := -ffreestanding -nostdlib -masm=intel
 LDFLAGS := -nostdlib -T linker.ld -Map=$(BIN_DIR)/$(IMAGE_NAME).map
-LDLIBS := -L${TOOLCHAIN_PATH}/lib/gcc/i386-elf/7.5.0 -lgcc
+LDLIBS := -L${TOOLCHAIN_PATH}/lib/gcc/x86_64-elf/7.5.0 -lgcc
 DEPFLAGS = -MT $@ -MMD -MP -MF $(DEP_DIR)/obj/$*.d
 
 CFILES := $(shell cd $(SRC_DIR) && find -L * -type f -name '*.c')
