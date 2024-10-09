@@ -1,5 +1,6 @@
 #include "FAT16.h"
 #include "drive.h"
+#include "memory.h"
 #include <stdbool.h>
 #include <stdint.h>
 

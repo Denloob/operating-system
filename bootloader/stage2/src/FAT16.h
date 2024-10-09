@@ -7,8 +7,6 @@
 #include <stdbool.h>
 
 #include "drive.h"
-#include "memory.h"
-#include "string.h"
 
 #define SECTOR_SIZE 512
 #define FAT16_CLUSTER_FREE 0x0000

@@ -1,7 +1,9 @@
 #pragma once
 
-void *memmove(void *dest, const void *src, int len);    
+#include <stddef.h>
 
+void *memmove(void *dest, const void *src, int len);    
+int memcmp(const void *ptr1, const void *ptr2, size_t num);
 void *memset(void *dest, int val, int len);
 
 void init_memory();
