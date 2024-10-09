@@ -31,8 +31,8 @@ void start(uint16_t drive_id)
 
 void main_gdt_long_mode_init()
 {
-    gdt_entry *gdt = main_gdt_64bit;
-    main_gdt_descriptor->offset = (uint64_t)gdt;
+    gdt_entry *gdt = &main_gdt_64bit;
+    main_gdt_descriptor.offset = (uint64_t)gdt;
 
     // Code
     gdt[1] = (gdt_entry){
