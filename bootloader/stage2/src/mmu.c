@@ -161,11 +161,23 @@ mmu_PageTableEntry *mmu_page(void *address)
     uint64_t address64 = (uint64_t)address;
     mmu_PageIndexes page_indexes = *(mmu_PageIndexes *)&address64;
 
-    mmu_PageMapEntry *pml3 = mmu_page_map_get_or_allocate_of(g_pml4 + page_indexes.level4);
-    mmu_PageMapEntry *pml2 = mmu_page_map_get_or_allocate_of(pml3 + page_indexes.level3);
-    mmu_PageTableEntry *page_table = (mmu_PageTableEntry *)mmu_page_map_get_or_allocate_of(pml2 + page_indexes.level2);
-    mmu_PageTableEntry *entry = page_table + page_indexes.page;
 
+    // We set read_write to `true` for all layers except last one,
+    //  as they are hierarchical, so even one false would mean that no page under can write.
+    mmu_PageMapEntry *pml4_entry = g_pml4 + page_indexes.level4;
+    pml4_entry->read_write = true;
+
+    mmu_PageMapEntry *pml3 = mmu_page_map_get_or_allocate_of(pml4_entry);
+
+    mmu_PageMapEntry *pml3_entry = pml3 + page_indexes.level3;
+    pml3_entry->read_write = true;
+    mmu_PageMapEntry *pml2 = mmu_page_map_get_or_allocate_of(pml3_entry);
+
+    mmu_PageMapEntry *pml2_entry = pml2 + page_indexes.level2;
+    pml2_entry->read_write = true;
+    mmu_PageTableEntry *page_table = (mmu_PageTableEntry *)mmu_page_map_get_or_allocate_of(pml2_entry);
+
+    mmu_PageTableEntry *entry = page_table + page_indexes.page;
     return entry;
 }
 
