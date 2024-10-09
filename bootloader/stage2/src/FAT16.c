@@ -39,18 +39,19 @@ bool fat16_read_root_directory(Drive *drive, fat16_BootSector bpb, fat16_DirEntr
     return drive_read(drive, sector, buffer, sectors);
 }
 
-fat16_DirEntry *fat16_find_file(Drive *drive, const char *filename, fat16_BootSector *bpb,
-                    fat16_DirEntry *rootDir)
+bool fat16_find_file(Drive *drive, const char *filename, fat16_BootSector *bpb,
+                    fat16_DirEntry *rootDir, fat16_DirEntry **out_file)
 {
     for (uint32_t i = 0; i < bpb->rootEntryCount; i++)
     {
         if (memcmp(filename, rootDir[i].filename, 11) == 0)
         {
-            return &rootDir[i];
+            *out_file = &rootDir[i];
+            return true;
         }
     }
 
-    return NULL;
+    return false;
 }
 
 bool fat16_read_file(fat16_DirEntry *fileEntry, Drive *drive, fat16_BootSector *bpb,
