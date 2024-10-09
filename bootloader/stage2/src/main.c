@@ -13,7 +13,7 @@ typedef void (*kernel_main)(Drive drive);
 #define KERNEL_SIZE (KERNEL_SEGMENT_SIZE * SEGMENT_SIZE)
 #define KERNEL_END (KERNEL_BEGIN + KERNEL_SIZE)
 #define KERNEL_BASE_ADDRESS (kernel_main)KERNEL_BEGIN
-#define KERNEL_SEGMENT 16
+#define KERNEL_SEGMENT 18
 
 void start(uint16_t drive_id)
 {
