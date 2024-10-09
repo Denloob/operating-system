@@ -5,7 +5,7 @@
 #include <stdint.h>
 
 #define SECTOR_SIZE 512
-#define TAKE_DEFUALT_VALUE -1
+#define TAKE_DEFAULT_VALUE -1
 
 bool fat16_read_BPB(Drive *drive, fat16_BootSector bpb, uint8_t *buffer)
 {
@@ -23,15 +23,15 @@ bool fat16_read_FAT(Drive *drive, fat16_BootSector bpb, uint8_t *FAT)
 bool fat16_read_sectors(Drive *drive, uint32_t sector, uint8_t *buffer,
                   uint32_t count)
 {
-    if (count == TAKE_DEFUALT_VALUE)
+    if (count == TAKE_DEFAULT_VALUE)
         count = SECTOR_SIZE;
     return drive_read(drive, sector * SECTOR_SIZE, buffer, count);
 }
 
-bool fat16_read_root_directory(Drive *drive, fat16_BootSector bpb, DirEntry *buffer)
+bool fat16_read_root_directory(Drive *drive, fat16_BootSector bpb, fat16_DirEntry *buffer)
 {
     uint32_t sector = bpb.reservedSectors + bpb.FATSize * bpb.numFATs;
-    uint32_t size = sizeof(DirEntry) * bpb.rootEntryCount;
+    uint32_t size = sizeof(fat16_DirEntry) * bpb.rootEntryCount;
     uint32_t sectors = (size / bpb.bytesPerSector);
     if (size % bpb.bytesPerSector > 0)
         sectors++;
@@ -39,8 +39,8 @@ bool fat16_read_root_directory(Drive *drive, fat16_BootSector bpb, DirEntry *buf
     return drive_read(drive, sector, buffer, sectors);
 }
 
-DirEntry *fat16_find_file(Drive *drive, const char *filename, fat16_BootSector *bpb,
-                    DirEntry *rootDir)
+fat16_DirEntry *fat16_find_file(Drive *drive, const char *filename, fat16_BootSector *bpb,
+                    fat16_DirEntry *rootDir)
 {
     for (uint32_t i = 0; i < bpb->rootEntryCount; i++)
     {
@@ -53,7 +53,7 @@ DirEntry *fat16_find_file(Drive *drive, const char *filename, fat16_BootSector *
     return NULL;
 }
 
-bool fat16_read_file(DirEntry *fileEntry, Drive *drive, fat16_BootSector *bpb,
+bool fat16_read_file(fat16_DirEntry *fileEntry, Drive *drive, fat16_BootSector *bpb,
               uint8_t *out_buffer, uint32_t rootDirectoryEnd, uint8_t *FAT)
 {
     uint16_t currCluster = fileEntry->firstClusterLow;
