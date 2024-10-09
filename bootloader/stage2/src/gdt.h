@@ -14,7 +14,7 @@
 #define GDT_SEG_EXPAND_DOWN    0x04
 
 #define GDT_SEG_DESCTYPE_NOT_SYSTEM  (1 << 0x04) // Descriptor type (0 for system, 1 for code/data)
-#define GDT_SEG_PRES      (1 << 0x00) // Present
+#define GDT_SEG_PRES      (1 << 0x07) // Present
 #define GDT_SEG_PRIV(x)     (((x) &  0x03) << 0x05)   // Set privilege level (0 - 3)
 
 #define GDT_SEG_DATA_RD        0x00 // Read-Only
@@ -26,8 +26,8 @@ typedef struct {
     uint64_t limit_low : 16;
     uint64_t base_low : 24;
     uint64_t access : 8;
-    uint64_t flags : 4;
     uint64_t limit_high : 4;
+    uint64_t flags : 4;
     uint64_t base_high : 8;
 } gdt_entry;
 
@@ -44,5 +44,5 @@ typedef struct {
 
 typedef struct __attribute__((__packed__)) {
     uint16_t size;
-    uint64_t offset;
+    uint32_t offset;
 } gdt_descriptor;
