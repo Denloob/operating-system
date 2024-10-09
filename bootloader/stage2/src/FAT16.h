@@ -1,5 +1,4 @@
-#ifndef FAT16_H
-#define FAT16_H
+#pragma once
 
 #include <stdint.h>
 #include <stddef.h>
@@ -70,4 +69,3 @@ bool read_root_directory(Drive *drive , BootSector bpb , DirEntry *buffer);
 DirEntry* find_file(Drive *drive , const char* filename , BootSector *bpb , DirEntry *rootDir); 
 
 bool readFile(DirEntry *fileEntry , Drive *drive , BootSector *bpb,uint8_t *out_buffer , uint32_t rootDirecotryEnd , uint8_t *FAT);//rootDirecotryEnd = lba + sectors
-#endif 
