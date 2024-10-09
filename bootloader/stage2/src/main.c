@@ -38,7 +38,7 @@ void main_gdt_long_mode_init()
     gdt[1] = (gdt_entry){
         .limit_low = 0xffff,
         .base_low = 0,
-        .access = GDT_SEG_PRES | GDT_SEG_DESCTYPE_NOT_SYSTEM | GDT_SEG_CODE_EXRD,
+        .access = GDT_SEG_PRES | GDT_SEG_DESCTYPE_NOT_SYSTEM | GDT_SEG_CODE_EXRD | GDT_SEG_ACCESSED,
         .flags = GDT_SEG_GRAN | GDT_SEG_LONG,
         .limit_high = 0xf,
         .base_high = 0,
@@ -48,7 +48,7 @@ void main_gdt_long_mode_init()
     gdt[2] = (gdt_entry){
         .limit_low = 0xffff,
         .base_low = 0,
-        .access = GDT_SEG_PRES | GDT_SEG_DESCTYPE_NOT_SYSTEM | GDT_SEG_DATA_RDWR,
+        .access = GDT_SEG_PRES | GDT_SEG_DESCTYPE_NOT_SYSTEM | GDT_SEG_DATA_RDWR | GDT_SEG_ACCESSED,
         .flags = GDT_SEG_GRAN | GDT_SEG_LONG,
         .limit_high = 0xf,
         .base_high = 0,
