@@ -3,6 +3,11 @@
 #include <stddef.h>
 #include <stdint.h>
 
+enum {
+    MMU_READ_WRITE      = 0x1,
+    MMU_EXECUTE_DISABLE = 0x2,
+};
+
 typedef struct
 {
     uint64_t offset : 12;
@@ -57,3 +62,5 @@ void mmu_table_init(void *address);
 void mmu_tlb_flush(size_t virtual_address);
 mmu_PageMapEntry *mmu_page_map_get_address_of(mmu_PageMapEntry *entry);
 mmu_PageTableEntry *mmu_page(void *address);
+
+void mmu_map_range(uint64_t physical_begin, uint64_t physical_end, uint64_t virtual_begin, int flags);

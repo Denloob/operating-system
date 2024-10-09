@@ -30,8 +30,8 @@
 #define STACK_END 0x8000
 #define STACK_BEGIN (STACK_END - KILOBYTE * 3)
 
-#define KERNEL_BEGIN 0x7000
-#define KERNEL_END (KILOBYTE * 2)
+#define VGA_BEGIN 0xb8000
+#define VGA_END 0xb8fa0
 
 
 Bitmap *mmu_tables_bitmap = (Bitmap *)MMU_BITMAP_BASE;
@@ -74,31 +74,10 @@ void mmu_init()
     g_pml4 = mmu_map_allocate();
     mmu_table_init(g_pml4);
 
-    for (uint64_t it = BOOTLOADER_STAGE2_BEGIN; it < (uint64_t)BOOTLOADER_STAGE2_END; it += KILOBYTE)
-    {
-        mmu_PageTableEntry *page = mmu_page_allocate(it, it);
-        page->read_write = true;
-    }
-
-    for (uint64_t it = KERNEL_BEGIN; it < (uint64_t)KERNEL_END; it += KILOBYTE)
-    {
-        mmu_PageTableEntry *page = mmu_page_allocate(it, it);
-        page->read_write = true;
-    }
-
-    for (uint64_t it = STACK_BEGIN; it < STACK_END; it += KILOBYTE)
-    {
-        mmu_PageTableEntry *page = mmu_page_allocate(it, it);
-        page->read_write = true;
-    }
-
-    for (uint64_t it = MMU_STRUCTURES_START; it < MMU_STRUCTURES_END; it += KILOBYTE)
-    {
-        mmu_PageTableEntry *page = mmu_page_allocate(it, it);
-        page->read_write = true;
-    }
-
-
+    mmu_map_range(BOOTLOADER_STAGE2_BEGIN, BOOTLOADER_STAGE2_END, BOOTLOADER_STAGE2_BEGIN, MMU_READ_WRITE);
+    mmu_map_range(STACK_BEGIN, STACK_END, STACK_BEGIN, MMU_READ_WRITE);
+    mmu_map_range(MMU_STRUCTURES_START, MMU_STRUCTURES_END, MMU_STRUCTURES_START, MMU_READ_WRITE);
+    mmu_map_range(VGA_BEGIN, VGA_END, VGA_BEGIN, MMU_READ_WRITE);
 
     __asm__ volatile("mov eax, cr4\n"
                      "or eax, 1 << 5\n"
@@ -191,4 +170,16 @@ uint64_t mmu_page_table_entry_address_get(void *page_map_ptr)
 void mmu_page_table_entry_address_set(void *page_map_ptr, uint64_t address)
 {
     ((mmu_PageTableEntry *)page_map_ptr)->_address = address >> MMU_ENTRY_ADDRESS_BITSHIFT;
+}
+
+void mmu_map_range(uint64_t physical_begin, uint64_t physical_end,
+                   uint64_t virtual_begin, int flags)
+{
+    for (uint64_t virt = virtual_begin & (~0xfff), phys = physical_begin & (~0xfff);
+         phys < physical_end; phys += KILOBYTE, virt += KILOBYTE)
+    {
+        mmu_PageTableEntry *page = mmu_page_allocate(virt, phys);
+        page->read_write = flags & MMU_READ_WRITE;
+        page->execute_disable = flags & MMU_EXECUTE_DISABLE;
+    }
 }
