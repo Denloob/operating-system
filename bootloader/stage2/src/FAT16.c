@@ -58,7 +58,6 @@ bool fat16_read_file(fat16_DirEntry *fileEntry, Drive *drive, fat16_BootSector *
               uint8_t *out_buffer, uint32_t rootDirectoryEnd, uint8_t *FAT)
 {
     uint16_t currCluster = fileEntry->firstClusterLow;
-    bool flag = true;
     //read each cluster , get the next cluster (almost the same idea as going threw linked list)
     do
     {
@@ -66,8 +65,11 @@ bool fat16_read_file(fat16_DirEntry *fileEntry, Drive *drive, fat16_BootSector *
         uint32_t lba =
             rootDirectoryEnd + (currCluster - 2) * bpb->sectorsPerCluster;
         //read cluster
-        flag = flag &&
-               fat16_read_sectors(drive, lba, out_buffer, bpb->sectorsPerCluster);
+        if (!fat16_read_sectors(drive, lba, out_buffer, bpb->sectorsPerCluster))
+        {
+            return false;
+        }
+
         out_buffer += bpb->sectorsPerCluster * bpb->bytesPerSector;
 
         //get next cluster
@@ -76,5 +78,7 @@ bool fat16_read_file(fat16_DirEntry *fileEntry, Drive *drive, fat16_BootSector *
             currCluster = (*(uint16_t *)(FAT + fatIndex)) & 0x0FFF;
         else
             currCluster = (*(uint16_t *)(FAT + fatIndex)) >> 4;
-    } while (flag && currCluster < 0xFF8);
+    } while (currCluster < 0xFF8);
+
+    return true;
 }
