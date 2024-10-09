@@ -23,9 +23,7 @@ void start(uint16_t drive_id)
         assert(false && "Read failed");
     }
 
-    asm volatile ("xchg bx, bx");
     mmu_init();
-    asm volatile ("xchg bx, bx");
 
     gdt_entry *gdt = main_gdt_64bit;
     main_gdt_descriptor->offset = (uint64_t)gdt;

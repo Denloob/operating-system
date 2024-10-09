@@ -123,9 +123,6 @@ void mmu_init()
                      :
                      :
                      : "eax", "cc");
-
-
-    asm volatile("xchg bx, bx");
 }
 
 void mmu_table_init(void *address)
