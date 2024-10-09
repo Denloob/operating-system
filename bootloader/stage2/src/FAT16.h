@@ -37,7 +37,7 @@ typedef struct
     uint32_t volumeID;
     uint8_t  volumeLabel[11];
     uint8_t  fileSystemType[8];    // (FAT16)
-} __attribute__((packed)) BootSector;
+} __attribute__((packed)) fat16_BootSector;
 
 
 typedef struct
@@ -55,17 +55,17 @@ typedef struct
     uint16_t lastModDate;
     uint16_t firstClusterLow;
     uint32_t fileSize;
-} __attribute__((packed)) DirEntry;
+} __attribute__((packed)) fat16_DirEntry;
 
-//reads the bootsector of the drive into a the address given (third argument / buffer)
-bool read_BPB(Drive *drive , BootSector bpb , uint8_t *buffer);
-//reads the FAT in the drive into a given buffer (named FAT)
-bool read_FAT(Drive *drive , BootSector bpb , uint8_t *FAT);
+// reads the bootsector of the drive into a the address given (third argument / buffer)
+bool fat16_read_BPB(Drive *drive , fat16_BootSector bpb , uint8_t *buffer);
+// reads the FAT in the drive into a given buffer (named FAT)
+bool fat16_read_FAT(Drive *drive , fat16_BootSector bpb , uint8_t *FAT);
 
-bool read_sectors(Drive *drive, uint32_t sector, uint8_t *buffer , uint32_t count);
+bool fat16_read_sectors(Drive *drive, uint32_t sector, uint8_t *buffer , uint32_t count);
 
-bool read_root_directory(Drive *drive , BootSector bpb , DirEntry *buffer);
+bool fat16_read_root_directory(Drive *drive , fat16_BootSector bpb , fat16_DirEntry *buffer);
 
-DirEntry* find_file(Drive *drive , const char* filename , BootSector *bpb , DirEntry *rootDir);
+fat16_DirEntry* fat16_find_file(Drive *drive , const char* filename , fat16_BootSector *bpb , fat16_DirEntry *rootDir);
 
-bool readFile(DirEntry *fileEntry , Drive *drive , BootSector *bpb,uint8_t *out_buffer , uint32_t rootDirecotryEnd , uint8_t *FAT);//rootDirecotryEnd = lba + sectors
+bool fat16_read_file(fat16_DirEntry *file_entry , Drive *drive , fat16_BootSector *bpb,uint8_t *out_buffer , uint32_t root_directory_end , uint8_t *FAT); //rootDirecotryEnd = lba + sectors
