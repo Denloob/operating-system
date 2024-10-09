@@ -24,7 +24,13 @@ void start(uint16_t drive_id)
     }
 
     mmu_init();
+    main_gdt_long_mode_init();
 
+    main_long_mode_jump_to(KERNEL_BASE_ADDRESS);
+}
+
+void main_gdt_long_mode_init()
+{
     gdt_entry *gdt = main_gdt_64bit;
     main_gdt_descriptor->offset = (uint64_t)gdt;
 
@@ -58,6 +64,4 @@ void start(uint16_t drive_id)
         .base_mid = 0,
         .base_high = 0,
     };
-
-    main_long_mode_jump_to(KERNEL_BASE_ADDRESS);
 }
