@@ -7,7 +7,12 @@
 #include "mmu.h"
 
 typedef void (*kernel_main)(Drive drive);
-#define KERNEL_BASE_ADDRESS (kernel_main)0x7e00
+#define KERNEL_BEGIN 0x7e00
+#define KERNEL_SEGMENT_SIZE 11
+#define SEGMENT_SIZE 512
+#define KERNEL_SIZE (KERNEL_SEGMENT_SIZE * SEGMENT_SIZE)
+#define KERNEL_END (KERNEL_BEGIN + KERNEL_SIZE)
+#define KERNEL_BASE_ADDRESS (kernel_main)KERNEL_BEGIN
 #define KERNEL_SEGMENT 16
 
 void start(uint16_t drive_id)
@@ -18,12 +23,15 @@ void start(uint16_t drive_id)
         assert(false && "drive_init failed");
     }
 
-    if (!drive_read(&drive, KERNEL_SEGMENT, KERNEL_BASE_ADDRESS, 512 * 11))
+    if (!drive_read(&drive, KERNEL_SEGMENT, KERNEL_BASE_ADDRESS, KERNEL_SIZE))
     {
         assert(false && "Read failed");
     }
 
     mmu_init();
+
+    mmu_map_range(KERNEL_BEGIN, KERNEL_END+0x1000, KERNEL_BEGIN, MMU_READ_WRITE);
+
     main_gdt_long_mode_init();
 
     main_long_mode_jump_to(KERNEL_BASE_ADDRESS);
