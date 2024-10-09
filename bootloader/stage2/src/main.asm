@@ -23,16 +23,10 @@ main_long_mode_jump_to:
 
     %define .addr [ebp + 8]
 
-    lgdt [main_gdt_64bit.Code]         ; Load the 64-bit global descriptor table.
-    jmp main_gdt_64bit.Code:.long_init       ; Set the code segment and enter 64-bit long mode.
+    lgdt [main_gdt_descriptor]         ; Load the 64-bit global descriptor table.
+    jmp 0x8:.long_init       ; Set the code segment and enter 64-bit long mode.
 .long_init:
     [bits 64]
-    mov ax, main_gdt_64bit.Data
-    mov ds, ax
-    mov es, ax
-    mov fs, ax
-    mov gs, ax
-    mov ss, ax
 
     mov eax, .addr
 
