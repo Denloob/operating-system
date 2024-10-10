@@ -2,9 +2,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
-
 #include <stdbool.h>
-
 #include "drive.h"
 
 #define SECTOR_SIZE 512
@@ -70,3 +68,45 @@ bool fat16_find_file(Drive *drive, const char *filename, fat16_BootSector *bpb,
                     fat16_DirEntry *rootDir, fat16_DirEntry **out_file);
 
 bool fat16_read_file(fat16_DirEntry *file_entry , Drive *drive , fat16_BootSector *bpb,uint8_t *out_buffer , uint32_t root_directory_end , uint8_t *FAT); // root_directory_end = lba + sectors
+
+typedef struct
+{
+    fat16_BootSector bpb;
+    Drive *drive;
+} fat16_Ref;
+
+typedef struct
+{
+    fat16_Ref *ref;
+    fat16_DirEntry file_entry;
+} fat16_File;
+
+/**
+ * @brief Initialises a fat16 reference struct.
+ * @WARN: Invalidating the ref will invalidate all data structures obtained with the ref.
+ *
+ * @return if succeeded
+ */
+bool fat16_ref_init(fat16_Ref *fat16, Drive *drive);
+
+/**
+ * @brief Opens a path
+ *
+ * @param path The path to the file to open
+ * @param out_file[out] The opened file
+ * @return if succeeded
+ *
+ * @see fat16_ref_init
+ */
+bool fat16_open(fat16_Ref *fat16, char *path, fat16_File *out_file);
+
+/**
+ * @brief Reads the whole file contents into out_buffer.
+ *
+ * @param file The file to read from
+ * @param out_buffer[out] The buffer where the **whole** file will be written. WARN: No bounds checks are done!
+ * @return if succeeded
+ *
+ * @see fat16_ref_init
+ */
+bool fat16_read(fat16_File *file, uint8_t *out_buffer);

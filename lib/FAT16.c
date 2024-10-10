@@ -1,6 +1,7 @@
 #include "FAT16.h"
 #include "drive.h"
 #include "memory.h"
+#include "assert.h"
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -85,6 +86,41 @@ bool fat16_read_file(fat16_DirEntry *fileEntry, Drive *drive, fat16_BootSector *
         else
             currCluster = (*(uint16_t *)(FAT + fatIndex)) >> 4;
     } while (currCluster < 0xFF8);
+
+    return true;
+}
+
+bool fat16_ref_init(fat16_Ref *fat16, Drive *drive)
+{
+    assert(fat16 && drive);
+    fat16->drive = drive;
+    return fat16_read_BPB(drive, &fat16->bpb);
+}
+
+bool fat16_open(fat16_Ref *fat16, char *path, fat16_File *out_file)
+{
+    assert(fat16 && path && out_file);
+
+    fat16_DirEntry root;
+    bool success = fat16_read_root_directory(fat16->drive , fat16->bpb , &root);
+    if (!success) return false;
+
+    success = fat16_find_file(fat16->drive, path, &fat16->bpb, &root, NULL); // FIXME: CHANGE THE NULL TO SOMETHING ADEQUATE!
+    if (!success) return false;
+
+    return true;
+}
+
+bool fat16_read(fat16_File *file, uint8_t *out_buffer)
+{
+    assert(file && out_buffer);
+    uint8_t fat[file->ref->bpb.FATSize * SECTOR_SIZE];
+    bool success = fat16_read_FAT(file->ref->drive, file->ref->bpb, (uint8_t *)&fat);
+    if (!success) return false;
+
+    success = fat16_read_file(&file->file_entry , file->ref->drive , file->ref->bpb ,out_buffer , NULL /* FIXME: this is `root_directory_end`, I have no idea how to properly calculate it, REPLACE WITH SOMETHING ADEQUATE! */,
+                              fat); // TODO: it's not a good idea to read the whole FAT into memory.
+    if (!success) return false;
 
     return true;
 }
