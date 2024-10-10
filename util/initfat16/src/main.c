@@ -6,27 +6,27 @@
 #include <stdlib.h>
 #include <string.h>
 
-bool fat16_initialize_file_allocation_table(Drive *drive, fat16_BootSector *bpb) 
+bool fat16_initialize_file_allocation_table(Drive *drive, fat16_BootSector *bpb)
 {
-  uint32_t totalSectors = (bpb->largeSectors) ? bpb->largeSectors : bpb->totalSectors;
-  uint32_t reservedSectors = bpb->reservedSectors;
-  uint32_t numFATs = bpb->numFATs;
-  uint32_t fatSize = bpb->FATSize;
-  uint32_t dataAreaSize = totalSectors - (reservedSectors + (numFATs * fatSize));
-  uint32_t numClusters = dataAreaSize / bpb->sectorsPerCluster;
+    uint32_t totalSectors = (bpb->largeSectors) ? bpb->largeSectors : bpb->totalSectors;
+    uint32_t reservedSectors = bpb->reservedSectors;
+    uint32_t numFATs = bpb->numFATs;
+    uint32_t fatSize = bpb->FATSize;
+    uint32_t dataAreaSize = totalSectors - (reservedSectors + (numFATs * fatSize));
+    uint32_t numClusters = dataAreaSize / bpb->sectorsPerCluster;
 
-  uint32_t fatBytes = fatSize * SECTOR_SIZE; 
-  uint16_t *fatTable = malloc(fatBytes);
+    uint32_t fatBytes = fatSize * SECTOR_SIZE;
+    uint16_t *fatTable = malloc(fatBytes);
 
-  memset(fatTable, 0, fatBytes);
+    memset(fatTable, 0, fatBytes);
 
-  for (uint32_t i = numClusters + 2; i < (fatBytes / sizeof(uint16_t)); i++)
-  {
-        fatTable[i] = FAT16_CLUSTER_EOF; 
-  }
+    for (uint32_t i = numClusters + 2; i < (fatBytes / sizeof(uint16_t)); i++)
+    {
+        fatTable[i] = FAT16_CLUSTER_EOF;
+    }
 
-  fseek(drive->file, bpb->reservedSectors * SECTOR_SIZE, SEEK_SET);
-  fwrite(fatTable, fatBytes, 1, drive->file);
+    fseek(drive->file, bpb->reservedSectors * SECTOR_SIZE, SEEK_SET);
+    fwrite(fatTable, fatBytes, 1, drive->file);
     free(fatTable);
 
     printf("FAT16 initialized successfully.\n");
@@ -35,7 +35,8 @@ bool fat16_initialize_file_allocation_table(Drive *drive, fat16_BootSector *bpb)
 
 int main(int argc, char **argv)
 {
-    if (argc != 2) {
+    if (argc != 2)
+    {
         printf("Usage: %s <filepath>\n", argv[0]);
         return 1;
     }
