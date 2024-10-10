@@ -9,11 +9,15 @@
 #define FAT16_CLUSTER_FREE 0x0000
 #define FAT16_CLUSTER_EOF  0xFFFF
 
-bool fat16_read_BPB(Drive *drive, fat16_BootSector bpb, uint8_t *buffer)
+bool fat16_read_BPB(Drive *drive, fat16_BootSector *bpb)
 {
-    //Boot sector is located at the start of the disk
-    if (!drive_read(drive, 0, buffer, SECTOR_SIZE))
+    uint8_t buf[SECTOR_SIZE];
+    // Boot sector is located at the start of the disk
+    if (!drive_read(drive, 0, buf, SECTOR_SIZE))
         return false;
+
+    *bpb = *(fat16_BootSector *)buf;
+
     return true;
 }
 

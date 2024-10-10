@@ -58,7 +58,7 @@ typedef struct
 } __attribute__((packed)) fat16_DirEntry;
 
 // reads the bootsector of the drive into a the address given (third argument / buffer)
-bool fat16_read_BPB(Drive *drive , fat16_BootSector bpb , uint8_t *buffer);
+bool fat16_read_BPB(Drive *drive , fat16_BootSector *bpb);
 // reads the FAT in the drive into a given buffer (named FAT)
 bool fat16_read_FAT(Drive *drive , fat16_BootSector bpb , uint8_t *FAT);
 
