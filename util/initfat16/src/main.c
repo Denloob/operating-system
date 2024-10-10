@@ -1,5 +1,6 @@
 #include "drive.h"
 #include <FAT16.h>
+#include <smartptr.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -16,7 +17,7 @@ bool fat16_initialize_file_allocation_table(Drive *drive, fat16_BootSector *bpb)
     uint32_t numClusters = dataAreaSize / bpb->sectorsPerCluster;
 
     uint32_t fatBytes = fatSize * SECTOR_SIZE;
-    uint16_t *fatTable = malloc(fatBytes);
+    smartptr uint16_t *fatTable = malloc(fatBytes);
 
     memset(fatTable, 0, fatBytes);
 
@@ -25,7 +26,6 @@ bool fat16_initialize_file_allocation_table(Drive *drive, fat16_BootSector *bpb)
 
     fseek(drive->file, bpb->reservedSectors * SECTOR_SIZE, SEEK_SET);
     fwrite(fatTable, fatBytes, 1, drive->file);
-    free(fatTable);
 
     printf("FAT16 initialized successfully.\n");
     return true;
@@ -42,17 +42,11 @@ int main(int argc, char **argv)
     Drive drive = {
         .file = fopen(argv[1], "r+b"),
     };
+    defer({ fclose(drive.file); });
 
     fat16_BootSector bpb;
     fseek(drive.file, 0, SEEK_SET);
     fread(&bpb, sizeof(fat16_BootSector), 1, drive.file);
 
-    if (!fat16_initialize_file_allocation_table(&drive, &bpb))
-    {
-        fclose(drive.file);
-        return 1;
-    }
-
-    fclose(drive.file);
-    return 0;
+    return !fat16_initialize_file_allocation_table(&drive, &bpb);
 }
