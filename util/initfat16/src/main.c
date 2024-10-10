@@ -20,10 +20,8 @@ bool fat16_initialize_file_allocation_table(Drive *drive, fat16_BootSector *bpb)
 
     memset(fatTable, 0, fatBytes);
 
-    for (uint32_t i = numClusters + 2; i < (fatBytes / sizeof(uint16_t)); i++)
-    {
-        fatTable[i] = FAT16_CLUSTER_EOF;
-    }
+    fatTable[0] = 0xfff8;
+    fatTable[1] = 0xffff;
 
     fseek(drive->file, bpb->reservedSectors * SECTOR_SIZE, SEEK_SET);
     fwrite(fatTable, fatBytes, 1, drive->file);
