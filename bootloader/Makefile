@@ -10,8 +10,9 @@ $(IMAGE_NAME).bin: $(STAGE_ONE) $(STAGE_TWO)
 	dd if=$(STAGE_TWO) of=$@ bs=1 seek=512 conv=notrunc
 
 .PHONY: $(STAGE_ONE)
-$(STAGE_ONE):
-	$(MAKE) -C stage1
+$(STAGE_ONE): $(STAGE_TWO)
+	STAGE_TWO_SIZE=$$(stat --format="%s" $<); \
+	$(MAKE) -C stage1 STAGE_TWO_SIZE=$$STAGE_TWO_SIZE
 
 .PHONY: $(STAGE_TWO)
 $(STAGE_TWO):

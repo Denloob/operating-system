@@ -1,8 +1,6 @@
 org 0x7C00
 bits 16
 
-STAGE2_BOOTLOADER_SIZE_IN_SECTORS equ 17
-
 BPB:
 
 jmp _start
