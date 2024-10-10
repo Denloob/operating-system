@@ -1,6 +1,8 @@
 org 0x7C00
 bits 16
 
+STAGE2_BOOTLOADER_SIZE_IN_SECTORS equ 17
+
 BPB:
 
 jmp _start
@@ -9,7 +11,7 @@ nop
     db "MDS-CORE"
     .bytes_per_sector: dw 512
     .sectors_per_cluster: db 1
-    .reserved_sectors: dw 16 ; 16 = 1 for MBR + 15 for 2nd stage of the bootloader
+    .reserved_sectors: dw (1 + STAGE2_BOOTLOADER_SIZE_IN_SECTORS)
     .fat_copies: db 1 ; TODO: maybe change to 2 when support is added
     .possible_root_entries: dw 512
     .small_number_of_sectors: dw 0x2000 ; 0x2000 because that's what MTools uses
@@ -39,7 +41,7 @@ _start:
     call get_drive_params       ; Query the BIOS for number_of_heads and sectors_per_track
 
     mov ax, 1                   ; LBA=1, that is the second sector
-    mov cl, 17                  ; Read the bootloader sectors
+    mov cl, STAGE2_BOOTLOADER_SIZE_IN_SECTORS   ; Read all sectors of the stage2 bootloader
     mov bx, 0x500               ; Load into the higher half of the address space
     call read_drive
     jmp 0x500                   ; Transfer execution to the loaded module
