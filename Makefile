@@ -5,13 +5,18 @@ IMAGE_NAME := floppy
 
 all: $(IMAGE_NAME).img
 
-$(IMAGE_NAME).img: $(BOOTLOADER) $(KERNEL)
+$(IMAGE_NAME).img: $(BOOTLOADER) $(KERNEL) initfat16
 	cp $(BOOTLOADER) $@
 
-	FILE_SIZE=$$(stat --format="%s" $@); \
-	NEW_SIZE=$$(( (FILE_SIZE + 511) / 512 * 512 )); \
-	truncate -s $$NEW_SIZE $@; \
-	dd if=$(KERNEL) of=$@ bs=1 seek=$$NEW_SIZE conv=notrunc
+	dd if=/dev/zero of=$@ bs=1 seek=$$(stat --format="%s" $@) count=$$(printf "%d" 0x10000)
+
+	./util/initfat16/bin/initfat16 $@
+
+	mcopy $(KERNEL) a:
+
+.PHONY: initfat16
+initfat16:
+	$(MAKE) -C ./util/initfat16
 
 .PHONY: $(BOOTLOADER)
 $(BOOTLOADER): 
