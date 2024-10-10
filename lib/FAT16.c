@@ -22,9 +22,9 @@ bool fat16_read_BPB(Drive *drive, fat16_BootSector *bpb)
     return true;
 }
 
-bool fat16_read_FAT(Drive *drive, fat16_BootSector bpb, uint8_t *FAT)
+bool fat16_read_FAT(Drive *drive, fat16_BootSector *bpb, uint8_t *FAT)
 {
-    return fat16_read_sectors(drive, bpb.reservedSectors, FAT, bpb.FATSize);
+    return fat16_read_sectors(drive, bpb->reservedSectors, FAT, bpb->FATSize);
 }
 
 bool fat16_read_sectors(Drive *drive, uint32_t sector, uint8_t *buffer,
@@ -35,12 +35,12 @@ bool fat16_read_sectors(Drive *drive, uint32_t sector, uint8_t *buffer,
     return drive_read(drive, sector * SECTOR_SIZE, buffer, count);
 }
 
-bool fat16_read_root_directory(Drive *drive, fat16_BootSector bpb, fat16_DirEntry *buffer)
+bool fat16_read_root_directory(Drive *drive, fat16_BootSector *bpb, fat16_DirEntry *buffer)
 {
-    uint32_t sector = bpb.reservedSectors + bpb.FATSize * bpb.numFATs;
-    uint32_t size = sizeof(fat16_DirEntry) * bpb.rootEntryCount;
-    uint32_t sectors = (size / bpb.bytesPerSector);
-    if (size % bpb.bytesPerSector > 0)
+    uint32_t sector = bpb->reservedSectors + bpb->FATSize * bpb->numFATs;
+    uint32_t size = sizeof(fat16_DirEntry) * bpb->rootEntryCount;
+    uint32_t sectors = (size / bpb->bytesPerSector);
+    if (size % bpb->bytesPerSector > 0)
         sectors++;
 
     return drive_read(drive, sector, buffer, sectors);
@@ -102,7 +102,7 @@ bool fat16_open(fat16_Ref *fat16, char *path, fat16_File *out_file)
     assert(fat16 && path && out_file);
 
     fat16_DirEntry root;
-    bool success = fat16_read_root_directory(fat16->drive , fat16->bpb , &root);
+    bool success = fat16_read_root_directory(fat16->drive , &fat16->bpb , &root);
     if (!success) return false;
 
     success = fat16_find_file(fat16->drive, path, &fat16->bpb, &root, NULL); // FIXME: CHANGE THE NULL TO SOMETHING ADEQUATE!
@@ -115,10 +115,10 @@ bool fat16_read(fat16_File *file, uint8_t *out_buffer)
 {
     assert(file && out_buffer);
     uint8_t fat[file->ref->bpb.FATSize * SECTOR_SIZE];
-    bool success = fat16_read_FAT(file->ref->drive, file->ref->bpb, (uint8_t *)&fat);
+    bool success = fat16_read_FAT(file->ref->drive, &file->ref->bpb, (uint8_t *)&fat);
     if (!success) return false;
 
-    success = fat16_read_file(&file->file_entry , file->ref->drive , file->ref->bpb ,out_buffer , NULL /* FIXME: this is `root_directory_end`, I have no idea how to properly calculate it, REPLACE WITH SOMETHING ADEQUATE! */,
+    success = fat16_read_file(&file->file_entry , file->ref->drive , &file->ref->bpb ,out_buffer , NULL /* FIXME: this is `root_directory_end`, I have no idea how to properly calculate it, REPLACE WITH SOMETHING ADEQUATE! */,
                               fat); // TODO: it's not a good idea to read the whole FAT into memory.
     if (!success) return false;
 
