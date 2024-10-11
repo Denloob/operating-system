@@ -1,3 +1,1 @@
-#pragma once
-
-int strlen(const char *s);
+../../../lib/string.h
