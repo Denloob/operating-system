@@ -1,3 +1,4 @@
+#include "FAT16.h"
 #include "assert.h"
 #include "bios.h"
 #include "drive.h"
@@ -23,10 +24,16 @@ void start(uint16_t drive_id)
         assert(false && "drive_init failed");
     }
 
-    if (!drive_read(&drive, KERNEL_SEGMENT, KERNEL_BASE_ADDRESS, KERNEL_SIZE))
-    {
-        assert(false && "Read failed");
-    }
+    fat16_Ref fat16;
+    bool success = fat16_ref_init(&fat16, &drive);
+    assert(success && "fat16_ref_init");
+
+    fat16_File file;
+    success = fat16_open(&fat16, "kernel  bin", &file);
+    assert(success && "fat16_open");
+
+    success = fat16_read(&file, (uint8_t *)KERNEL_BEGIN);
+    assert(success && "fat16_read");
 
     mmu_init();
 
