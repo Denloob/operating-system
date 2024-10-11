@@ -90,7 +90,7 @@ bool fat16_find_file(Drive *drive, fat16_BootSector *bpb,
 }
 
 bool fat16_read_file(fat16_DirEntry *fileEntry, Drive *drive, fat16_BootSector *bpb,
-                     uint8_t *out_buffer, uint8_t *FAT)
+                     uint8_t *out_buffer, uint16_t *FAT)
 {
     const uint32_t rootDirectoryEnd =
         (bpb->reservedSectors + bpb->FATSize * bpb->numFATs) +
@@ -112,12 +112,7 @@ bool fat16_read_file(fat16_DirEntry *fileEntry, Drive *drive, fat16_BootSector *
 
         out_buffer += bpb->sectorsPerCluster * bpb->bytesPerSector;
 
-        //get next cluster
-        uint32_t fatIndex = currCluster * 3 / 2;
-        if (currCluster % 2 == 0)
-            currCluster = (*(uint16_t *)(FAT + fatIndex)) & 0x0FFF;
-        else
-            currCluster = (*(uint16_t *)(FAT + fatIndex)) >> 4;
+        currCluster = FAT[currCluster];
     } while (currCluster < 0xFF8);
 
     return true;
