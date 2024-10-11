@@ -41,7 +41,6 @@ bool fat16_read_root_directory(Drive *drive, fat16_BootSector *bpb, fat16_DirEnt
     assert(dir_entries_len >= bpb->rootEntryCount && "fat16_read_root_directory: all entries must fix inside the array");
 
     uint32_t sector_offset = bpb->reservedSectors + bpb->FATSize * bpb->numFATs;
-    uint32_t address = sector_offset * SECTOR_SIZE;
     uint32_t size = sizeof(fat16_DirEntry) * bpb->rootEntryCount;
 
     // First, if any, we read all the data that's multiple of SECTOR_SIZE (aligned)
@@ -50,14 +49,14 @@ bool fat16_read_root_directory(Drive *drive, fat16_BootSector *bpb, fat16_DirEnt
     uint32_t size_aligned_part1 = size - size_leftover_part2;
     if (size_aligned_part1)
     {
-        bool success = drive_read(drive, address, (uint8_t *)dir_entries_arr, size_aligned_part1);
+        bool success = drive_read(drive, sector_offset, (uint8_t *)dir_entries_arr, size_aligned_part1);
         if (!success) return false;
     }
 
     if (size_leftover_part2)
     {
         uint8_t tmp_buf[SECTOR_SIZE];
-        bool success = drive_read(drive, address + size_aligned_part1, tmp_buf, SECTOR_SIZE);
+        bool success = drive_read(drive, sector_offset + size_aligned_part1 / SECTOR_SIZE, tmp_buf, SECTOR_SIZE);
         if (!success) return false;
 
         memmove((uint8_t *)dir_entries_arr + size_aligned_part1, tmp_buf, size_leftover_part2);
