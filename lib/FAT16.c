@@ -32,7 +32,7 @@ bool fat16_read_sectors(Drive *drive, uint32_t sector, uint8_t *buffer,
 {
     if (count == TAKE_DEFAULT_VALUE)
         count = SECTOR_SIZE;
-    return drive_read(drive, sector * SECTOR_SIZE, buffer, count);
+    return drive_read(drive, sector, buffer, count * SECTOR_SIZE);
 }
 
 bool fat16_read_root_directory(Drive *drive, fat16_BootSector *bpb, fat16_DirEntry *dir_entries_arr, size_t dir_entries_len)
