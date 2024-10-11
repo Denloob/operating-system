@@ -29,7 +29,7 @@ void start(uint16_t drive_id)
     assert(success && "fat16_ref_init");
 
     fat16_File file;
-    success = fat16_open(&fat16, "kernel  bin", &file);
+    success = fat16_open(&fat16, "KERNEL  BIN", &file); //  HACK: fat16 should be case insensitive!
     assert(success && "fat16_open");
 
     success = fat16_read(&file, (uint8_t *)KERNEL_BEGIN);
