@@ -66,14 +66,23 @@ bool fat16_read_root_directory(Drive *drive, fat16_BootSector *bpb, fat16_DirEnt
     return true;
 }
 
-bool fat16_find_file(Drive *drive, const char *filename, fat16_BootSector *bpb,
-                    fat16_DirEntry *rootDir, fat16_DirEntry **out_file)
+bool fat16_find_file(Drive *drive, fat16_BootSector *bpb,
+                     fat16_DirEntry *direntry_arr, size_t dir_size,
+                     const char *filename, fat16_DirEntry **out_file)
 {
-    for (uint32_t i = 0; i < bpb->rootEntryCount; i++)
+    for (uint32_t i = 0; i < dir_size; i++)
     {
-        if (memcmp(filename, rootDir[i].filename, 11) == 0)
+
+// FAT16 uses a 8.3 file name. If extension or filename is shorter that 3 or 8
+// bytes accordingly, the missing part is padded with spaces. As both are stored
+// near each other in memory, we can simply memcmp the beginning of the one to
+// the full filename.
+#define FAT16_FILENAME_SIZE                                                    \
+    (sizeof(direntry_arr->filename) + sizeof(direntry_arr->extension))
+
+        if (memcmp(filename, direntry_arr[i].filename, FAT16_FILENAME_SIZE) == 0)
         {
-            *out_file = &rootDir[i];
+            *out_file = &direntry_arr[i];
             return true;
         }
     }
@@ -125,9 +134,11 @@ bool fat16_open(fat16_Ref *fat16, char *path, fat16_File *out_file)
     bool success = fat16_read_root_directory(fat16->drive , &fat16->bpb , root, fat16->bpb.rootEntryCount);
     if (!success) return false;
 
-    success = fat16_find_file(fat16->drive, path, &fat16->bpb, &root, NULL); // FIXME: CHANGE THE NULL TO SOMETHING ADEQUATE!
+    fat16_DirEntry *dir_entry_ptr;
+    success = fat16_find_file(fat16->drive, &fat16->bpb, root, fat16->bpb.rootEntryCount, path, &dir_entry_ptr);
     if (!success) return false;
 
+    out_file->file_entry = *dir_entry_ptr;
     return true;
 }
 

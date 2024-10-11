@@ -64,10 +64,9 @@ bool fat16_read_sectors(Drive *drive, uint32_t sector, uint8_t *buffer , uint32_
 
 bool fat16_read_root_directory(Drive *drive, fat16_BootSector *bpb, fat16_DirEntry *dir_entries_arr, size_t dir_entries_len);
 
-bool fat16_find_file(Drive *drive, const char *filename, fat16_BootSector *bpb,
-                    fat16_DirEntry *rootDir, fat16_DirEntry **out_file);
-
-bool fat16_read_file(fat16_DirEntry *file_entry , Drive *drive , fat16_BootSector *bpb,uint8_t *out_buffer , uint32_t root_directory_end , uint8_t *FAT); // root_directory_end = lba + sectors
+bool fat16_find_file(Drive *drive, fat16_BootSector *bpb,
+                     fat16_DirEntry *direntry_arr, size_t dir_size,
+                     const char *filename, fat16_DirEntry **out_file);
 
 typedef struct
 {
