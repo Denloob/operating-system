@@ -24,7 +24,7 @@ bool fat16_read_BPB(Drive *drive, fat16_BootSector *bpb)
 
 bool fat16_read_FAT(Drive *drive, fat16_BootSector *bpb, uint8_t *FAT)
 {
-    return fat16_read_sectors(drive, bpb->reservedSectors, FAT, bpb->FATSize);
+    return fat16_read_sectors(drive, bpb->reservedSectors, FAT, /* bpb->FATSize */ 1 ); // HACK: the FAT should be loaded dynamically.
 }
 
 bool fat16_read_sectors(Drive *drive, uint32_t sector, uint8_t *buffer,
@@ -151,7 +151,8 @@ bool fat16_open(fat16_Ref *fat16, char *path, fat16_File *out_file)
 bool fat16_read(fat16_File *file, uint8_t *out_buffer)
 {
     assert(file && out_buffer);
-    uint8_t fat[file->ref->bpb.FATSize * SECTOR_SIZE];
+
+    uint8_t fat[/*file->ref->bpb.FATSize * SECTOR_SIZE*/ SECTOR_SIZE]; // HACK: the fat should be read dynamically
     bool success = fat16_read_FAT(file->ref->drive, &file->ref->bpb, (uint8_t *)&fat);
     if (!success) return false;
 
