@@ -91,8 +91,13 @@ bool fat16_find_file(Drive *drive, fat16_BootSector *bpb,
 }
 
 bool fat16_read_file(fat16_DirEntry *fileEntry, Drive *drive, fat16_BootSector *bpb,
-              uint8_t *out_buffer, uint32_t rootDirectoryEnd, uint8_t *FAT)
+                     uint8_t *out_buffer, uint8_t *FAT)
 {
+    const uint32_t rootDirectoryEnd =
+        (bpb->reservedSectors + bpb->FATSize * bpb->numFATs) +
+        (bpb->rootEntryCount * sizeof(fat16_DirEntry) + SECTOR_SIZE - 1) / SECTOR_SIZE;
+
+
     uint16_t currCluster = fileEntry->firstClusterLow;
     //read each cluster , get the next cluster (almost the same idea as going threw linked list)
     do
@@ -149,8 +154,7 @@ bool fat16_read(fat16_File *file, uint8_t *out_buffer)
     bool success = fat16_read_FAT(file->ref->drive, &file->ref->bpb, (uint8_t *)&fat);
     if (!success) return false;
 
-    success = fat16_read_file(&file->file_entry , file->ref->drive , &file->ref->bpb ,out_buffer , NULL /* FIXME: this is `root_directory_end`, I have no idea how to properly calculate it, REPLACE WITH SOMETHING ADEQUATE! */,
-                              fat); // TODO: it's not a good idea to read the whole FAT into memory.
+    success = fat16_read_file(&file->file_entry , file->ref->drive , &file->ref->bpb ,out_buffer, fat); // TODO: it's not a good idea to read the whole FAT into memory.
     if (!success) return false;
 
     return true;
