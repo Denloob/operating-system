@@ -134,6 +134,8 @@ bool fat16_open(fat16_Ref *fat16, char *path, fat16_File *out_file)
 {
     assert(fat16 && path && out_file);
 
+    out_file->ref = fat16;
+
     fat16_DirEntry root[fat16->bpb.rootEntryCount];
     bool success = fat16_read_root_directory(fat16->drive , &fat16->bpb , root, fat16->bpb.rootEntryCount);
     if (!success) return false;
