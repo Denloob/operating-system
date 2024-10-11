@@ -62,7 +62,7 @@ bool fat16_read_FAT(Drive *drive , fat16_BootSector *bpb , uint8_t *FAT);
 
 bool fat16_read_sectors(Drive *drive, uint32_t sector, uint8_t *buffer , uint32_t count);
 
-bool fat16_read_root_directory(Drive *drive , fat16_BootSector *bpb , fat16_DirEntry *buffer);
+bool fat16_read_root_directory(Drive *drive, fat16_BootSector *bpb, fat16_DirEntry *dir_entries_arr, size_t dir_entries_len);
 
 bool fat16_find_file(Drive *drive, const char *filename, fat16_BootSector *bpb,
                     fat16_DirEntry *rootDir, fat16_DirEntry **out_file);

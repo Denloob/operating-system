@@ -35,15 +35,35 @@ bool fat16_read_sectors(Drive *drive, uint32_t sector, uint8_t *buffer,
     return drive_read(drive, sector * SECTOR_SIZE, buffer, count);
 }
 
-bool fat16_read_root_directory(Drive *drive, fat16_BootSector *bpb, fat16_DirEntry *buffer)
+bool fat16_read_root_directory(Drive *drive, fat16_BootSector *bpb, fat16_DirEntry *dir_entries_arr, size_t dir_entries_len)
 {
-    uint32_t sector = bpb->reservedSectors + bpb->FATSize * bpb->numFATs;
-    uint32_t size = sizeof(fat16_DirEntry) * bpb->rootEntryCount;
-    uint32_t sectors = (size / bpb->bytesPerSector);
-    if (size % bpb->bytesPerSector > 0)
-        sectors++;
+    assert(drive && bpb && dir_entries_arr);
+    assert(dir_entries_len >= bpb->rootEntryCount && "fat16_read_root_directory: all entries must fix inside the array");
 
-    return drive_read(drive, sector, buffer, sectors);
+    uint32_t sector_offset = bpb->reservedSectors + bpb->FATSize * bpb->numFATs;
+    uint32_t address = sector_offset * SECTOR_SIZE;
+    uint32_t size = sizeof(fat16_DirEntry) * bpb->rootEntryCount;
+
+    // First, if any, we read all the data that's multiple of SECTOR_SIZE (aligned)
+    // then, we read what's left over if any.
+    uint32_t size_leftover_part2 = size % SECTOR_SIZE;
+    uint32_t size_aligned_part1 = size - size_leftover_part2;
+    if (size_aligned_part1)
+    {
+        bool success = drive_read(drive, address, (uint8_t *)dir_entries_arr, size_aligned_part1);
+        if (!success) return false;
+    }
+
+    if (size_leftover_part2)
+    {
+        uint8_t tmp_buf[SECTOR_SIZE];
+        bool success = drive_read(drive, address + size_aligned_part1, tmp_buf, SECTOR_SIZE);
+        if (!success) return false;
+
+        memmove((uint8_t *)dir_entries_arr + size_aligned_part1, tmp_buf, size_leftover_part2);
+    }
+
+    return true;
 }
 
 bool fat16_find_file(Drive *drive, const char *filename, fat16_BootSector *bpb,
@@ -101,8 +121,8 @@ bool fat16_open(fat16_Ref *fat16, char *path, fat16_File *out_file)
 {
     assert(fat16 && path && out_file);
 
-    fat16_DirEntry root;
-    bool success = fat16_read_root_directory(fat16->drive , &fat16->bpb , &root);
+    fat16_DirEntry root[fat16->bpb.rootEntryCount];
+    bool success = fat16_read_root_directory(fat16->drive , &fat16->bpb , root, fat16->bpb.rootEntryCount);
     if (!success) return false;
 
     success = fat16_find_file(fat16->drive, path, &fat16->bpb, &root, NULL); // FIXME: CHANGE THE NULL TO SOMETHING ADEQUATE!
