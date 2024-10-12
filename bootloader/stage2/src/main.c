@@ -74,8 +74,8 @@ void main_gdt_long_mode_init()
         .limit_low = 0x68,
         .base_low = 0,
         .access = GDT_SEG_PRES | GDT_SEG_DESCTYPE_NOT_SYSTEM | GDT_SEG_SIZE_32,
-        .flags = 0xcf,
-        .limit_high = 0,
+        .flags = 0xc,
+        .limit_high = 0xf,
         .base_mid = 0,
         .base_high = 0,
     };
