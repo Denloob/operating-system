@@ -304,6 +304,7 @@ bios_memory_get_mem_map:
 .state.entry_id            equ 0x0
 .state.done                equ 0x4
 .state.is_extended         equ 0x5
+.res.attr_bitfield       equ 0x14
     linear_to_segmented_offset .state_ptr, es, esi, si ; es:si = .state_ptr
 
     mov ebx, es:[si + .state.entry_id] ; ebx = .state_ptr->entry_id;
@@ -314,6 +315,7 @@ bios_memory_get_mem_map:
     mov ecx, 24
 
     linear_to_segmented_offset .res_ptr, es, edi, di    ; es:di = .res_ptr
+    mov dword es:[di+.res.attr_bitfield], 1             ; .res_ptr->attr_bitfield = 1 // For ACPI 3.X compatibility
 
     int 0x15
     xchg bx,bx
