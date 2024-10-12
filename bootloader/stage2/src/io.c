@@ -110,6 +110,31 @@ void printf(char *fmt, ...)
 
         fmt++;
         char ch = *fmt;
+
+        bool is_long = false;
+        bool is_long_long = false;
+        // Check for modifiers
+        switch (ch)
+        {
+            case 'l':
+            {
+                if (*(fmt+1) == 'l')
+                {
+                    is_long_long = true;
+                    fmt++;
+                }
+                else
+                {
+                    is_long = true;
+                }
+                fmt++;
+                ch = *fmt;
+                break;
+            }
+            default:
+                break;
+        }
+
         switch (ch)
         {
             default:
@@ -124,11 +149,13 @@ void printf(char *fmt, ...)
             case 'd':
             case 'x':
             {
-                int num = va_arg(args, int);
+                long long num = is_long_long ? va_arg(args, long long)
+                           : is_long    ? va_arg(args, long)
+                                        : va_arg(args, int);
 
-#define MAX_INT_LENGTH 12
-                char buf[MAX_INT_LENGTH] = {0};
-                itoa(num, buf, sizeof(buf), ch == 'd' ? 10 : 0x10);
+#define MAX_NUM_LENGTH 21
+                char buf[MAX_NUM_LENGTH] = {0};
+                lltoa(num, buf, sizeof(buf), ch == 'd' ? 10 : 0x10);
 
                 put(buf);
                 break;
