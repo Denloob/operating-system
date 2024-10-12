@@ -38,55 +38,62 @@ void puts(char *str)
     putc('\n');
 }
 
-char *itoa(long value_tmp, char *str, size_t size, int base)
-{
-    long long value = value_tmp;
-    assert(size != 0 && "size cannot be 0");
-
-    // Check if base is supported
-    if ( base < 2 || base > 36 )
-    {
-        *str = '\0';
-        return str;
-    }
-
-    char *ptr = str;
-    if ( value < 0 && base == 10 )
-    {
-        value = -value;
-        *ptr++ = '-';
-        size--;
-    }
-    char *number_start = ptr;
-
-    do
-    {
-        if (size == 0)
-        {
-            return NULL;
-        }
-
-        *ptr++ = "0123456789abcdefghijklmnopqrstuvwxyz"[value % base];
-        size--;
-
-        value /= base;
-    } while (value);
-
-    if (size == 0)
-    {
-        return NULL;
-    }
-    *ptr-- = '\0';
-
-    // Reverse the string (the numbers are reversed)
-    while ( number_start < ptr )
-    {
-        char tmp = *number_start;
-        *number_start++ = *ptr;
-        *ptr-- = tmp;
-    }
-    return str;
+#define define_ttoa(name, type)                                                \
+char *name(type value_tmp, char *str, size_t size, int base)                   \
+{                                                                              \
+    assert(size != 0 && "size cannot be 0");                                   \
+    unsigned type value = value_tmp;                                           \
+    int sign = (value_tmp < 0);                                                \
+    if (sign)                                                                  \
+        value = -value_tmp;                                                    \
+                                                                               \
+    /* Check if base is supported */                                           \
+    if (base < 2 || base > 36)                                                 \
+    {                                                                          \
+        *str = '\0';                                                           \
+        return str;                                                            \
+    }                                                                          \
+                                                                               \
+    char *ptr = str;                                                           \
+    if (sign && base == 10)                                                    \
+    {                                                                          \
+        *ptr++ = '-';                                                          \
+        size--;                                                                \
+    }                                                                          \
+    char *number_start = ptr;                                                  \
+                                                                               \
+    do                                                                         \
+    {                                                                          \
+        if (size == 0)                                                         \
+        {                                                                      \
+            return NULL;                                                       \
+        }                                                                      \
+                                                                               \
+        *ptr++ = "0123456789abcdefghijklmnopqrstuvwxyz"[value % base];         \
+        size--;                                                                \
+                                                                               \
+        value /= base;                                                         \
+    } while (value);                                                           \
+                                                                               \
+    if (size == 0)                                                             \
+    {                                                                          \
+        return NULL;                                                           \
+    }                                                                          \
+    *ptr-- = '\0';                                                             \
+                                                                               \
+    /* Reverse the string (the numbers are reversed)  */                       \
+    while (number_start < ptr)                                                 \
+    {                                                                          \
+        char tmp = *number_start;                                              \
+        *number_start++ = *ptr;                                                \
+        *ptr-- = tmp;                                                          \
+    }                                                                          \
+    return str;                                                                \
 }
+
+define_ttoa(itoa, int)
+define_ttoa(ltoa, long)
+define_ttoa(lltoa, long long)
 
 void printf(char *fmt, ...)
 {

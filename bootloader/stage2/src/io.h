@@ -19,7 +19,9 @@ static inline uint8_t in_byte(uint16_t port)
     return ret;
 }
 
-char *itoa(long value, char *str, size_t size, int base);
+char *itoa(int value, char *str, size_t size, int base);
+char *ltoa(long value, char *str, size_t size, int base);
+char *lltoa(long long value, char *str, size_t size, int base);
 void printf(char *fmt, ...);
 
 int wait_key();
