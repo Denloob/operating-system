@@ -280,3 +280,78 @@ bios_drive_read:
 
     leave
     ret
+
+global bios_memory_get_mem_map
+bios_memory_get_mem_map:
+    [bits 32]
+    push ebp
+    mov ebp, esp
+
+    param32 0, .res_ptr         ; bios_memory_MapEntry *
+    param32 1, .state_ptr       ; bios_memory_MapRequestState  *
+
+    %macro un_param 0
+        %undef .res_ptr
+        %undef .state_ptr
+    %endmacro
+
+    push ebx            ; Store registers
+    push edi
+    push esi
+
+    enter_real_mode
+
+.state.entry_id            equ 0x0
+.state.done                equ 0x4
+.state.is_extended         equ 0x5
+    linear_to_segmented_offset .state_ptr, es, esi, si ; es:si = .state_ptr
+
+    mov ebx, es:[si + .state.entry_id] ; ebx = .state_ptr->entry_id;
+
+.magic_bios_canary equ 0x534D4150
+    mov edx, .magic_bios_canary
+    mov eax, 0xe820
+    mov ecx, 24
+
+    linear_to_segmented_offset .res_ptr, es, edi, di    ; es:di = .res_ptr
+
+    int 0x15
+    xchg bx,bx
+
+    setc dl                                             ; Store the cary flag in dl
+
+    cmp eax, .magic_bios_canary                         ; if eax doesn't match the canary, interrupt failed
+    jnz .fail
+
+    linear_to_segmented_offset .state_ptr, es, esi, si  ; es:si = .state_ptr
+    mov es:[si+.state.done], dl                         ; .state_ptr->done = cary_bit (if it's 1 - we are done)
+
+    sub cl, 20
+    mov es:[si+.state.is_extended], cl                  ; .state_ptr->is_extended = (bios-bytes-written - 20)
+    
+    mov es:[si+.state.entry_id], ebx                    ; .state_ptr->entry_id = (next-entry-id)
+
+    test ebx, ebx                                        ; if (entry_id == 0) {
+    setz es:[si+.state.done]                            ;    state_ptr->done = true; 
+                                                        ; }
+
+    push 1                                              ; return_value = true;
+    jmp .end
+
+.fail:
+    push 0                                              ; return_value = false;
+
+.end:
+    enter_protected_mode
+
+    pop eax                                             ; eax = return_value
+
+    pop esi                                             ; Restore registers
+    pop edi
+    pop ebx
+
+    un_param
+    %undef un_param
+
+    leave
+    ret
