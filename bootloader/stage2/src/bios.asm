@@ -318,7 +318,6 @@ bios_memory_get_mem_map:
     mov dword es:[di+.res.attr_bitfield], 1             ; .res_ptr->attr_bitfield = 1 // For ACPI 3.X compatibility
 
     int 0x15
-    xchg bx,bx
 
     setc dl                                             ; Store the cary flag in dl
 
