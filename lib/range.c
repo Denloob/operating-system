@@ -128,6 +128,7 @@ uint64_t merge_adjacent(range_Range *range_arr, uint64_t length)
 
 uint64_t range_defragment(range_Range *range_arr, uint64_t length)
 {
+    assert(length != 0 && "length cannot be 0");
     quicksort(range_arr, length);
 
     length = merge_adjacent(range_arr, length);
