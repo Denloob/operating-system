@@ -1,4 +1,5 @@
 #include "assert.h"
+#include "memory.h"
 #include "range.h"
 
 // Returns a pointer to the median range
@@ -86,9 +87,50 @@ static void quicksort(range_Range *arr, uint64_t length)
     quicksort_recursive(arr, 0, length - 1);
 }
 
+uint64_t merge_adjacent(range_Range *range_arr, uint64_t length)
+{
+    if (length == 1) return length;
+
+    range_Range *begin = range_arr;
+    range_Range *end = begin + length;
+
+    range_Range *prev = begin;
+    range_Range *cur = begin + 1; 
+    while (cur < end)
+    {
+        uint64_t prev_end = prev->begin + prev->size;
+        uint64_t cur_end = cur->begin + cur->size;
+        if (prev_end >= cur->begin)
+        {
+            if (cur_end > prev_end)
+            {
+                uint64_t leftover_size = cur_end - prev_end;
+                prev->size += leftover_size;
+            }
+
+            const range_Range *last = end - 1;
+            if (cur != last)
+            {
+                memmove(cur, cur + 1, (end - cur - 1) * sizeof(*cur));
+            }
+            length--;
+            end--;
+
+            continue;
+        }
+
+        prev = cur;
+        cur++;
+    }
+
+    return length;
+}
+
 uint64_t range_defragment(range_Range *range_arr, uint64_t length)
 {
     quicksort(range_arr, length);
+
+    length = merge_adjacent(range_arr, length);
 
     return length;
 }
