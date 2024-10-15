@@ -44,7 +44,7 @@ char *name(type value_tmp, char *str, size_t size, int base)                   \
     assert(size != 0 && "size cannot be 0");                                   \
     unsigned type value = value_tmp;                                           \
     int sign = (value_tmp < 0);                                                \
-    if (sign)                                                                  \
+    if (sign && base == 10)                                                    \
         value = -value_tmp;                                                    \
                                                                                \
     /* Check if base is supported */                                           \
