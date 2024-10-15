@@ -22,6 +22,7 @@ void start(uint16_t drive_id)
     range_Range *memory_map = (void *)0x100; // TODO: FIXME: TEMPORARY
     uint64_t memory_map_length = 0;
 
+    printf("[*] Retrieving memory map\n");
     bios_memory_MapEntry entry = {0};
     bios_memory_MapRequestState state = {0};
     for (int i = 0;; i++)
@@ -36,6 +37,8 @@ void start(uint16_t drive_id)
 
         uint64_t begin = entry.base_address;
         uint64_t size = entry.region_length;
+        uint64_t end = begin + size;
+        printf("    %llx - %llx (%x)\n", begin, end, entry.type);
 
         if (entry.type == bios_memory_TYPE_USABLE)
         {
@@ -48,18 +51,29 @@ void start(uint16_t drive_id)
         }
     }
 
+    printf("[*] Available:\n");
     memory_map_length = range_defragment(memory_map, memory_map_length);
+    for (int i = 0; i < memory_map_length; i++)
+    {
+        uint64_t begin = memory_map[i].begin;
+        uint64_t size = memory_map[i].size;
+        uint64_t end = begin + size;
+        printf("    %llx - %llx\n", begin, end);
+    }
 
+    printf("[*] Initializing drive #%d\n", (int)drive_id);
     Drive drive;
     if (!drive_init(&drive, drive_id))
     {
         assert(false && "drive_init failed");
     }
 
+    printf("[*] Reading FAT16\n");
     fat16_Ref fat16;
     bool success = fat16_ref_init(&fat16, &drive);
     assert(success && "fat16_ref_init");
 
+    printf("[*] Loading the kernel\n");
     fat16_File file;
     success = fat16_open(&fat16, "KERNEL  BIN", &file); //  HACK: fat16 should be case insensitive!
     assert(success && "fat16_open");
@@ -67,12 +81,18 @@ void start(uint16_t drive_id)
     success = fat16_read(&file, (uint8_t *)KERNEL_BEGIN);
     assert(success && "fat16_read");
 
+    printf("[*] Initializing paging\n");
     mmu_init();
+
+    printf("[*] Preparing for warp jump...\n");
 
     mmu_map_range(KERNEL_BEGIN, KERNEL_END+0x1000, KERNEL_BEGIN, MMU_READ_WRITE);
 
     main_gdt_long_mode_init();
 
+    printf("\n[+] Coordinates locked, warp core stable\n");
+    printf("Press any key to launch...\n");
+    wait_key();
     main_long_mode_jump_to(KERNEL_BASE_ADDRESS);
 }
 

@@ -6,6 +6,7 @@
 
 void __attribute__((section(".entry"))) kernel_main(uint16_t drive_id)
 {
+    io_clear_vga();
 
     init_memory();
 
