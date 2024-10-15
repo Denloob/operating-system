@@ -1,4 +1,5 @@
 #include "FAT16.h"
+#include "range.h"
 #include "assert.h"
 #include "bios.h"
 #include "drive.h"
@@ -18,6 +19,37 @@ typedef void (*kernel_main)(Drive drive);
 
 void start(uint16_t drive_id)
 {
+    range_Range *memory_map = (void *)0x100; // TODO: FIXME: TEMPORARY
+    uint64_t memory_map_length = 0;
+
+    bios_memory_MapEntry entry = {0};
+    bios_memory_MapRequestState state = {0};
+    for (int i = 0;; i++)
+    {
+        bool success = bios_memory_get_mem_map(&entry, &state);
+        assert(success && "bios_memory_get_mem_map");
+        if (state.done)
+            break;
+
+        if (entry.region_length == 0)
+            continue;
+
+        uint64_t begin = entry.base_address;
+        uint64_t size = entry.region_length;
+
+        if (entry.type == bios_memory_TYPE_USABLE)
+        {
+            // TODO: FIXME: check max size
+            memory_map[memory_map_length] = (range_Range){
+                .begin = begin,
+                .size = size,
+            };
+            memory_map_length++;
+        }
+    }
+
+    memory_map_length = range_defragment(memory_map, memory_map_length);
+
     Drive drive;
     if (!drive_init(&drive, drive_id))
     {
