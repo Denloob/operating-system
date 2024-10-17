@@ -109,3 +109,33 @@ bool fat16_open(fat16_Ref *fat16, char *path, fat16_File *out_file);
  * @see fat16_ref_init
  */
 bool fat16_read(fat16_File *file, uint8_t *out_buffer);
+
+/**
+ * @brief converts a cluster to sector.
+ *
+ * @param fat16 the ref that holds the bpb , drive
+ * @param cluster The cluster to be converted
+ * @return the corresponds sector number.
+ */
+uint32_t fat16_cluster_to_sector(fat16_Ref *fat16, uint16_t cluster);
+
+bool fat16_write_sectors(Drive *drive, uint32_t sector, const uint8_t *buffer, uint32_t count);
+
+
+
+/**
+ *@brief finds a free clutser in the FAT and returns its number
+ *
+ *
+ *
+ */
+uint16_t fat16_allocate_cluster(fat16_Ref *fat16);
+/**
+ * @brief the function returns the next cluster number in a clusters chain
+ *
+ */
+uint16_t fat16_get_next_cluster(fat16_Ref *fat16, uint16_t cluster);
+/**
+ *@brief the functions links 2 clusters (linking = change values in the FAT)
+ */
+bool fat16_set_next_cluster(fat16_Ref *fat16, uint16_t current_cluster, uint16_t next_cluster);

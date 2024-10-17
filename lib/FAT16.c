@@ -156,3 +156,78 @@ bool fat16_read(fat16_File *file, uint8_t *out_buffer)
 
     return true;
 }
+
+uint32_t fat16_cluster_to_sector(fat16_Ref *fat16, uint16_t cluster)
+{
+    fat16_BootSector *bpb = &fat16->bpb;
+    uint32_t firstDataSector = bpb->reservedSectors + (bpb->numFATs * bpb->FATSize) + ((bpb->rootEntryCount*32) + (bpb->bytesPerSector-1)) / bpb->bytesPerSector;
+    return firstDataSector + (cluster - 2) * bpb->sectorsPerCluster;
+}
+
+bool fat16_write_sectors(Drive *drive, uint32_t sector, const uint8_t *buffer, uint32_t count)
+{
+    for (uint32_t i = 0; i < count; i++)
+    {
+        //if (!drive_write(drive, sector + i, buffer + (i * SECTOR_SIZE), 1)) // we dont have a drive write yet but assuming we d o
+        {
+            return false; // Failed to write to the sector
+        }
+    }
+    return true;
+}
+
+uint16_t fat16_allocate_cluster(fat16_Ref *fat16)
+{
+    uint8_t *FAT = malloc(fat16->bpb.FATSize * SECTOR_SIZE);
+    if (!fat16_read_FAT(fat16->drive, &fat16->bpb, FAT))
+    {
+        free(FAT);
+        return FAT16_CLUSTER_FREE; // Reading FAT failed
+    }
+
+    for (uint16_t i = 2; i < fat16->bpb.FATSize * SECTOR_SIZE / 2; i++)
+    {
+        uint16_t entry = ((uint16_t*)FAT)[i];
+        if (entry == FAT16_CLUSTER_FREE)
+        {
+            ((uint16_t*)FAT)[i] = FAT16_CLUSTER_EOF;
+            fat16_write_sectors(fat16->drive, fat16->bpb.reservedSectors, FAT, fat16->bpb.FATSize);
+            free(FAT);
+            return i; // Found and allocated a free cluster
+        }
+    }
+
+    free(FAT);
+    return FAT16_CLUSTER_FREE; // No free cluster found
+}
+
+uint16_t fat16_get_next_cluster(fat16_Ref *fat16, uint16_t cluster)
+{
+    uint8_t *FAT = malloc(fat16->bpb.FATSize * SECTOR_SIZE);
+    if (!fat16_read_FAT(fat16->drive, &fat16->bpb, FAT))
+    {
+        free(FAT);
+        return FAT16_CLUSTER_EOF; // Reading FAT failed
+    }
+
+    uint16_t nextCluster = ((uint16_t*)FAT)[cluster];
+    free(FAT);
+    return nextCluster;
+}
+
+bool fat16_set_next_cluster(fat16_Ref *fat16, uint16_t current_cluster, uint16_t next_cluster)
+{
+    uint8_t *FAT = malloc(fat16->bpb.FATSize * SECTOR_SIZE);
+    if (!fat16_read_FAT(fat16->drive, &fat16->bpb, FAT))
+    {
+        free(FAT);
+        return false; // Reading FAT failed
+    }
+
+    ((uint16_t*)FAT)[current_cluster] = next_cluster;
+
+    bool result = fat16_write_sectors(fat16->drive, fat16->bpb.reservedSectors, FAT, fat16->bpb.FATSize);
+    free(FAT);
+    return result;
+}
+
