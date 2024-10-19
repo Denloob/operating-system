@@ -142,6 +142,19 @@ void printf(char *fmt, ...)
         fmt++;
         char ch = *fmt;
 
+        bool zero_padding = false;
+        int width = 0;
+
+        if( ch == '0')
+        {
+            zero_padding = true;
+            fmt++;
+            ch = *fmt;
+            width = ch - '0'; //the digit that spesifiy the width (multi digit is not supported)
+            fmt++;
+            ch = *fmt;
+        }
+        
         bool is_long = false;
         bool is_long_long = false;
 
@@ -197,6 +210,14 @@ void printf(char *fmt, ...)
                     itoa(num, buf, sizeof(buf), ch == 'd' ? 10 : 0x10);
                 }
 
+                int len = strlen(buf);
+                if(zero_padding && width > len)
+                {
+                    for(int i=0; i < (width - len) ; i++)
+                    {
+                        putc('0');
+                    }
+                }
                 put(buf);
                 break;
             }

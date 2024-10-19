@@ -33,7 +33,7 @@ void __attribute__((section(".entry"))) kernel_main(uint16_t drive_id)
     get_date(&year, &month, &day);
 
     // Print time and date using your printf function
-    printf("Current Time: %d:%d:%d\n", hours, minutes, seconds);
+    printf("Current Time: %d:%02d:%02d\n", hours, minutes, seconds);
     printf("Current Date: %d-%d-%d\n", day, month, year);
 
     while(true)
