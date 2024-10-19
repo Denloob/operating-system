@@ -4,6 +4,7 @@
 #define RTC_ADDRESS 0x70
 #define RTC_DATA    0x71
 #define RTC_BASE_YEAR 2000
+#define TIME_ZONE_OFFSET 3
 uint8_t read_rtc_register(uint8_t reg)
 {
     out_byte(RTC_ADDRESS, reg);
@@ -24,6 +25,13 @@ void get_time(uint8_t *hours, uint8_t *minutes, uint8_t *seconds)
     *seconds = bcd_to_bin(read_rtc_register(0x00));
     *minutes = bcd_to_bin(read_rtc_register(0x02));
     *hours   = bcd_to_bin(read_rtc_register(0x04));
+
+    *hours += TIME_ZONE_OFFSET;
+
+    if(*hours>24)
+    {
+        *hours -= 24;
+    }
 }
 
 void get_date(uint16_t *year, uint8_t *month, uint8_t *day) 
