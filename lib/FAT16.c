@@ -175,7 +175,7 @@ bool fat16_write_sectors(Drive *drive, uint32_t sector, const uint8_t *buffer, u
     }
     return true;
 }
-
+/*
 uint16_t fat16_allocate_cluster(fat16_Ref *fat16)
 {
     uint8_t *FAT = malloc(fat16->bpb.FATSize * SECTOR_SIZE);
@@ -230,4 +230,5 @@ bool fat16_set_next_cluster(fat16_Ref *fat16, uint16_t current_cluster, uint16_t
     free(FAT);
     return result;
 }
+*/
 

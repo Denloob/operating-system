@@ -139,3 +139,5 @@ uint16_t fat16_get_next_cluster(fat16_Ref *fat16, uint16_t cluster);
  *@brief the functions links 2 clusters (linking = change values in the FAT)
  */
 bool fat16_set_next_cluster(fat16_Ref *fat16, uint16_t current_cluster, uint16_t next_cluster);
+
+
