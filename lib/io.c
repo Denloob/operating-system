@@ -2,6 +2,7 @@
 #include "assert.h"
 #include <stdarg.h>
 #include "memory.h"
+#include "string.h"
 
 #define VGA_ADDR ((volatile char *)0xb8000)
 #define VGA_WIDTH 160
