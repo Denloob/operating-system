@@ -6,7 +6,7 @@ ELF_NAME := initfat16
 
 CC := gcc
 LD := gcc
-CFLAGS := -I${LIB_PATH}
+CFLAGS :=
 LDFLAGS :=
 LDLIBS :=
 DEPFLAGS = -MT $@ -MMD -MP -MF $(DEP_DIR)/obj/$*.d
