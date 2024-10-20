@@ -32,7 +32,7 @@ void __attribute__((section(".entry"))) kernel_main(uint16_t drive_id)
     uint8_t month, day;
     get_date(&year, &month, &day);
 
-    // Print time and date using your printf function
+    //the printf is using zero padding 
     printf("Current Time: %d:%02d:%02d\n", hours, minutes, seconds);
     printf("Current Date: %d-%d-%d\n", day, month, year);
 
