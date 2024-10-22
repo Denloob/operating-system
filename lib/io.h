@@ -25,6 +25,27 @@ static inline uint8_t in_byte(uint16_t port)
     return ret;
 }
 
+static inline void out_dword(uint16_t port, uint32_t val)
+{
+    out_byte(port, (val & 0xFF));
+    out_byte(port, (val >> 8) & 0xFF);
+    out_byte(port, (val >> 16) & 0xFF);
+    out_byte(port, (val >> 24) & 0xFF);
+}
+
+static inline uint32_t in_dword(uint16_t port) 
+{
+    uint32_t ret = 0;
+    ret |= in_byte(port);
+    ret |= in_byte(port) << 8;
+    ret |= in_byte(port) << 16;
+    ret |= in_byte(port) << 24;
+    return ret;
+}
+
+
+
+
 char *itoa(int value, char *str, size_t size, int base);
 char *ltoa(long value, char *str, size_t size, int base);
 char *lltoa(long long value, char *str, size_t size, int base);

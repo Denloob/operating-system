@@ -139,5 +139,22 @@ uint16_t fat16_get_next_cluster(fat16_Ref *fat16, uint16_t cluster);
  *@brief the functions links 2 clusters (linking = change values in the FAT)
  */
 bool fat16_set_next_cluster(fat16_Ref *fat16, uint16_t current_cluster, uint16_t next_cluster);
+/**
+ *@brief the function creates an empty file and registers it and the FAT , RootDirectory
+ *
+ *@*fat16 - the fat ref (bpb , drive) 
+ *@*filename - the file name
+ @extension - the file extension (exe , com , txt , doc ,   bmp , gif , jpg ...)
+ *@attributes - the attributes of the file (0x01 - read only / 0x02 - hidden / 0x04 - system / 0x08 -volume label / 0x10 - directory / 0x20  - archive / 0x0F - long file name) can be 2 things or more for example 0x12 is a hidden directory 
+*@out_file - the variables where the refrence to the file will be stored
+ */
+bool fat16_create_empty_file(fat16_Ref *fat16 , const char *filename , const char *extension , uint8_t attributes , fat16_File *out_file);
 
-
+/**
+ *@brief the function gets a file and writes content into it
+ *
+ *@file - the file we want to write into
+ *@buffer - the data to write into the file
+ *@size - the size of the data
+ */
+bool fat16_wirte_to_file(fat16_File *file , uint8_t buffer , size_t size);

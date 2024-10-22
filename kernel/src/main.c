@@ -2,6 +2,7 @@
 #include "shell.h"
 #include "memory.h"
 #include "RTC.h"
+#include "PCI.h"
 
 #define INPUT_BUFFER_SIZE 256 
 
@@ -11,6 +12,11 @@ void __attribute__((section(".entry"))) kernel_main(uint16_t drive_id)
 
     init_memory();
 
+    //PCI scan test
+    puts("Starting PCI scan");
+    pci_scan_for_ide();
+
+    //memory allocation test
     void *block1 = kernel_malloc(10);  // allocate 8 kb
 
     if (block1) {
