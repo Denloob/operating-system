@@ -1,13 +1,16 @@
 #include "PCI.h"
+#include "assert.h"
 #include "io.h"
 
 static void pci_config_address(uint8_t bus, uint8_t device, uint8_t function, uint8_t offset) 
 {
+    assert((offset & 0b11) == 0 && "Offset must fe aligned to 4 bytes");
+
     uint32_t address = (1 << 31)                 // Enable bit
                      | ((uint32_t)bus << 16)     // Bus number
                      | ((uint32_t)device << 11)  // Device number
                      | ((uint32_t)function << 8) // Function number
-                     | (offset & 0xFC);          // Offset (aligned to 4 bytes)
+                     | (offset);                 // Offset (aligned to 4 bytes)
     out_dword(0xCF8, address);
 }
 
