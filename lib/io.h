@@ -27,19 +27,13 @@ static inline uint8_t in_byte(uint16_t port)
 
 static inline void out_dword(uint16_t port, uint32_t val)
 {
-    out_byte(port, (val & 0xFF));
-    out_byte(port, (val >> 8) & 0xFF);
-    out_byte(port, (val >> 16) & 0xFF);
-    out_byte(port, (val >> 24) & 0xFF);
+    __asm__ volatile("out %1, %0" : : "a"(val), "Nd"(port) : "memory");
 }
 
 static inline uint32_t in_dword(uint16_t port) 
 {
     uint32_t ret = 0;
-    ret |= in_byte(port);
-    ret |= in_byte(port) << 8;
-    ret |= in_byte(port) << 16;
-    ret |= in_byte(port) << 24;
+    __asm__ volatile("in %0, %1" : "=a"(ret) : "Nd"(port) : "memory");
     return ret;
 }
 
