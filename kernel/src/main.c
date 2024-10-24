@@ -1,4 +1,5 @@
 #include "io.h"
+#include "mmu.h"
 #include "shell.h"
 #include "memory.h"
 #include "RTC.h"
@@ -6,9 +7,15 @@
 
 #define INPUT_BUFFER_SIZE 256 
 
+extern char __bss_start;
+extern char __bss_end;
+
 void __attribute__((section(".entry"))) kernel_main(uint16_t drive_id)
 {
     io_clear_vga();
+
+    mmu_map_range((uint64_t)&__bss_start, (uint64_t)&__bss_end, (uint64_t)&__bss_start, MMU_READ_WRITE);
+    memset(&__bss_start, 0, (uint64_t)&__bss_end - (uint64_t)&__bss_start);
 
     init_memory();
 
