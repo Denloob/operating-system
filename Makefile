@@ -26,8 +26,13 @@ $(BOOTLOADER):
 $(KERNEL):
 	$(MAKE) -C kernel
 
+QEMU_IDE_DEVICES := -device piix3-ide,id=ide -device ide-hd,drive=disk,bus=ide.0
+QEMU_LOG_OPTIONS := -d int,cpu_reset,in_asm,guest_errors -D log.txt
+QEMU_MISC_OPTIONS := -no-reboot
+QEMU_DEBUG_OPTIONS := -s -S
+
 run: $(IMAGE_NAME).img
-	$(EMU) -drive id=disk,file=$<,if=none -device piix3-ide,id=ide -device ide-hd,drive=disk,bus=ide.0
+	$(EMU) -drive id=disk,file=$<,if=none $(QEMU_IDE_DEVICES) $(QEMU_LOG_OPTIONS) $(QEMU_MISC_OPTIONS)
 
 debug: $(IMAGE_NAME).img
 	bochs -f bochs_config.txt -q
