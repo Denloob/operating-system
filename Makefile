@@ -1,7 +1,7 @@
 EMU := qemu-system-x86_64
 BOOTLOADER := bootloader/bootloader.bin
 KERNEL := kernel/bin/kernel.bin
-IMAGE_NAME := floppy
+IMAGE_NAME := hdd
 
 all: $(IMAGE_NAME).img
 
@@ -27,7 +27,7 @@ $(KERNEL):
 	$(MAKE) -C kernel
 
 run: $(IMAGE_NAME).img
-	$(EMU) -fda $<
+	$(EMU) -drive id=disk,file=$<,if=none -device piix3-ide,id=ide -device ide-hd,drive=disk,bus=ide.0
 
 debug: $(IMAGE_NAME).img
 	bochs -f bochs_config.txt -q
