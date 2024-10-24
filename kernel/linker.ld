@@ -5,11 +5,13 @@ SECTIONS
 {
     . = phys;
 
-    .entry       : { __entry_start = .;     *(.entry)   }
-    .text        : { __text_start = .;      *(.text)    }
-    .data        : { __data_start = .;      *(.data)    }
-    .rodata      : { __rodata_start = .;    *(.rodata)  }
-    .bss         : { __bss_start = .;       *(.bss)     }
+    .entry       : { __entry_start = .;     *(.entry)   ; __entry_end = .;  }
+    .text        : { __text_start = .;      *(.text)    ; __text_end = .;   }
+    .data        : { __data_start = .;      *(.data)    ; __data_end = .;   }
+    .rodata      : { __rodata_start = .;    *(.rodata)  ; __rodata_end = .; }
+    .bss         : { __bss_start = .;       *(.bss)}
+    __bss_end = .;
+    
 
     __end = .;
 }
