@@ -69,7 +69,7 @@ void pci_scan_for_ide()
 
             if (class_code == 0x01 && subclass_code == 0x01) //check for IDE controller
             { 
-                printf("IDE controller found at bus %u, device %u\n", bus, device);
+                printf("IDE controller found at bus 0x%x, device 0x%x\n", bus, device);
                 // Print BARs
                 for (uint8_t bar = 0; bar < 6; bar++) {
                     uint32_t bar_value = pci_get_bar(bus, device, 0, bar);
