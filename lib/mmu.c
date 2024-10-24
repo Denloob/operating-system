@@ -57,7 +57,7 @@ void mmu_map_deallocate(void *address)
     bitmap_clear(mmu_tables_bitmap, index);
 }
 
-mmu_PageMapEntry *g_pml4 = NULL;
+mmu_PageMapEntry *g_pml4 = (void *)MMU_MAP_BASE; // NOTE: even though it has a value, it SHALL NOT be used before mmu_init was called.
 
 mmu_PageTableEntry *mmu_page_allocate(uint64_t virtual, uint64_t physical)
 {
@@ -72,6 +72,7 @@ void mmu_init()
 {
     bitmap_init(mmu_tables_bitmap, MMU_BITMAP_SIZE);
     g_pml4 = mmu_map_allocate();
+    assert((g_pml4 == (void *)MMU_MAP_BASE) && "Expected g_pml4 to be located at the first available address");
     mmu_table_init(g_pml4);
 
     mmu_map_range(BOOTLOADER_STAGE2_BEGIN, BOOTLOADER_STAGE2_END, BOOTLOADER_STAGE2_BEGIN, MMU_READ_WRITE);
