@@ -55,30 +55,36 @@ uint32_t pci_get_bar(uint8_t bus, uint8_t device, uint8_t function, uint8_t bar_
     return pci_config_read(bus, device, function, 0x10 + (bar_index * 4));
 }
 
+
+
 void pci_scan_for_ide()
 {
     for (uint16_t bus = 0; bus < 256; bus++) 
     {
         for (uint8_t device = 0; device < 32; device++) 
         {
-            uint16_t vendor_id = pci_get_vendor_id(bus, device, 0);
-            if (vendor_id == 0xFFFF) continue; // Device doesn't exist
+            for(uint8_t function=0; function<8;function++)
+            {
+                uint16_t vendor_id = pci_get_vendor_id(bus, device, function);
+                if (vendor_id == 0xFFFF) continue; // Device doesn't exist
 
-            uint8_t class_code = pci_get_class_code(bus, device, 0);
-            uint8_t subclass_code = pci_get_subclass_code(bus, device, 0);
+                uint8_t class_code = pci_get_class_code(bus, device, function);
+                uint8_t subclass_code = pci_get_subclass_code(bus, device, function);
 
-            if (class_code == 0x01 && subclass_code == 0x01) //check for IDE controller
-            { 
-                printf("IDE controller found at bus 0x%x, device 0x%x\n", bus, device);
-                // Print BARs
-                for (uint8_t bar = 0; bar < 6; bar++) {
-                    uint32_t bar_value = pci_get_bar(bus, device, 0, bar);
-                    if (bar_value) {
-                        printf("BAR%u: 0x%x\n", bar, bar_value);
+                if (class_code == 0x01 && subclass_code == 0x01) //check for IDE controller
+                { 
+                    printf("IDE controller found at bus 0x%x, device 0x%x , function 0x%x\n", bus, device , function);
+                    // Print BARs
+                    for (uint8_t bar = 0; bar < 6; bar++)
+                    {
+                        uint32_t bar_value = pci_get_bar(bus, device, function, bar);
+                        if (bar_value)
+                        {
+                            printf("BAR 0x%x: 0x%x\n", bar, bar_value);
+                        }
                     }
                 }
             }
         }
     }
 }
-
