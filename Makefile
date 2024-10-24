@@ -26,16 +26,15 @@ $(BOOTLOADER):
 $(KERNEL):
 	$(MAKE) -C kernel
 
-QEMU_IDE_DEVICES := -device piix3-ide,id=ide -device ide-hd,drive=disk,bus=ide.0
 QEMU_LOG_OPTIONS := -d int,cpu_reset,in_asm,guest_errors -D log.txt
 QEMU_MISC_OPTIONS := -no-reboot -monitor stdio
 QEMU_DEBUG_OPTIONS := -gdb tcp::1234 -S
 
 run: $(IMAGE_NAME).img
-	$(EMU) -drive id=disk,file=$<,if=none $(QEMU_IDE_DEVICES) $(QEMU_LOG_OPTIONS) $(QEMU_MISC_OPTIONS)
+	$(EMU) -hda $< $(QEMU_LOG_OPTIONS) $(QEMU_MISC_OPTIONS)
 
 debug: $(IMAGE_NAME).img
-	$(EMU) -drive id=disk,file=$<,if=none $(QEMU_IDE_DEVICES) $(QEMU_LOG_OPTIONS) $(QEMU_MISC_OPTIONS) $(QEMU_DEBUG_OPTIONS)
+	$(EMU) -hda $< $(QEMU_LOG_OPTIONS) $(QEMU_MISC_OPTIONS) $(QEMU_DEBUG_OPTIONS)
 
 clean:
 	$(MAKE) clean -C bootloader
