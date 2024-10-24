@@ -35,7 +35,7 @@ run: $(IMAGE_NAME).img
 	$(EMU) -drive id=disk,file=$<,if=none $(QEMU_IDE_DEVICES) $(QEMU_LOG_OPTIONS) $(QEMU_MISC_OPTIONS)
 
 debug: $(IMAGE_NAME).img
-	bochs -f bochs_config.txt -q
+	$(EMU) -drive id=disk,file=$<,if=none $(QEMU_IDE_DEVICES) $(QEMU_LOG_OPTIONS) $(QEMU_MISC_OPTIONS) $(QEMU_DEBUG_OPTIONS)
 
 clean:
 	$(MAKE) clean -C bootloader

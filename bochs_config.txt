@@ -1,4 +1,0 @@
-floppya: 1_44=floppy.img, status=inserted
-boot: floppy
-magic_break: enabled=1
-display_library: x, options="gui_debug"
