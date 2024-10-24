@@ -79,12 +79,17 @@ void mmu_init()
     mmu_map_range(MMU_STRUCTURES_START, MMU_STRUCTURES_END, MMU_STRUCTURES_START, MMU_READ_WRITE);
     mmu_map_range(VGA_BEGIN, VGA_END, VGA_BEGIN, MMU_READ_WRITE);
 
-    __asm__ volatile("mov eax, cr4\n"
+#ifdef __x86_64__
+#define EAX_RAX "rax"
+#else
+#define EAX_RAX "eax"
+#endif
+    __asm__ volatile("mov " EAX_RAX ", cr4\n"
                      "or eax, 1 << 5\n"
-                     "mov cr4, eax\n"
+                     "mov cr4, " EAX_RAX "\n"
                      :
                      :
-                     : "eax", "cc");
+                     : EAX_RAX, "cc");
 
     __asm__ volatile("mov cr3, %0\n" : : "a"(g_pml4));
 
@@ -96,12 +101,12 @@ void mmu_init()
                      : "c"(EFER_MSR)
                      : "eax", "cc");
 
-    __asm__ volatile("mov eax, cr0\n"
+    __asm__ volatile("mov " EAX_RAX ", cr0\n"
                      "or eax, 1 << 31\n"
-                     "mov cr0, eax\n"
+                     "mov cr0, " EAX_RAX "\n"
                      :
                      :
-                     : "eax", "cc");
+                     : EAX_RAX, "cc");
 }
 
 void mmu_table_init(void *address)
