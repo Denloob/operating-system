@@ -2,21 +2,26 @@
 #include "assert.h"
 #include "io.h"
 
+#define PORT_CONFIG_ADDRESS 0xCF8
+#define PORT_CONFIG_DATA 0xCFC
+
 static void pci_config_address(uint8_t bus, uint8_t device, uint8_t function, uint8_t offset) 
 {
     assert((offset & 0b11) == 0 && "Offset must fe aligned to 4 bytes");
+    assert((function & (~0x7)) == 0 && "Function has to be max 3 bits long");
+    assert((device & (~0x1f)) == 0 && "");
 
     uint32_t address = (1 << 31)                 // Enable bit
                      | ((uint32_t)bus << 16)     // Bus number
                      | ((uint32_t)device << 11)  // Device number
                      | ((uint32_t)function << 8) // Function number
                      | (offset);                 // Offset (aligned to 4 bytes)
-    out_dword(0xCF8, address);
+    out_dword(PORT_CONFIG_ADDRESS, address);
 }
 
 static uint32_t pci_config_data() 
 {
-    return in_dword(0xCFC);
+    return in_dword(PORT_CONFIG_DATA);
 }
 
 uint32_t pci_config_read(uint8_t bus, uint8_t device, uint8_t function, uint8_t offset) 
