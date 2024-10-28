@@ -1,14 +1,20 @@
+#include "IDT.h"
 #include "io.h"
 #include "mmu.h"
 #include "shell.h"
 #include "memory.h"
 #include "RTC.h"
 #include "PCI.h"
+#include "assert.h"
 
 #define INPUT_BUFFER_SIZE 256 
 
 extern char __bss_start;
 extern char __bss_end;
+
+IDTEntry *g_idt;
+
+static void init_idt();
 
 void __attribute__((section(".entry"))) kernel_main(uint16_t drive_id)
 {
@@ -16,6 +22,8 @@ void __attribute__((section(".entry"))) kernel_main(uint16_t drive_id)
 
     mmu_map_range((uint64_t)&__bss_start, (uint64_t)&__bss_end, (uint64_t)&__bss_start, MMU_READ_WRITE);
     memset(&__bss_start, 0, (uint64_t)&__bss_end - (uint64_t)&__bss_start);
+
+    init_idt();
 
     init_memory();
 
@@ -57,4 +65,22 @@ void __attribute__((section(".entry"))) kernel_main(uint16_t drive_id)
 
       parse_command(input_buffer, INPUT_BUFFER_SIZE);
     }
+}
+
+static void init_idt()
+{
+    g_idt = (void *)0x100; // TODO: TEMP: FIXME: VERY temporary!!!
+
+    // TODO: instead of 0, register all to a callback that does nothing
+    for (int i = 0; i < IDT_LENGTH; i++)
+    {
+        g_idt[i] = (IDTEntry){0};
+    }
+
+    IDTDescriptor idtd = {
+        .limit = IDT_LENGTH * sizeof(IDTEntry),
+        .base = (uint64_t)g_idt,
+    };
+
+    asm volatile("lidt %0" : : "m"(idtd));
 }
