@@ -30,3 +30,12 @@ typedef struct
 
 #define IDT_LENGTH 256
 extern IDTEntry *g_idt;
+
+/**
+ * @brief - Register an IDT entry
+ *
+ * @param interrupt - The number of the interrupt you wish to register.
+ * @param gate_type - The type of the gate (interrupt/trap gate).
+ * @param callback - The function to call on the interrupt.
+ */
+void idt_register(int interrupt, IDT_gate_type gate_type, void *callback);
