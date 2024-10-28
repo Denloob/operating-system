@@ -197,18 +197,20 @@ void printf(char *fmt, ...)
 #define MAX_NUM_LENGTH 21
                 char buf[MAX_NUM_LENGTH] = {0};
 
+                const int base = ch == 'd' ? 10 : 0x10;
+
                 // Use the appropriate conversion based on size and base
                 if (is_long_long)
                 {
-                    lltoa(num, buf, sizeof(buf), ch == 'd' ? 10 : 0x10);
+                    lltoa(num, buf, sizeof(buf), base);
                 }
                 else if (is_long)
                 {
-                    ltoa(num, buf, sizeof(buf), ch == 'd' ? 10 : 0x10);
+                    ltoa(num, buf, sizeof(buf), base);
                 }
                 else
                 {
-                    itoa(num, buf, sizeof(buf), ch == 'd' ? 10 : 0x10);
+                    itoa(num, buf, sizeof(buf), base);
                 }
 
                 int len = strlen(buf);
