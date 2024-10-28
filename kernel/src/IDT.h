@@ -1,8 +1,6 @@
 #pragma once
 #include <stdint.h>
 
-#define IDT_MAX_ENTRIES 256
-
 typedef struct
 {
     uint16_t offset_low;    // Holds the lower 16 bits of the address of the interrupt handler function
@@ -26,10 +24,9 @@ typedef enum
 
 typedef struct 
 {
-    uint16_t limit; // Specifies the maximum size of the IDT (IDT_MAX_ENTRIES * Entry size)
+    uint16_t limit; // Specifies the maximum size of the IDT (IDT_LENGTH * Entry size)
     uint64_t base;  // The base address of the idt
 } __attribute__((packed)) IDTDescriptor;
 
-extern IDTEntry idt[IDT_MAX_ENTRIES]; // will be in kernel main.c
-extern IDTDescriptor idt_descriptor;  // will be in kernel main.c
-
+#define IDT_LENGTH 256
+extern IDTEntry *g_idt;
