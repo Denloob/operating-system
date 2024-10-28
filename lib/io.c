@@ -189,7 +189,7 @@ void printf(char *fmt, ...)
             case 'd':
             case 'x':
             {
-                // Choose the right itoa function depending on size
+                // Get the right vaarg argument depending on size specifier
                 long long num = is_long_long ? va_arg(args, long long)
                              : is_long      ? va_arg(args, long)
                                             : va_arg(args, int);
