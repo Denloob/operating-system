@@ -3,24 +3,6 @@
 
 #include <stdint.h>
 
-// Function declarations for RTC operations
-
-/**
- * @brief Reads a specific RTC register.
- * 
- * @param reg The register number to read from.
- * @return The value of the register.
- */
-uint8_t read_rtc_register(uint8_t reg);
-
-/**
- * @brief Converts a Binary Coded Decimal (BCD) value to binary.
- * 
- * @param val The BCD value to convert.
- * @return The converted binary value.
- */
-uint8_t bcd_to_bin(uint8_t val);
-
 /**
  * @brief Gets the current time from the RTC.
  * 

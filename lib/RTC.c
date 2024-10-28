@@ -5,13 +5,30 @@
 #define RTC_DATA    0x71
 #define RTC_BASE_YEAR 2000
 #define TIME_ZONE_OFFSET 3
-uint8_t read_rtc_register(uint8_t reg)
+
+/**
+ * @brief Reads a specific RTC register.
+ * 
+ * @param reg The register number to read from.
+ * @return The value of the register.
+ */
+static uint8_t read_rtc_register(uint8_t reg);
+
+/**
+ * @brief Converts a Binary Coded Decimal (BCD) value to binary.
+ * 
+ * @param val The BCD value to convert.
+ * @return The converted binary value.
+ */
+static uint8_t bcd_to_bin(uint8_t val);
+
+static uint8_t read_rtc_register(uint8_t reg)
 {
     out_byte(RTC_ADDRESS, reg);
     return in_byte(RTC_DATA);
 }
 
-uint8_t bcd_to_bin(uint8_t val) 
+static uint8_t bcd_to_bin(uint8_t val) 
 {
     //example for BCD 45 = 0100(4) 0101(5)
     //to convert to bin we do (val & 0x0F) to return the first digit in the example 5
