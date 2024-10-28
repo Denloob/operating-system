@@ -33,10 +33,3 @@ typedef struct
 extern IDTEntry idt[IDT_MAX_ENTRIES]; // will be in kernel main.c
 extern IDTDescriptor idt_descriptor;  // will be in kernel main.c
 
-void IDT_set_gate(int num, uint64_t base, uint16_t selector, uint8_t flags);
-void IDT_load(void);
-void IDT_enable_gate(int num);
-void IDT_disable_gate(int num);
-void IDT_initialize(void);
-
-extern void idt_flush(uint64_t idt_ptr_address); // Needs to be an ass implementation
