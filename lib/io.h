@@ -88,3 +88,7 @@ char key_to_char(int keycode);
 */
 void get_string(char *buffer, size_t max_size);
 
+/**
+ * @brief - the funciton adds a small delay
+ */
+void io_delay();
