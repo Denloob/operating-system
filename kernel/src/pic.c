@@ -10,7 +10,7 @@
 #define PIC2_COMMAND PIC2
 #define PIC2_DATA (PIC2 + 1)
 
-void pic_send_EOI(uint8_t interrupt_request)
+void pic_send_EOI(pic_IRQ interrupt_request)
 {
 #define PIC1_REQUEST_PIN_COUNT 8
     if (interrupt_request >= PIC1_REQUEST_PIN_COUNT)
@@ -30,7 +30,7 @@ void pic_send_EOI(uint8_t interrupt_request)
 #define ICW1_INIT 0x10      /* Initialization - required! */
 
 #define ICW3_SLAVE_AT_IRQ2 0b100
-#define ICW3_SET_CASCADE_IDENTITY 0b10 // Tells the slave its cascade identity
+#define ICW3_SET_CASCADE_IDENTITY pic_IRQ__CASCADE // Tells the slave its cascade identity
 
 #define ICW4_8086 0x01       /* 8086/88 (MCS-80/85) mode */
 #define ICW4_AUTO 0x02       /* Auto (normal) EOI */
