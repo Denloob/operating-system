@@ -10,7 +10,9 @@
 
 // If you do not wish to have a macro `smartptr` that calls free
 // (for example if you don't have libc, remove the following define)
+#if 0
 #define smartptr__setting_SUPPORT_FREE
+#endif
 
 // If you have a problem with the `defer` symbol being defined here, remove,
 // remove the following define

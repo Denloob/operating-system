@@ -1,5 +1,6 @@
 #include "drive.h"
 #include "FAT16.h"
+#define smartptr__setting_SUPPORT_FREE
 #include "smartptr.h"
 #include <stdbool.h>
 #include <stdint.h>
