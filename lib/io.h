@@ -8,6 +8,16 @@ void put(char *str);
 void putc(char ch);
 void puts(char *str);
 
+static inline void sti()
+{
+    asm volatile ("sti" : : : "memory");
+}
+
+static inline void cli()
+{
+    asm volatile ("cli" : : : "memory");
+}
+
 static inline void out_byte(uint16_t port, uint8_t val)
 {
     __asm__ volatile("out %1, %0" : : "a"(val), "Nd"(port) : "memory");
