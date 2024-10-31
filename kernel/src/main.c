@@ -1,6 +1,10 @@
 #include "IDT.h"
+#include "error.isr.h"
 #include "io.h"
+#include "io.isr.h"
+#include "io_keyboard.h"
 #include "mmu.h"
+#include "pic.h"
 #include "shell.h"
 #include "memory.h"
 #include "RTC.h"
@@ -22,6 +26,13 @@ void __attribute__((section(".entry"))) kernel_main(uint16_t drive_id)
     memset(&__bss_start, 0, (uint64_t)&__bss_end - (uint64_t)&__bss_start);
 
     init_idt();
+
+    PIC_remap(0x20, 0x70);
+    pic_mask_all();
+    pic_clear_mask(pic_IRQ_KEYBOARD);
+    idt_register(0x20 + pic_IRQ_KEYBOARD, IDT_gate_type_INTERRUPT, io_isr_keyboard_event);
+    io_input_keyboard_key = io_keyboard_wait_key;
+    asm volatile ("sti");
 
     init_memory();
 
