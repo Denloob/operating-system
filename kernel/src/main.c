@@ -10,6 +10,7 @@
 #include "RTC.h"
 #include "PCI.h"
 #include "assert.h"
+#include "IDE.h"
 
 #define INPUT_BUFFER_SIZE 256 
 
@@ -39,7 +40,10 @@ void __attribute__((section(".entry"))) kernel_main(uint16_t drive_id)
     //PCI scan test
     puts("Starting PCI scan");
     pci_scan_for_ide();
-
+    
+    //IDE scan
+    puts("Starting IDE scan");
+    ide_detect();
     //memory allocation test
     void *block1 = kernel_malloc(10);  // allocate 8 kb
 
