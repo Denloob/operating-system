@@ -11,7 +11,7 @@ LD := x86_64-elf-ld
 CFLAGS := -ffreestanding -nostdlib -masm=intel
 ISRCFLAGS := -mgeneral-regs-only -mno-red-zone
 LDFLAGS := -nostdlib -T linker.ld -Map=$(BIN_DIR)/$(IMAGE_NAME).map
-LDLIBS := -L${TOOLCHAIN_PATH}/lib/gcc/x86_64-elf/7.5.0 -lgcc
+LDLIBS := -L${TOOLCHAIN_PATH}/lib/gcc/x86_64-elf/14.2.0 -lgcc
 DEPFLAGS = -MT $@ -MMD -MP -MF $(DEP_DIR)/obj/$*.d
 
 CFILES := $(shell cd $(SRC_DIR) && find -L * -type f -name '*.c' ! -name '*.isr.c')
