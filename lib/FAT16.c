@@ -151,7 +151,7 @@ bool fat16_read(fat16_File *file, uint8_t *out_buffer)
     bool success = fat16_read_FAT(file->ref->drive, &file->ref->bpb, (uint8_t *)&fat);
     if (!success) return false;
 
-    success = fat16_read_file(&file->file_entry , file->ref->drive , &file->ref->bpb ,out_buffer, fat); // TODO: it's not a good idea to read the whole FAT into memory.
+    success = fat16_read_file(&file->file_entry , file->ref->drive , &file->ref->bpb ,out_buffer, (uint16_t *)fat); // TODO: it's not a good idea to read the whole FAT into memory.
     if (!success) return false;
 
     return true;
