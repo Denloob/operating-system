@@ -71,11 +71,8 @@ static void init_idt()
 {
     g_idt = (void *)0x100; // TODO: TEMP: FIXME: VERY temporary!!!
 
-    // TODO: instead of 0, register all to a callback that does nothing
-    for (int i = 0; i < IDT_LENGTH; i++)
-    {
-        g_idt[i] = (IDTEntry){0};
-    }
+    memset(g_idt, 0, IDT_LENGTH * sizeof(*g_idt));
+
     idt_register(0xd, IDT_gate_type_INTERRUPT, error_isr_general_protection_fault);
 
     IDTDescriptor idtd = {
