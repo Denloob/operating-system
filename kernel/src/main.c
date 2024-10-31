@@ -76,6 +76,7 @@ static void init_idt()
     {
         g_idt[i] = (IDTEntry){0};
     }
+    idt_register(0xd, IDT_gate_type_INTERRUPT, error_isr_general_protection_fault);
 
     IDTDescriptor idtd = {
         .limit = IDT_LENGTH * sizeof(IDTEntry),
