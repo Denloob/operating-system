@@ -38,3 +38,35 @@ typedef struct
             pop rax;                                                           \
         " : : : "memory")
 
+/**
+ * @brief - Trampolines to the provided function.
+ *
+ * @param func - pointer to the function to trampoline to. Passed on the stack (first on the stack, aka at [rsp]).
+ * @param frame - isr_InterruptFrame from the interrupt. Passed on the stack (second on the stack, aka [rsp+8])
+ *
+ * @return it will return, and you will have to pop the function pointer from it before you can iretq.
+ */
+void __attribute__((naked)) isr_trampoline();
+
+/**
+ * @brief - Trampolines to the provided function.
+ *
+ * @param func - pointer to the function to trampoline to. Passed on the stack (first on the stack, aka at [rsp]).
+ * @param error - uint64_t of the error code. Passed on the stack (second on the stack, aka [rsp+8])
+ * @param frame - isr_InterruptFrame from the interrupt. Passed on the stack (third on the stack, aka [rsp+16])
+ *
+ * @return it will return, and you will have to pop the function pointer from it, and the error code too before you can iretq.
+ */
+void __attribute__((naked)) isr_trampoline_error();
+
+#define isr_IMPL_INTERRUPT(c_function)                                         \
+    asm volatile ("push offset " # c_function  "\n"                                   \
+                  "call isr_trampoline\n"                                      \
+                  "add rsp, 0x8\n"                                             \
+                  "iretq" : : : "memory", "cc");
+
+#define isr_IMPL_INTERRUPT_ERROR(c_function)                                   \
+    asm volatile ("push offset " # c_function  "\n"                                   \
+                  "call isr_trampoline_error\n"                                      \
+                  "add rsp, 0x16\n"                                            \
+                  "iretq" : : : "memory", "cc");
