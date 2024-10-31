@@ -87,7 +87,7 @@ void start(uint16_t drive_id)
 
     printf("\n[+] Coordinates locked, warp core stable\n");
     printf("Press any key to launch...\n");
-    wait_key();
+    io_wait_key_raw();
     main_long_mode_jump_to(KERNEL_BASE_ADDRESS);
 }
 

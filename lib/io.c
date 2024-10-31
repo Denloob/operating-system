@@ -250,7 +250,9 @@ int get_key_type(int keycode)
     return res;
 }
 
-int wait_key()
+int (*io_input_keyboard_key)() = io_wait_key_raw;
+
+int io_wait_key_raw()
 {
     int k = 0;
 
@@ -389,7 +391,7 @@ void get_string(char *buffer, size_t max_size)
     // While loop till "Enter" is pressed
     while (1)
     {
-        keycode = wait_key();
+        keycode = io_input_keyboard_key();
         ch = key_to_char(keycode);
 
         // If the key is a newline character, break the loop

@@ -57,7 +57,9 @@ void printf(char *fmt, ...);
 
 void io_clear_vga();
 
-int wait_key();
+int io_wait_key_raw();
+
+extern int (*io_input_keyboard_key)();
 
 typedef enum KeycodeType
 {
