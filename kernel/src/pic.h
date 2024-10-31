@@ -34,3 +34,7 @@ void pic_send_EOI(pic_IRQ interrupt_request);
  * @param offset2 The amount by which to offset the PIC2 IRQs
  */
 void PIC_remap(int offset1, int offset2);
+
+void pic_mask_all();
+void pic_clear_mask(pic_IRQ interrupt_request);
+void pic_set_mask(pic_IRQ interrupt_request);

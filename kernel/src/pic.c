@@ -58,3 +58,43 @@ void PIC_remap(int offset1, int offset2)
     out_byte(PIC1_DATA, mask1); // restore saved masks.
     out_byte(PIC2_DATA, mask2);
 }
+
+void pic_mask_all()
+{
+    out_byte(PIC1_DATA, 0xff);
+    out_byte(PIC2_DATA, 0xff);
+}
+
+void pic_set_mask(pic_IRQ interrupt_request)
+{
+    uint16_t port;
+
+    if (interrupt_request < 8)
+    {
+        port = PIC1_DATA;
+    }
+    else
+    {
+        port = PIC2_DATA;
+        interrupt_request -= 8;
+    }
+    uint16_t value = in_byte(port) | (1 << interrupt_request);
+    out_byte(port, value);
+}
+
+void pic_clear_mask(pic_IRQ interrupt_request)
+{
+    uint16_t port;
+
+    if (interrupt_request < 8)
+    {
+        port = PIC1_DATA;
+    }
+    else
+    {
+        port = PIC2_DATA;
+        interrupt_request -= 8;
+    }
+    uint16_t value = in_byte(port) & ~(1 << interrupt_request);
+    out_byte(port, value);
+}
