@@ -14,10 +14,22 @@
 
 #define INPUT_BUFFER_SIZE 256 
 
+#define BAR0 0x1F0   // Primary IDE Channel base 
+#define BAR1 0x3F6   // Primary IDE Channel control
+#define BAR2 0x170   // Secondary IDE Channel base 
+#define BAR3 0x376   // Secondary IDE Channel control 
+#define BAR4 0x000   // Bus Master IDE 
+
 extern char __bss_start;
 extern char __bss_end;
 
 static void init_idt();
+
+
+IDEChannelRegisters channels[2];
+ide_device ide_devices[4];
+
+void test_ide();
 
 void __attribute__((section(".entry"))) kernel_main(uint16_t drive_id)
 {
@@ -43,7 +55,7 @@ void __attribute__((section(".entry"))) kernel_main(uint16_t drive_id)
     
     //IDE scan
     puts("Starting IDE scan");
-    ide_detect();
+    test_ide();
     //memory allocation test
     void *block1 = kernel_malloc(10);  // allocate 8 kb
 
@@ -94,4 +106,20 @@ static void init_idt()
     };
 
     asm volatile("lidt %0" : : "m"(idtd));
+}
+
+void test_ide() {
+    ide_initialize(BAR0, BAR1, BAR2, BAR3, BAR4);
+    for (int i = 0; i < 4; i++) 
+    {
+        if (ide_devices[i].Reserved)
+        {
+            printf("IDE Device %d:\n", i);
+            printf("  Model: %s\n", ide_devices[i].Model);
+            printf("  Type: %s\n", ide_devices[i].Type == IDE_ATA ? "ATA" : "ATAPI");
+            printf("  Size: %d sectors\n", ide_devices[i].Size);
+            printf("  Channel: %s\n", ide_devices[i].Channel == ATA_PRIMARY ? "Primary" : "Secondary");
+            printf("  Drive: %s\n", ide_devices[i].Drive == ATA_MASTER ? "Master" : "Slave");
+        }
+    }
 }
