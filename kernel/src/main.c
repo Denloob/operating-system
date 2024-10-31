@@ -12,8 +12,6 @@
 extern char __bss_start;
 extern char __bss_end;
 
-IDTEntry *g_idt;
-
 static void init_idt();
 
 void __attribute__((section(".entry"))) kernel_main(uint16_t drive_id)
