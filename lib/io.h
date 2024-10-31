@@ -28,6 +28,11 @@ static inline void out_word(uint16_t port, uint16_t val)
     __asm__ volatile("out %1, %0" : : "a"(val), "Nd"(port) : "memory");
 }
 
+static inline void out_dword(uint16_t port, uint32_t val)
+{
+    __asm__ volatile("out %1, %0" : : "a"(val), "Nd"(port) : "memory");
+}
+
 static inline uint8_t in_byte(uint16_t port)
 {
     uint8_t ret;
@@ -35,9 +40,11 @@ static inline uint8_t in_byte(uint16_t port)
     return ret;
 }
 
-static inline void out_dword(uint16_t port, uint32_t val)
+static inline uint16_t in_word(uint16_t port)
 {
-    __asm__ volatile("out %1, %0" : : "a"(val), "Nd"(port) : "memory");
+    uint16_t ret=0;
+    __asm__ volatile("in %0, %1" : "=a"(ret) : "Nd"(port) : "memory");
+    return ret;
 }
 
 static inline uint32_t in_dword(uint16_t port) 
@@ -46,8 +53,6 @@ static inline uint32_t in_dword(uint16_t port)
     __asm__ volatile("in %0, %1" : "=a"(ret) : "Nd"(port) : "memory");
     return ret;
 }
-
-
 
 
 char *itoa(int value, char *str, size_t size, int base);
