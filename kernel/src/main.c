@@ -108,6 +108,7 @@ static void init_idt()
     memset(g_idt, 0, IDT_LENGTH * sizeof(*g_idt));
 
     idt_register(0xd, IDT_gate_type_INTERRUPT, error_isr_general_protection_fault);
+    idt_register(0xe, IDT_gate_type_INTERRUPT, error_isr_page_fault);
 
     IDTDescriptor idtd = {
         .limit = IDT_LENGTH * sizeof(IDTEntry),
