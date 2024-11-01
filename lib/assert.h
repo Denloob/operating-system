@@ -6,6 +6,6 @@
         if (!(expr))                                                           \
         {                                                                      \
             puts(#expr);                                                       \
-            asm("hlt");                                                        \
+            asm("cli; hlt");                                                   \
         }                                                                      \
     } while (0)
