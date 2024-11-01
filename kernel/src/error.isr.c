@@ -8,6 +8,8 @@ error_isr_general_protection_fault_impl(isr_InterruptFrame *frame, uint64_t erro
 {
     printf("\nGeneral protection fault: RIP=0x%llx ; Error Code = 0x%llx\n",
            frame->rip, error);
+    printf("Press any key to continue\n");
+    io_wait_key_raw();
 }
 
 void __attribute__((naked)) error_isr_general_protection_fault()
@@ -47,6 +49,8 @@ error_isr_page_fault_impl(isr_InterruptFrame *frame, PageFaultErrorCode error)
            error.present, error.write, error.user, error.reserved_write,
            error.instruction_fetch, error.protection_key, error.shadow_stack,
            error.software_guard_extensions);
+    printf("Press any key to continue\n");
+    io_wait_key_raw();
 }
 
 void __attribute__((naked)) error_isr_page_fault()
