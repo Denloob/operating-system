@@ -120,6 +120,13 @@ void mmu_tlb_flush(size_t virtual_address)
     __asm__ volatile("invlpg (%0)" : : "m"(virtual_address) : "memory");
 }
 
+void mmu_tlb_flush_all()
+{
+    unsigned long cr3; // We don't actually need the value of cr3, but by using the `long` type, gcc will automatically compile it into eax on IA-32 and rax on amd64
+    asm volatile ("mov %0, cr3\n"
+                  "mov cr3, %0\n" : "=a"(cr3) : : "memory");
+}
+
 mmu_PageMapEntry *mmu_page_map_get_address_of(mmu_PageMapEntry *entry)
 {
     assert(entry->present && "The page map must be valid");

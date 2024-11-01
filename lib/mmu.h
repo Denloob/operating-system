@@ -60,6 +60,7 @@ uint64_t mmu_page_table_entry_address_get(void *page_map_ptr);
 void mmu_page_table_entry_address_set(void *page_map_ptr, uint64_t address);
 void mmu_table_init(void *address);
 void mmu_tlb_flush(size_t virtual_address);
+void mmu_tlb_flush_all();
 mmu_PageMapEntry *mmu_page_map_get_address_of(mmu_PageMapEntry *entry);
 mmu_PageTableEntry *mmu_page(void *address);
 
