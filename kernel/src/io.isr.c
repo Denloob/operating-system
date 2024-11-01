@@ -7,7 +7,7 @@
 // @see io.c
 #define KEYBOARD_PORT 0x60
 
-int io_keyboard_buffer[IO_KEYBOARD_BUFFER_SIZE + 1]; // +1 for ring buffer impl
+int io_keyboard_buffer[IO_KEYBOARD_BUFFER_SIZE];
 uint8_t io_keyboard_buffer_head;
 uint8_t io_keyboard_buffer_tail;
 

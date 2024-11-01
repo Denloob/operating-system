@@ -1,8 +1,8 @@
 #pragma once
 #include "isr.h"
 
-#define IO_KEYBOARD_BUFFER_SIZE 0x10
-extern int io_keyboard_buffer[IO_KEYBOARD_BUFFER_SIZE + 1]; // +1 for ring buffer impl (is-full detection)
+#define IO_KEYBOARD_BUFFER_SIZE 0x11 // 0x10+1 for ring buffer impl (is-full detection)
+extern int io_keyboard_buffer[IO_KEYBOARD_BUFFER_SIZE]; 
 // Items are inserted at the head, and popped from tail
 extern uint8_t io_keyboard_buffer_head;
 extern uint8_t io_keyboard_buffer_tail;

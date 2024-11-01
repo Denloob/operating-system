@@ -16,6 +16,7 @@ int io_keyboard_wait_key()
     cli();
     int key = io_keyboard_buffer[io_keyboard_buffer_tail];
     io_keyboard_buffer_tail++;
+    io_keyboard_buffer_tail %= IO_KEYBOARD_BUFFER_SIZE;
     sti();
 
     return key;
