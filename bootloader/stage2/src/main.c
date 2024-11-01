@@ -51,7 +51,20 @@ void start(uint16_t drive_id)
     success = fat16_open(&fat16, "KERNEL  BIN", &file); //  HACK: fat16 should be case insensitive!
     assert(success && "fat16_open");
 
-    success = fat16_read(&file, (uint8_t *)KERNEL_BEGIN);
+    uint8_t *kernel_physical_address = NULL;
+    for (int i = 0; i < memory_map_length; i++)
+    {
+        if (memory_map[i].size >= file.file_entry.fileSize)
+        {
+            kernel_physical_address = (void *)memory_map[i].begin;
+            memory_map[i].begin += PAGE_ALIGN_UP(file.file_entry.fileSize);
+            memory_map[i].size -= PAGE_ALIGN_UP(file.file_entry.fileSize);
+        }
+    }
+    assert(kernel_physical_address && "No consecutive physical RAM for the kernel was found\n");
+    printf("[*] Chose kernel location - 0x%lx", kernel_physical_address);
+
+    success = fat16_read(&file, kernel_physical_address);
     assert(success && "fat16_read");
 
     printf("[*] Initializing paging\n");
@@ -59,7 +72,7 @@ void start(uint16_t drive_id)
 
     printf("[*] Preparing for warp jump...\n");
 
-    mmu_map_range(KERNEL_BEGIN, KERNEL_BEGIN + file.file_entry.fileSize, KERNEL_BEGIN, MMU_READ_WRITE);
+    mmu_map_range((uint64_t)kernel_physical_address, KERNEL_BEGIN + file.file_entry.fileSize, KERNEL_BEGIN, MMU_READ_WRITE);
 
     main_gdt_long_mode_init();
 
