@@ -116,6 +116,7 @@ uint64_t merge_adjacent(range_Range *range_arr, uint64_t length)
             length--;
             end--;
 
+            cur++;
             continue;
         }
 
