@@ -7,54 +7,32 @@
 #include "io.h"
 #include "main.h"
 #include "mmu.h"
+#include "memory.h"
+
+// The start and the end of the bootloader
+extern char __entry_start;
+extern char __end;
+
+#define PAGE_SIZE 0x1000
+#define PAGE_ALIGN_UP(address)   (((address) + PAGE_SIZE - 1) & ~(PAGE_SIZE - 1))
+#define PAGE_ALIGN_DOWN(address) ((address) & ~(PAGE_SIZE - 1))
 
 typedef void (*kernel_main)(Drive drive);
 #define KERNEL_BEGIN 0x7e00
 #define KERNEL_BASE_ADDRESS (kernel_main)KERNEL_BEGIN
 
+#define MEMORY_MAP_MAX_LENGTH (0x1000 / sizeof(range_Range)) // HACK: having all the ranges fit inside a single page makes implementation easier.
+// Following number is chosen because the range 0x00007E00..0x0007FFFF should be free of use.
+#define MEMORY_MAP_PHYSICAL_ADDR 0x8000
+
+void get_memory_map(range_Range **resulting_memory_map, uint64_t *resulting_memory_map_size);
+
 void start(uint16_t drive_id)
 {
-    range_Range *memory_map = (void *)0x100; // TODO: FIXME: TEMPORARY
     uint64_t memory_map_length = 0;
-
-    printf("[*] Retrieving memory map\n");
-    bios_memory_MapEntry entry = {0};
-    bios_memory_MapRequestState state = {0};
-    for (int i = 0;; i++)
-    {
-        bool success = bios_memory_get_mem_map(&entry, &state);
-        assert(success && "bios_memory_get_mem_map");
-        if (state.done)
-            break;
-
-        if (entry.region_length == 0)
-            continue;
-
-        uint64_t begin = entry.base_address;
-        uint64_t size = entry.region_length;
-        uint64_t end = begin + size;
-        printf("    %llx - %llx (%x)\n", begin, end, entry.type);
-
-        if (entry.type == bios_memory_TYPE_USABLE)
-        {
-            // TODO: FIXME: check max size
-            memory_map[memory_map_length] = (range_Range){
-                .begin = begin,
-                .size = size,
-            };
-            memory_map_length++;
-        }
-    }
-
-    printf("[*] Available:\n");
-    memory_map_length = range_defragment(memory_map, memory_map_length);
-    for (int i = 0; i < memory_map_length; i++)
-    {
-        uint64_t begin = memory_map[i].begin;
-        uint64_t size = memory_map[i].size;
-        uint64_t end = begin + size;
-        printf("    %llx - %llx\n", begin, end);
-    }
+    range_Range *memory_map = NULL;
+    get_memory_map(&memory_map, &memory_map_length);
+    assert(memory_map && memory_map_length && "Out of memory");
 
     printf("[*] Initializing drive #%d\n", (int)drive_id);
     Drive drive;
@@ -126,4 +104,115 @@ void main_gdt_long_mode_init()
         .base_mid = 0,
         .base_high = 0,
     };
+}
+
+void get_memory_map(range_Range **resulting_memory_map, uint64_t *resulting_memory_map_size)
+{
+    range_Range *memory_map = (void *)MEMORY_MAP_PHYSICAL_ADDR;
+    uint64_t memory_map_length = 0;
+
+    printf("[*] Retrieving memory map\n");
+    bios_memory_MapEntry entry = {0};
+    bios_memory_MapRequestState state = {0};
+    while (true)
+    {
+        bool success = bios_memory_get_mem_map(&entry, &state);
+        assert(success && "bios_memory_get_mem_map");
+        if (state.done)
+            break;
+
+        if (entry.region_length == 0)
+            continue;
+
+        if (memory_map_length >= MEMORY_MAP_MAX_LENGTH)
+        {
+            // If we hit the limit, let's try to defragment, maybe there are some non-merged adjacent ranges
+            memory_map_length = range_defragment(memory_map, memory_map_length);
+            if (memory_map_length >= MEMORY_MAP_MAX_LENGTH)
+            {
+                // Didn't work
+                printf(
+                    "[WARNING] There's not enough space for the memory map ranges. "
+                    "Either there's a bug in the kernel, your bios, or you actually "
+                    "have more than %lld usable memory ranges. Skipping all following memory ranges.\n",
+                    MEMORY_MAP_MAX_LENGTH);
+                break;
+            }
+        }
+
+        uint64_t begin = entry.base_address;
+        uint64_t size = entry.region_length;
+        uint64_t end = begin + size;
+        printf("    %llx - %llx (%x)\n", begin, end, entry.type);
+
+        if (entry.type == bios_memory_TYPE_USABLE)
+        {
+            memory_map[memory_map_length] = (range_Range){
+                .begin = begin,
+                .size = size,
+            };
+            memory_map_length++;
+        }
+    }
+
+    memory_map_length = range_defragment(memory_map, memory_map_length);
+
+    printf("[*] Available:\n");
+    // Both print out, and page-align all the ranges
+    for (int i = 0; i < memory_map_length; i++)
+    {
+        uint64_t begin = PAGE_ALIGN_UP(memory_map[i].begin);
+        uint64_t size = PAGE_ALIGN_DOWN(memory_map[i].size);
+        memory_map[i].begin = begin;
+        memory_map[i].size = size;
+        uint64_t end = begin + size;
+        printf("    %llx - %llx\n", begin, end);
+    }
+
+    // Temporarily, remove all the pages the bootloader occupies
+    for (int64_t i = 0; i < memory_map_length; i++)
+    {
+        // HACK: because the bootloader starts at physical page 0, we can assume that the first entry in the range will be of our bootloader
+        if (memory_map[i].begin > (uint32_t)&__end)
+            break;
+
+        uint64_t range_end = memory_map[i].begin + memory_map[i].size;
+        bool is_end_in_range = range_end > (uint32_t)&__end;
+        if (is_end_in_range)
+        {
+            memory_map[i].begin = PAGE_ALIGN_UP((uint32_t)&__end);
+            bool overflow = __builtin_sub_overflow(range_end, memory_map[i].begin, &memory_map[i].size);
+            assert(!(!overflow && memory_map[i].size < PAGE_SIZE) && "Because all sizes and pages are aligned, this case should be impossible. If you see this error, please report it");
+            bool is_range_empty = overflow;
+            if (!is_range_empty)
+            {
+                break;
+            }
+            // Otherwise, fall-through to the delete
+        }
+
+        // Delete current range
+        // HACK: Because the memory_map map is moved to a different memory location later anyway, and because we know the ranges we need start at 0, to delete an entry we can just shift the beginning of the map like so
+        memory_map++;
+        i--;
+    }
+
+    assert(memory_map_length != 0 && "Out of memory");
+    range_Range *last_map = &memory_map[memory_map_length - 1];
+    range_Range *new_memory_map_addr = (void *)(last_map->begin + last_map->size - PAGE_SIZE);
+    if (last_map->size > PAGE_SIZE)
+    {
+        last_map->size -= PAGE_SIZE;
+    }
+    else
+    {
+        // Remove the range from the map
+        memory_map_length--;
+    }
+
+    memmove(new_memory_map_addr, memory_map, memory_map_length * sizeof(*memory_map));
+    memory_map = new_memory_map_addr;
+
+    *resulting_memory_map = memory_map;
+    *resulting_memory_map_size = memory_map_length;
 }
