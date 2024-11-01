@@ -68,5 +68,5 @@ void __attribute__((naked)) isr_trampoline_error();
 #define isr_IMPL_INTERRUPT_ERROR(c_function)                                   \
     asm volatile ("push offset " # c_function  "\n"                                   \
                   "call isr_trampoline_error\n"                                      \
-                  "add rsp, 0x16\n"                                            \
+                  "add rsp, 0x10\n"                                            \
                   "iretq" : : : "memory", "cc");
