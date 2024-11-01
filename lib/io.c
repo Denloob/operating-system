@@ -123,6 +123,16 @@ char *name(type value_tmp, char *str, size_t size, int base)                   \
     return str;                                                                \
 }
 
+void repeated_in_dword(uint16_t port , uint32_t *out , uint64_t count)
+{
+    int index;
+    for(index=0;index<count;index++)
+    {
+        out[index] = in_dword(port);
+    }
+}
+
+
 define_ttoa(itoa, int)
 define_ttoa(ltoa, long)
 define_ttoa(lltoa, long long)

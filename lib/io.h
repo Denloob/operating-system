@@ -54,6 +54,7 @@ static inline uint32_t in_dword(uint16_t port)
     return ret;
 }
 
+void repeated_in_dword(uint16_t port , uint32_t *out , uint64_t count);
 
 char *itoa(int value, char *str, size_t size, int base);
 char *ltoa(long value, char *str, size_t size, int base);
