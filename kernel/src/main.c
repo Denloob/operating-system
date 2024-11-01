@@ -45,6 +45,8 @@ void __attribute__((section(".entry"))) kernel_main(uint16_t drive_id)
     mmu_map_range((uint64_t)&__text_start, (uint64_t)&__text_end, (uint64_t)&__text_start, 0);
     mmu_map_range((uint64_t)&__bss_start, (uint64_t)&__bss_end, (uint64_t)&__bss_start, MMU_READ_WRITE | MMU_EXECUTE_DISABLE);
     mmu_map_range((uint64_t)&__data_start, (uint64_t)&__data_end, (uint64_t)&__data_start, MMU_READ_WRITE | MMU_EXECUTE_DISABLE);
+    mmu_tlb_flush_all();
+
     memset(&__bss_start, 0, (uint64_t)&__bss_end - (uint64_t)&__bss_start);
 
     init_idt();
