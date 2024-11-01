@@ -53,7 +53,7 @@ void *mmu_map_allocate()
 
 void mmu_map_deallocate(void *address)
 {
-    int index = ((size_t)address - MMU_BITMAP_BASE) / TABLE_SIZE_BYTES;
+    int index = ((size_t)address - MMU_STRUCTURES_START) / TABLE_SIZE_BYTES;
     bitmap_clear(mmu_tables_bitmap, index);
 }
 
