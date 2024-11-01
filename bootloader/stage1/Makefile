@@ -6,6 +6,7 @@ NASM_SOURCE := src/boot.asm
 
 all: bin/$(IMAGE_NAME).bin
 
+.PHONY: bin/$(IMAGE_NAME).bin # It doesn't cost much to assemble one file + we need to reassemble each time stage2 size changes. This is the easiest solution.
 bin/$(IMAGE_NAME).bin: $(NASM_SOURCE)
 ifndef STAGE_TWO_SIZE
 	$(error stage2 bootloader size (`STAGE_TWO_SIZE`) but is required for stage1 assembling)
