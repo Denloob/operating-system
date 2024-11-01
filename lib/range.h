@@ -25,3 +25,13 @@ uint64_t range_defragment(range_Range *range_arr, uint64_t length);
  *          larger, zero if both are equal.
  */
 int range_cmp(range_Range *range, range_Range *other);
+
+/**
+ * @brief - Removes all ranges with size 0 from range_arr.
+ *
+ * @param range_arr - Pointer to an array of ranges of length `length`
+ * @param length - Length of the array
+ *
+ * @return The new length of range_arr.
+ */
+uint64_t range_remove_empty(range_Range *range_arr, uint64_t length);

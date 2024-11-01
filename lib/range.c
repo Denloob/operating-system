@@ -87,6 +87,38 @@ static void quicksort(range_Range *arr, uint64_t length)
     quicksort_recursive(arr, 0, length - 1);
 }
 
+uint64_t range_remove_empty(range_Range *range_arr, uint64_t length)
+{
+    range_Range *last_empty = NULL;
+    for (int i = 0; i < length; i++)
+    {
+        if (last_empty == NULL)
+        {
+            if (range_arr[i].size == 0)
+            {
+                last_empty = &range_arr[i];
+            }
+            continue;
+        }
+
+        if (range_arr[i].size == 0)
+        {
+            memmove(last_empty, last_empty + 1, (&range_arr[i] - last_empty - 1) * sizeof(range_Range));
+            last_empty = &range_arr[i];
+            length--;
+            i--;
+        }
+    }
+
+    if (last_empty && last_empty != &range_arr[length - 1])
+    {
+        memmove(last_empty, last_empty + 1, (&range_arr[length - 1] - last_empty - 1) * sizeof(range_Range));
+        length--;
+    }
+
+    return length;
+}
+
 uint64_t merge_adjacent(range_Range *range_arr, uint64_t length)
 {
     if (length == 1) return length;
@@ -132,6 +164,7 @@ uint64_t range_defragment(range_Range *range_arr, uint64_t length)
     assert(length != 0 && "length cannot be 0");
     quicksort(range_arr, length);
 
+    length = range_remove_empty(range_arr, length);
     length = merge_adjacent(range_arr, length);
 
     return length;
