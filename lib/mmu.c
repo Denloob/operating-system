@@ -94,16 +94,16 @@ void mmu_init()
 
     __asm__ volatile("mov cr3, %0\n" : : "a"(g_pml4));
 
-#define EFER_MSR 0xC0000080
+#define EFER_MSR 0xC0000080 // This is the MSR (model-specific register) address for the EFER register
     __asm__ volatile("rdmsr\n"
-                     "or eax, 1 << 8\n"
+                     "or eax, (1 << 8) | (1 << 11) \n" // Set the long mode bit and no-execute enable (allows MMU_EXECUTE_DISABLE flag to work in paging)
                      "wrmsr"
                      :
                      : "c"(EFER_MSR)
                      : "eax", "cc");
 
     __asm__ volatile("mov " EAX_RAX ", cr0\n"
-                     "or eax, 1 << 31\n"
+                     "or eax, (1 << 31) | (1 << 16) \n" // Set the paging bit, the write-protect bit (kernel too is subject to paging limiting the write ability)
                      "mov cr0, " EAX_RAX "\n"
                      :
                      :
