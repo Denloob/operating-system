@@ -22,6 +22,8 @@
 
 extern char __bss_start;
 extern char __bss_end;
+extern char __rodata_start;
+extern char __rodata_end;
 extern char __data_start;
 extern char __data_end;
 extern char __text_start;
@@ -50,6 +52,8 @@ void __attribute__((section(".entry"), sysv_abi)) kernel_main(uint32_t param_mmu
     mmu_page_range_set_flags(&__text_start, &__text_end, 0);
     mmu_page_range_set_flags(&__bss_start, &__bss_end, MMU_READ_WRITE | MMU_EXECUTE_DISABLE);
     mmu_map_range((uint64_t)&__bss_start, (uint64_t)&__bss_end, (uint64_t)&__bss_start, MMU_READ_WRITE | MMU_EXECUTE_DISABLE);
+    mmu_page_range_set_flags(&__rodata_start, &__rodata_end, MMU_EXECUTE_DISABLE);
+    mmu_page_range_set_flags(&__data_start, &__data_end, MMU_READ_WRITE | MMU_EXECUTE_DISABLE);
     mmu_tlb_flush_all();
 
     memset(&__bss_start, 0, (uint64_t)&__bss_end - (uint64_t)&__bss_start);
