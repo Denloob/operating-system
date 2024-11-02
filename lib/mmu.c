@@ -82,6 +82,7 @@ void mmu_init(range_Range *memory_map, uint64_t memory_map_length)
             g_mmu_map_base_physical_address = memory_map[i].begin;
             memory_map[i].begin += PAGE_ALIGN_UP(MMU_TOTAL_CHUNK_SIZE);
             memory_map[i].size -= PAGE_ALIGN_UP(MMU_TOTAL_CHUNK_SIZE);
+            break;
         }
     }
     assert(g_mmu_map_base_physical_address && "No consecutive physical RAM for the MMU structures were found\n");
