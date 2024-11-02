@@ -59,6 +59,7 @@ void start(uint16_t drive_id)
             kernel_physical_address = (void *)memory_map[i].begin;
             memory_map[i].begin += PAGE_ALIGN_UP(file.file_entry.fileSize);
             memory_map[i].size -= PAGE_ALIGN_UP(file.file_entry.fileSize);
+            break;
         }
     }
     assert(kernel_physical_address && "No consecutive physical RAM for the kernel was found\n");
