@@ -191,6 +191,7 @@ mmu_PageTableEntry *mmu_page_existing(void *address)
     mmu_PageTableEntry *page_table = (mmu_PageTableEntry *)mmu_page_map_get_address_of(pml2_entry);
 
     mmu_PageTableEntry *entry = page_table + page_indexes.page;
+    assert(entry->present && "The page must be valid");
     return entry;
 }
 
