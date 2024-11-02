@@ -9,8 +9,6 @@
 #include "mmu.h"
 #include "memory.h"
 
-// The start and the end of the bootloader
-extern char __entry_start;
 extern char __end;
 
 #define PAGE_SIZE 0x1000
@@ -183,18 +181,19 @@ void get_memory_map(range_Range **resulting_memory_map, uint64_t *resulting_memo
         printf("    %llx - %llx\n", begin, end);
     }
 
-    // Temporarily, remove all the pages the bootloader occupies
+    // Temporarily, remove all the pages the bootloader occupies + all pages stack occupies
+    const uint32_t stack_and_bootloader_end = 0x8000; // HACK: At the time of the writing, the bootloader ends at page 0x5000, the stack starts at page 0x8000, which means it has approx 3 pages until they clash. Thus the hack is to just (temporarily) remove both the stack and the bootloader from the map, aka the range 0x0..0x8000.
     for (int64_t i = 0; i < memory_map_length; i++)
     {
         // HACK: because the bootloader starts at physical page 0, we can assume that the first entry in the range will be of our bootloader
-        if (memory_map[i].begin > (uint32_t)&__end)
+        if (memory_map[i].begin > stack_and_bootloader_end)
             break;
 
         uint64_t range_end = memory_map[i].begin + memory_map[i].size;
-        bool is_end_in_range = range_end > (uint32_t)&__end;
+        bool is_end_in_range = range_end > stack_and_bootloader_end;
         if (is_end_in_range)
         {
-            memory_map[i].begin = PAGE_ALIGN_UP((uint32_t)&__end);
+            memory_map[i].begin = PAGE_ALIGN_UP(stack_and_bootloader_end);
             bool overflow = __builtin_sub_overflow(range_end, memory_map[i].begin, &memory_map[i].size);
             assert(!(!overflow && memory_map[i].size < PAGE_SIZE) && "Because all sizes and pages are aligned, this case should be impossible. If you see this error, please report it");
             bool is_range_empty = overflow;
