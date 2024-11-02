@@ -5,7 +5,7 @@
 
 typedef void (*kernel_main)(Drive drive);
 
-void main_long_mode_jump_to(kernel_main addr);
+void main_long_mode_jump_to(kernel_main addr, uint32_t param1, uint32_t param2, uint32_t param3);
 void main_gdt_long_mode_init();
 
 extern gdt_entry main_gdt_64bit;

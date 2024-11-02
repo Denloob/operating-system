@@ -37,10 +37,15 @@ ide_device ide_devices[4];
 
 void test_ide();
 
-void __attribute__((section(".entry"))) kernel_main(uint16_t drive_id)
+void __attribute__((section(".entry"), sysv_abi)) kernel_main(uint32_t param_mmu_map_base_address, uint32_t param_memory_map, uint32_t param_memory_map_length)
 {
+    uint64_t mmu_map_base_address = param_mmu_map_base_address;
+    uint64_t memory_map = param_memory_map;
+    uint64_t memory_map_length = param_memory_map_length;
+
     io_clear_vga();
 
+    mmu_init_post_init(mmu_map_base_address);
     mmu_map_range((uint64_t)&__entry_start, (uint64_t)&__entry_end, (uint64_t)&__entry_start, MMU_READ_WRITE);
     mmu_map_range((uint64_t)&__text_start, (uint64_t)&__text_end, (uint64_t)&__text_start, 0);
     mmu_map_range((uint64_t)&__bss_start, (uint64_t)&__bss_end, (uint64_t)&__bss_start, MMU_READ_WRITE | MMU_EXECUTE_DISABLE);
