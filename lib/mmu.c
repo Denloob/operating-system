@@ -178,6 +178,21 @@ mmu_PageMapEntry *mmu_page_map_get_or_allocate_of(mmu_PageMapEntry *entry)
     return (mmu_PageMapEntry *)mmu_page_table_entry_address_get(entry);
 }
 
+mmu_PageTableEntry *mmu_page_existing(void *address)
+{
+    uint64_t address64 = (uint64_t)address;
+    mmu_PageIndexes page_indexes = *(mmu_PageIndexes *)&address64;
+
+    mmu_PageMapEntry *pml4_entry = g_pml4 + page_indexes.level4;
+    mmu_PageMapEntry *pml3 = mmu_page_map_get_address_of(pml4_entry);
+    mmu_PageMapEntry *pml3_entry = pml3 + page_indexes.level3;
+    mmu_PageMapEntry *pml2 = mmu_page_map_get_address_of(pml3_entry);
+    mmu_PageMapEntry *pml2_entry = pml2 + page_indexes.level2;
+    mmu_PageTableEntry *page_table = (mmu_PageTableEntry *)mmu_page_map_get_address_of(pml2_entry);
+
+    mmu_PageTableEntry *entry = page_table + page_indexes.page;
+    return entry;
+}
 
 mmu_PageTableEntry *mmu_page(void *address)
 {
@@ -225,5 +240,24 @@ void mmu_map_range(uint64_t physical_begin, uint64_t physical_end,
         mmu_PageTableEntry *page = mmu_page_allocate(virt, phys);
         page->read_write = flags & MMU_READ_WRITE;
         page->execute_disable = flags & MMU_EXECUTE_DISABLE;
+    }
+}
+
+void mmu_page_set_flags(void *virtual_address, int new_flags)
+{
+    mmu_PageTableEntry *page = mmu_page_existing(virtual_address);
+
+    page->read_write = new_flags & MMU_READ_WRITE;
+    page->execute_disable = new_flags & MMU_EXECUTE_DISABLE;
+}
+
+void mmu_page_range_set_flags(void *virtual_address_begin, void *virtual_address_end, int new_flags)
+{
+    uint64_t virtual_begin = (uint64_t)virtual_address_begin & (~0xfff);
+    uint64_t virtual_end = (uint64_t)virtual_address_end;
+
+    for (uint64_t virt = virtual_begin; virt < virtual_end; virt += KILOBYTE)
+    {
+        mmu_page_set_flags(virtual_address_end, new_flags);
     }
 }
