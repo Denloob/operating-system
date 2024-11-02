@@ -67,7 +67,7 @@ void start(uint16_t drive_id)
     assert(success && "fat16_read");
 
     printf("[*] Initializing paging\n");
-    mmu_init(memory_map, memory_map_length);
+    uint64_t mmu_map_base_address = mmu_init(memory_map, memory_map_length, (uint64_t)&__end);
 
     printf("[*] Preparing for warp jump...\n");
 

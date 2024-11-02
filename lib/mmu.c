@@ -19,9 +19,9 @@
 #define MMU_BITMAP_SIZE (MMU_TABLE_COUNT / 8)
 #define MMU_BITMAP_LENGTH MMU_TABLE_COUNT
 
-#define MMU_MAP_BASE_VIRTUAL_ADDR 0x100000
-uint64_t g_mmu_map_base_physical_address;
-uint64_t g_mmu_map_base_address; // physical addr when paging is off, and virtual when is on
+uint64_t g_mmu_map_base_address = 0; // NOTE: this has to be not in the bss, as we cannot map the bss pages without this variable, and cannot set this variable (if it were in the bss) without mapping the bss pages.
+Bitmap *mmu_tables_bitmap = 0;
+mmu_PageMapEntry *g_pml4 = 0;
 
 #define MMU_ALL_TABLES_SIZE (MMU_TABLE_COUNT * TABLE_SIZE_BYTES)
 #define MMU_TOTAL_CHUNK_SIZE (MMU_BITMAP_SIZE + MMU_ALL_TABLES_SIZE)
@@ -31,15 +31,12 @@ uint64_t g_mmu_map_base_address; // physical addr when paging is off, and virtua
 #define MMU_STRUCTURES_START g_mmu_map_base_address
 #define MMU_STRUCTURES_END (MMU_STRUCTURES_START + MMU_TOTAL_CHUNK_SIZE)
 #define BOOTLOADER_STAGE2_BEGIN 0
-#define BOOTLOADER_STAGE2_END (7 * KILOBYTE)
 
 #define STACK_END 0x8000
 #define STACK_BEGIN (STACK_END - KILOBYTE * 3)
 
 #define VGA_BEGIN 0xb8000
 #define VGA_END 0xb8fa0
-
-Bitmap *mmu_tables_bitmap;
 
 void *mmu_map_allocate()
 {
@@ -62,8 +59,6 @@ void mmu_map_deallocate(void *address)
     bitmap_clear(mmu_tables_bitmap, index);
 }
 
-mmu_PageMapEntry *g_pml4 = (void *)MMU_MAP_BASE_VIRTUAL_ADDR; // NOTE: even though it has a value, it SHALL NOT be used before mmu_init was called.
-
 mmu_PageTableEntry *mmu_page_allocate(uint64_t virtual, uint64_t physical)
 {
     mmu_PageTableEntry *page = mmu_page((void *)virtual);
@@ -73,19 +68,35 @@ mmu_PageTableEntry *mmu_page_allocate(uint64_t virtual, uint64_t physical)
     return page;
 }
 
-void mmu_init(range_Range *memory_map, uint64_t memory_map_length)
+/**
+ * @brief - This function initializes global variables the mmu code depends on.
+ *          It shall be called ONLY after mmu_init has ran. It's purpose is to run
+ *          in the same context but different linkage of the mmu compilation unit.
+ *          For example: After MMU is initialized by the bootloader, call
+ *              this from the kernel.
+ *
+ * @param mmu_map_base_address The base address the mmu data is located at.
+ */
+void mmu_init_post_init(uint64_t mmu_map_base_address)
+{
+    g_mmu_map_base_address = mmu_map_base_address;
+    mmu_tables_bitmap = (Bitmap *)MMU_BITMAP_BASE; // This macro depends on g_mmu_map_base_address
+    g_pml4 = (mmu_PageMapEntry *)g_mmu_map_base_address; // As asserted bellow, this always will be the case.
+}
+
+uint64_t mmu_init(range_Range *memory_map, uint64_t memory_map_length, uint64_t bootloader_end_addr)
 {
     for (int i = 0; i < memory_map_length; i++)
     {
         if (memory_map[i].size >= MMU_TOTAL_CHUNK_SIZE)
         {
-            g_mmu_map_base_physical_address = memory_map[i].begin;
+            g_mmu_map_base_address = memory_map[i].begin;
             memory_map[i].begin += PAGE_ALIGN_UP(MMU_TOTAL_CHUNK_SIZE);
             memory_map[i].size -= PAGE_ALIGN_UP(MMU_TOTAL_CHUNK_SIZE);
             break;
         }
     }
-    assert(g_mmu_map_base_physical_address && "No consecutive physical RAM for the MMU structures were found\n");
+    assert(g_mmu_map_base_address && "No consecutive physical RAM for the MMU structures were found\n");
     mmu_tables_bitmap = (Bitmap *)MMU_BITMAP_BASE;
 
     bitmap_init(mmu_tables_bitmap, MMU_BITMAP_SIZE);
@@ -93,7 +104,7 @@ void mmu_init(range_Range *memory_map, uint64_t memory_map_length)
     assert((g_pml4 == (void *)g_mmu_map_base_address) && "Expected g_pml4 to be located at the first available address");
     mmu_table_init(g_pml4);
 
-    mmu_map_range(BOOTLOADER_STAGE2_BEGIN, BOOTLOADER_STAGE2_END, BOOTLOADER_STAGE2_BEGIN, MMU_READ_WRITE);
+    mmu_map_range(BOOTLOADER_STAGE2_BEGIN, bootloader_end_addr, BOOTLOADER_STAGE2_BEGIN, MMU_READ_WRITE);
     mmu_map_range(STACK_BEGIN, STACK_END, STACK_BEGIN, MMU_READ_WRITE);
     mmu_map_range(MMU_STRUCTURES_START, MMU_STRUCTURES_END, MMU_STRUCTURES_START, MMU_READ_WRITE);
     mmu_map_range(VGA_BEGIN, VGA_END, VGA_BEGIN, MMU_READ_WRITE);
@@ -126,6 +137,8 @@ void mmu_init(range_Range *memory_map, uint64_t memory_map_length)
                      :
                      :
                      : EAX_RAX, "cc");
+
+    return g_mmu_map_base_address;
 }
 
 void mmu_table_init(void *address)
