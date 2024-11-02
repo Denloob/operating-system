@@ -9,6 +9,7 @@
 #define TAKE_DEFAULT_VALUE -1
 #define FAT16_CLUSTER_FREE 0x0000
 #define FAT16_CLUSTER_EOF  0xFFFF
+#define FAT16_FILENAME_SIZE (8+3) //(filename + extension)
 
 bool fat16_read_BPB(Drive *drive, fat16_BootSector *bpb)
 {
@@ -18,7 +19,6 @@ bool fat16_read_BPB(Drive *drive, fat16_BootSector *bpb)
         return false;
 
     *bpb = *(fat16_BootSector *)buf;
-
     return true;
 }
 
@@ -33,6 +33,36 @@ bool fat16_read_sectors(Drive *drive, uint32_t sector, uint8_t *buffer,
     if (count == TAKE_DEFAULT_VALUE)
         count = SECTOR_SIZE;
     return drive_read(drive, sector, buffer, count * SECTOR_SIZE);
+}
+
+
+
+void fat16_init_dir_reader(fat16_DirReader *reader, fat16_BootSector *bpb) 
+{
+    reader->current_sector = bpb->reservedSectors + bpb->FATSize * bpb->numFATs;
+    reader->root_dir_start = reader->current_sector;
+    reader->root_dir_end = reader->root_dir_start + (bpb->rootEntryCount * sizeof(fat16_DirEntry) + SECTOR_SIZE - 1) / SECTOR_SIZE;
+    reader->entry_offset = 0;
+}
+
+
+bool fat16_read_next_root_entry(Drive *drive, fat16_DirReader *reader, fat16_DirEntry *entry)
+{
+    if (reader->current_sector >= reader->root_dir_end) return false;
+
+    uint8_t sector_buf[SECTOR_SIZE];
+    if (!drive_read(drive, reader->current_sector, sector_buf, SECTOR_SIZE))
+        return false;
+    *entry = *(fat16_DirEntry *)(sector_buf + reader->entry_offset);
+
+    reader->entry_offset += sizeof(fat16_DirEntry);
+    if (reader->entry_offset >= SECTOR_SIZE)
+    {
+        reader->entry_offset = 0;
+        reader->current_sector++;
+    }
+
+    return true;
 }
 
 bool fat16_read_root_directory(Drive *drive, fat16_BootSector *bpb, fat16_DirEntry *dir_entries_arr, size_t dir_entries_len)
@@ -65,23 +95,17 @@ bool fat16_read_root_directory(Drive *drive, fat16_BootSector *bpb, fat16_DirEnt
     return true;
 }
 
-bool fat16_find_file(Drive *drive, fat16_BootSector *bpb,
-                     fat16_DirEntry *direntry_arr, size_t dir_size,
-                     const char *filename, fat16_DirEntry **out_file)
+bool fat16_find_file(Drive *drive, fat16_BootSector *bpb, const char *filename, fat16_DirEntry *out_file)
 {
-    for (uint32_t i = 0; i < dir_size; i++)
+    fat16_DirReader reader;
+    fat16_init_dir_reader(&reader, bpb);
+
+    fat16_DirEntry entry;
+    while (fat16_read_next_root_entry(drive, &reader, &entry)) 
     {
-
-// FAT16 uses a 8.3 file name. If extension or filename is shorter that 3 or 8
-// bytes accordingly, the missing part is padded with spaces. As both are stored
-// near each other in memory, we can simply memcmp the beginning of the one to
-// the full filename.
-#define FAT16_FILENAME_SIZE                                                    \
-    (sizeof(direntry_arr->filename) + sizeof(direntry_arr->extension))
-
-        if (memcmp(filename, direntry_arr[i].filename, FAT16_FILENAME_SIZE) == 0)
+        if (memcmp(filename, entry.filename, FAT16_FILENAME_SIZE) == 0) 
         {
-            *out_file = &direntry_arr[i];
+            *out_file = entry;
             return true;
         }
     }
@@ -131,15 +155,13 @@ bool fat16_open(fat16_Ref *fat16, char *path, fat16_File *out_file)
 
     out_file->ref = fat16;
 
-    fat16_DirEntry root[fat16->bpb.rootEntryCount];
-    bool success = fat16_read_root_directory(fat16->drive , &fat16->bpb , root, fat16->bpb.rootEntryCount);
-    if (!success) return false;
+    fat16_DirEntry dir_entry;
+    if (!fat16_find_file(fat16->drive, &fat16->bpb, path, &dir_entry)) 
+    {
+        return false;
+    }
 
-    fat16_DirEntry *dir_entry_ptr;
-    success = fat16_find_file(fat16->drive, &fat16->bpb, root, fat16->bpb.rootEntryCount, path, &dir_entry_ptr);
-    if (!success) return false;
-
-    out_file->file_entry = *dir_entry_ptr;
+    out_file->file_entry = dir_entry;
     return true;
 }
 

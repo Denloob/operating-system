@@ -55,6 +55,8 @@ typedef struct
     uint32_t fileSize;
 } __attribute__((packed)) fat16_DirEntry;
 
+
+
 // reads the bootsector of the drive into a the address given (third argument / buffer)
 bool fat16_read_BPB(Drive *drive , fat16_BootSector *bpb);
 // reads the FAT in the drive into a given buffer (named FAT)
@@ -62,11 +64,29 @@ bool fat16_read_FAT(Drive *drive , fat16_BootSector *bpb , uint8_t *FAT);
 
 bool fat16_read_sectors(Drive *drive, uint32_t sector, uint8_t *buffer , uint32_t count);
 
+
+//new algo functions
+typedef struct 
+{
+    uint32_t current_sector;
+    uint32_t entry_offset;
+    uint32_t root_dir_start;
+    uint32_t root_dir_end;
+} fat16_DirReader;
+
+void fat16_init_dir_reader(fat16_DirReader *reader, fat16_BootSector *bpb);
+bool fat16_read_next_root_entry(Drive *drive, fat16_DirReader *reader, fat16_DirEntry *entry);
+//----------------
+
 bool fat16_read_root_directory(Drive *drive, fat16_BootSector *bpb, fat16_DirEntry *dir_entries_arr, size_t dir_entries_len);
 
-bool fat16_find_file(Drive *drive, fat16_BootSector *bpb,
+
+/*bool fat16_find_file(Drive *drive, fat16_BootSector *bpb,
                      fat16_DirEntry *direntry_arr, size_t dir_size,
                      const char *filename, fat16_DirEntry **out_file);
+*/
+//new ver of fat16_find_file
+bool fat16_find_file(Drive *drive, fat16_BootSector *bpb, const char *filename, fat16_DirEntry *out_file);
 
 typedef struct
 {
@@ -91,13 +111,13 @@ bool fat16_ref_init(fat16_Ref *fat16, Drive *drive);
 /**
  * @brief Opens a path
  *
- * @param path The path to the file to open
- * @param out_file[out] The opened file
+ * @param path - The path to the file to open
+ * @param out_file[out] - The opened file
  * @return if succeeded
  *
  * @see fat16_ref_init
  */
-bool fat16_open(fat16_Ref *fat16, char *path, fat16_File *out_file);
+bool fat16_open(fat16_Ref *fat16, char *path, fat16_File *out_file); //changed the function to work with the new algo 
 
 /**
  * @brief Reads the whole file contents into out_buffer.
