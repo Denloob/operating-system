@@ -61,7 +61,7 @@ void start(uint16_t drive_id)
         }
     }
     assert(kernel_physical_address && "No consecutive physical RAM for the kernel was found\n");
-    printf("[*] Chose kernel location - 0x%lx", kernel_physical_address);
+    printf("[*] Chose kernel location - 0x%lx\n", kernel_physical_address);
 
     success = fat16_read(&file, kernel_physical_address);
     assert(success && "fat16_read");
