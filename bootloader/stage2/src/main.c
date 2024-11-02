@@ -71,7 +71,7 @@ void start(uint16_t drive_id)
 
     printf("[*] Preparing for warp jump...\n");
 
-    mmu_map_range((uint64_t)kernel_physical_address, KERNEL_BEGIN + file.file_entry.fileSize, KERNEL_BEGIN, MMU_READ_WRITE);
+    mmu_map_range((uint64_t)kernel_physical_address, (uint64_t)kernel_physical_address + file.file_entry.fileSize, KERNEL_BEGIN, MMU_READ_WRITE);
 
     main_gdt_long_mode_init();
 
