@@ -1,5 +1,6 @@
 #pragma once
 
+#include "range.h"
 #include <stddef.h>
 #include <stdint.h>
 
@@ -55,7 +56,7 @@ typedef struct
 
 extern mmu_PageMapEntry *pml4;
 
-void mmu_init();
+void mmu_init(range_Range *memory_map, uint64_t memory_map_length);
 uint64_t mmu_page_table_entry_address_get(void *page_map_ptr);
 void mmu_page_table_entry_address_set(void *page_map_ptr, uint64_t address);
 void mmu_table_init(void *address);

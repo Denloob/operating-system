@@ -1,4 +1,5 @@
 #include "mmu.h"
+#include "range.h"
 #include "bitmap.h"
 #include "bitmap.h"
 #include "memory.h"
@@ -8,6 +9,9 @@
 
 #define TABLE_LENGTH 512
 #define KILOBYTE 4096
+#define PAGE_SIZE KILOBYTE
+#define PAGE_ALIGN_UP(address)   (((address) + PAGE_SIZE - 1) & ~(PAGE_SIZE - 1))
+#define PAGE_ALIGN_DOWN(address) ((address) & ~(PAGE_SIZE - 1))
 
 #define TABLE_SIZE_BYTES (TABLE_LENGTH * sizeof(mmu_PageMapEntry))
 
@@ -15,14 +19,16 @@
 #define MMU_BITMAP_SIZE (MMU_TABLE_COUNT / 8)
 #define MMU_BITMAP_LENGTH MMU_TABLE_COUNT
 
-#define MMU_MAP_BASE 0x100000
+#define MMU_MAP_BASE_VIRTUAL_ADDR 0x100000
+uint64_t g_mmu_map_base_physical_address;
+uint64_t g_mmu_map_base_address; // physical addr when paging is off, and virtual when is on
 
 #define MMU_ALL_TABLES_SIZE (MMU_TABLE_COUNT * TABLE_SIZE_BYTES)
 #define MMU_TOTAL_CHUNK_SIZE (MMU_BITMAP_SIZE + MMU_ALL_TABLES_SIZE)
 
-#define MMU_BITMAP_BASE (MMU_MAP_BASE + MMU_ALL_TABLES_SIZE)
+#define MMU_BITMAP_BASE (g_mmu_map_base_address + MMU_ALL_TABLES_SIZE)
 
-#define MMU_STRUCTURES_START MMU_MAP_BASE
+#define MMU_STRUCTURES_START g_mmu_map_base_address
 #define MMU_STRUCTURES_END (MMU_STRUCTURES_START + MMU_TOTAL_CHUNK_SIZE)
 #define BOOTLOADER_STAGE2_BEGIN 0
 #define BOOTLOADER_STAGE2_END (7 * KILOBYTE)
@@ -33,8 +39,7 @@
 #define VGA_BEGIN 0xb8000
 #define VGA_END 0xb8fa0
 
-
-Bitmap *mmu_tables_bitmap = (Bitmap *)MMU_BITMAP_BASE;
+Bitmap *mmu_tables_bitmap;
 
 void *mmu_map_allocate()
 {
@@ -43,7 +48,7 @@ void *mmu_map_allocate()
         if (!bitmap_test(mmu_tables_bitmap, i))
         {
             bitmap_set(mmu_tables_bitmap, i);
-            return (void *)(MMU_MAP_BASE + i * TABLE_SIZE_BYTES);
+            return (void *)(g_mmu_map_base_address + i * TABLE_SIZE_BYTES);
         }
     }
 
@@ -57,7 +62,7 @@ void mmu_map_deallocate(void *address)
     bitmap_clear(mmu_tables_bitmap, index);
 }
 
-mmu_PageMapEntry *g_pml4 = (void *)MMU_MAP_BASE; // NOTE: even though it has a value, it SHALL NOT be used before mmu_init was called.
+mmu_PageMapEntry *g_pml4 = (void *)MMU_MAP_BASE_VIRTUAL_ADDR; // NOTE: even though it has a value, it SHALL NOT be used before mmu_init was called.
 
 mmu_PageTableEntry *mmu_page_allocate(uint64_t virtual, uint64_t physical)
 {
@@ -68,11 +73,23 @@ mmu_PageTableEntry *mmu_page_allocate(uint64_t virtual, uint64_t physical)
     return page;
 }
 
-void mmu_init()
+void mmu_init(range_Range *memory_map, uint64_t memory_map_length)
 {
+    for (int i = 0; i < memory_map_length; i++)
+    {
+        if (memory_map[i].size >= MMU_TOTAL_CHUNK_SIZE)
+        {
+            g_mmu_map_base_physical_address = memory_map[i].begin;
+            memory_map[i].begin += PAGE_ALIGN_UP(MMU_TOTAL_CHUNK_SIZE);
+            memory_map[i].size -= PAGE_ALIGN_UP(MMU_TOTAL_CHUNK_SIZE);
+        }
+    }
+    assert(g_mmu_map_base_physical_address && "No consecutive physical RAM for the MMU structures were found\n");
+    mmu_tables_bitmap = (Bitmap *)MMU_BITMAP_BASE;
+
     bitmap_init(mmu_tables_bitmap, MMU_BITMAP_SIZE);
     g_pml4 = mmu_map_allocate();
-    assert((g_pml4 == (void *)MMU_MAP_BASE) && "Expected g_pml4 to be located at the first available address");
+    assert((g_pml4 == (void *)g_mmu_map_base_address) && "Expected g_pml4 to be located at the first available address");
     mmu_table_init(g_pml4);
 
     mmu_map_range(BOOTLOADER_STAGE2_BEGIN, BOOTLOADER_STAGE2_END, BOOTLOADER_STAGE2_BEGIN, MMU_READ_WRITE);
