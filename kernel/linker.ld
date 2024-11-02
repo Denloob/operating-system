@@ -1,6 +1,6 @@
 ENTRY(kernel_main)
 OUTPUT_FORMAT("binary")
-phys = 0x7e00;
+phys = 0x8000000;
 SECTIONS
 {
     . = phys;

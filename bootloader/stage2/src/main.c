@@ -16,7 +16,7 @@ extern char __end;
 #define PAGE_ALIGN_DOWN(address) ((address) & ~(PAGE_SIZE - 1))
 
 typedef void (*kernel_main)(Drive drive);
-#define KERNEL_BEGIN 0x7e00
+#define KERNEL_BEGIN 0x8000000
 #define KERNEL_BASE_ADDRESS (kernel_main)KERNEL_BEGIN
 
 #define MEMORY_MAP_MAX_LENGTH (0x1000 / sizeof(range_Range)) // HACK: having all the ranges fit inside a single page makes implementation easier.
