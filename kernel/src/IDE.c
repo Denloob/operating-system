@@ -254,7 +254,7 @@ void ide_read_sector(unsigned int drive, unsigned int sector, unsigned char *buf
     //pooling
     while (ide_polling(ide_devices[drive].Channel, 1));
 
-    ide_read_buffer(ide_devices[drive].Channel, ATA_REG_DATA, (unsigned int *)buffer, 256);
+    ide_read_buffer(ide_devices[drive].Channel, ATA_REG_DATA, (unsigned int *)buffer, 128);
 }
 
 void ide_write_sector(unsigned int drive, unsigned int sector, unsigned char *buffer) {
@@ -266,7 +266,7 @@ void ide_write_sector(unsigned int drive, unsigned int sector, unsigned char *bu
     ide_write(ide_devices[drive].Channel, ATA_REG_LBA2, (sector >> 16) & 0xFF);
     ide_write(ide_devices[drive].Channel, ATA_REG_COMMAND, ATA_CMD_WRITE_PIO);
 
-    ide_write_buffer(ide_devices[drive].Channel, ATA_REG_DATA, (unsigned int *)buffer, 256);
+    ide_write_buffer(ide_devices[drive].Channel, ATA_REG_DATA, (unsigned int *)buffer, 128);
 
     //polling
     while (ide_polling(ide_devices[drive].Channel, 1));
