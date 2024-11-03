@@ -29,14 +29,15 @@
 
 //STATUS
 
-#define ATA_SR_BSY     0x80    // Busy
-#define ATA_SR_DRDY    0x40    // Drive ready
-#define ATA_SR_DF      0x20    // Drive write fault
+#define ATA_SR_BSY     0x80    // Busy - Indicates the drive is preparing to send/receive data (wait for it to clear). In case of 'hang' (it never clears), do a software reset.
+#define ATA_SR_DRDY    0x40    // Drive ready - Bit is clear when drive is spun down, or after an error. Set otherwise.
+#define ATA_SR_DF      0x20    // Drive write fault - Drive Fault Error (does not set ERR!!).
+// NOTE: on osdev 0x10 is SRV - overlapped mode service request. IDK if the following is correct
 #define ATA_SR_DSC     0x10    // Drive seek complete
-#define ATA_SR_DRQ     0x08    // Data request ready
-#define ATA_SR_CORR    0x04    // Corrected data
-#define ATA_SR_IDX     0x02    // Index
-#define ATA_SR_ERR     0x01    // Error
+#define ATA_SR_DRQ     0x08    // Data request ready - Set when the drive has PIO data to transfer, or is ready to accept PIO data.
+#define ATA_SR_CORR    0x04    // Corrected data - Always set to zero.
+#define ATA_SR_IDX     0x02    // Index - Always set to zero.
+#define ATA_SR_ERR     0x01    // Error - Indicates an error occurred. Send a new command to clear it (or nuke it with a Software Reset).
 
 //Errors
 
