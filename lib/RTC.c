@@ -4,7 +4,7 @@
 #define RTC_ADDRESS 0x70
 #define RTC_DATA    0x71
 #define RTC_BASE_YEAR 2000
-#define TIME_ZONE_OFFSET 3
+#define TIME_ZONE_OFFSET 2
 
 /**
  * @brief Reads a specific RTC register.
