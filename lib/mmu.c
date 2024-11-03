@@ -86,17 +86,9 @@ void mmu_init_post_init(uint64_t mmu_map_base_address)
 
 uint64_t mmu_init(range_Range *memory_map, uint64_t memory_map_length, uint64_t bootloader_end_addr)
 {
-    for (int i = 0; i < memory_map_length; i++)
-    {
-        if (memory_map[i].size >= MMU_TOTAL_CHUNK_SIZE)
-        {
-            g_mmu_map_base_address = memory_map[i].begin;
-            memory_map[i].begin += PAGE_ALIGN_UP(MMU_TOTAL_CHUNK_SIZE);
-            memory_map[i].size -= PAGE_ALIGN_UP(MMU_TOTAL_CHUNK_SIZE);
-            break;
-        }
-    }
-    assert(g_mmu_map_base_address && "No consecutive physical RAM for the MMU structures were found\n");
+    bool success = range_pop_of_size(memory_map, memory_map_length, PAGE_ALIGN_UP(MMU_TOTAL_CHUNK_SIZE), &g_mmu_map_base_address);
+    assert(success && "No consecutive physical RAM for the MMU structures were found\n");
+
     mmu_tables_bitmap = (Bitmap *)MMU_BITMAP_BASE;
 
     bitmap_init(mmu_tables_bitmap, MMU_BITMAP_SIZE);

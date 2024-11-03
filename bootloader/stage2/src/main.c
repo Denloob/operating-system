@@ -8,6 +8,7 @@
 #include "main.h"
 #include "mmu.h"
 #include "memory.h"
+#include <stdint.h>
 
 extern char __end;
 
@@ -18,6 +19,8 @@ extern char __end;
 typedef void (*kernel_main)(Drive drive);
 #define KERNEL_BEGIN 0x8000000
 #define KERNEL_BASE_ADDRESS (kernel_main)KERNEL_BEGIN
+
+#define MAX_DRIVE_READ_ADDRESS (0x100000 - 1) // Under one mebibyte
 
 #define MEMORY_MAP_MAX_LENGTH (0x1000 / sizeof(range_Range)) // HACK: having all the ranges fit inside a single page makes implementation easier.
 // Following number is chosen because the range 0x00007E00..0x0007FFFF should be free of use.
@@ -49,21 +52,16 @@ void start(uint16_t drive_id)
     success = fat16_open(&fat16, "KERNEL  BIN", &file); //  HACK: fat16 should be case insensitive!
     assert(success && "fat16_open");
 
-    uint8_t *kernel_physical_address = NULL;
-    for (int i = 0; i < memory_map_length; i++)
-    {
-        if (memory_map[i].size >= file.file_entry.fileSize)
-        {
-            kernel_physical_address = (void *)memory_map[i].begin;
-            memory_map[i].begin += PAGE_ALIGN_UP(file.file_entry.fileSize);
-            memory_map[i].size -= PAGE_ALIGN_UP(file.file_entry.fileSize);
-            break;
-        }
-    }
-    assert(kernel_physical_address && "No consecutive physical RAM for the kernel was found\n");
+    const uint64_t kernel_size = file.file_entry.fileSize;
+
+    uint64_t kernel_physical_address = 0;
+    success = range_pop_of_size(memory_map, memory_map_length,
+                                PAGE_ALIGN_UP(kernel_size), &kernel_physical_address);
+    assert(success && "No consecutive physical RAM for the kernel was found\n");
+    assert(kernel_physical_address + kernel_size < MAX_DRIVE_READ_ADDRESS && "The address chosen for kernel ");
     printf("[*] Chose kernel location - 0x%lx\n", kernel_physical_address);
 
-    success = fat16_read(&file, kernel_physical_address);
+    success = fat16_read(&file, (void *)kernel_physical_address);
     assert(success && "fat16_read");
 
     printf("[*] Initializing paging\n");
@@ -71,7 +69,7 @@ void start(uint16_t drive_id)
 
     printf("[*] Preparing for warp jump...\n");
 
-    mmu_map_range((uint64_t)kernel_physical_address, (uint64_t)kernel_physical_address + file.file_entry.fileSize, KERNEL_BEGIN, MMU_READ_WRITE);
+    mmu_map_range((uint64_t)kernel_physical_address, (uint64_t)kernel_physical_address + kernel_size, KERNEL_BEGIN, MMU_READ_WRITE);
     mmu_map_range((uint64_t)memory_map, (uint64_t)(memory_map + PAGE_SIZE), (uint64_t)memory_map, MMU_READ_WRITE | MMU_EXECUTE_DISABLE);
 
     main_gdt_long_mode_init();

@@ -59,18 +59,8 @@ void __attribute__((section(".entry"), sysv_abi)) kernel_main(uint32_t param_mmu
 
     uint64_t bss_size = PAGE_ALIGN_UP((uint64_t)&__bss_end - (uint64_t)&__bss_start);
     uint64_t bss_physical_address = 0;
-    bool bss_physical_address_found = false;
-    for (int i = 0; i < memory_map_length; i++)
-    {
-        if (memory_map[i].size >= bss_size)
-        {
-            bss_physical_address = memory_map[i].begin;
-            memory_map[i].begin += bss_size;
-            memory_map[i].size -= bss_size;
-            bss_physical_address_found = true;
-            break;
-        }
-    }
+    bool bss_physical_address_found = range_pop_of_size(
+        memory_map, memory_map_length, bss_size, &bss_physical_address);
     assert(bss_physical_address_found && "Couldn't find a memory region for kernel bss section");
     mmu_map_range(bss_physical_address, bss_physical_address + bss_size, (uint64_t)&__bss_start, MMU_READ_WRITE | MMU_EXECUTE_DISABLE);
     mmu_tlb_flush_all();
