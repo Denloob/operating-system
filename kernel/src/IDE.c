@@ -59,7 +59,7 @@ void ide_read_buffer(unsigned char channel, unsigned char reg , unsigned int *bu
       ide_write(channel, ATA_REG_CONTROL, channels[channel].nIEN);
 }
 
-unsigned char ide_polling(unsigned char channel, unsigned int advanced_check) 
+unsigned char ide_polling(unsigned char channel) 
 {
 
    // (I) Delay 400 nanosecond for BSY to be set:
@@ -69,32 +69,11 @@ unsigned char ide_polling(unsigned char channel, unsigned int advanced_check)
 
    // (II) Wait for BSY to be cleared:
    // -------------------------------------------------
-   while (ide_read(channel, ATA_REG_STATUS) & ATA_SR_BSY)
+   unsigned char state;
+   while ((state = ide_read(channel, ATA_REG_STATUS) & ATA_SR_BSY))
       ; // Wait for BSY to be zero.
 
-   if (advanced_check) {
-      unsigned char state = ide_read(channel, ATA_REG_STATUS); // Read Status Register.
-
-      // (III) Check For Errors:
-      // -------------------------------------------------
-      if (state & ATA_SR_ERR)
-         return 2; // Error.
-
-      // (IV) Check If Device fault:
-      // -------------------------------------------------
-      if (state & ATA_SR_DF)
-         return 1; // Device Fault.
-
-      // (V) Check DRQ:
-      // -------------------------------------------------
-      // BSY = 0; DF = 0; ERR = 0 so we should check for DRQ now.
-      if ((state & ATA_SR_DRQ) == 0)
-         return 3; // DRQ should be set
-
-   }
-
-   return 0; // No Error.
-
+   return state;
 }
 
 unsigned char ide_print_error(unsigned int drive, unsigned char err)
@@ -242,7 +221,7 @@ void ide_write_buffer(unsigned char channel, unsigned char reg, unsigned int *bu
     }
 }
 
-void ide_read_sector(unsigned int drive, unsigned int sector, unsigned char *buffer) {
+bool ide_read_sector(unsigned int drive, unsigned int sector, unsigned char *buffer) {
     //issue read command
     ide_write(ide_devices[drive].Channel, ATA_REG_HDDEVSEL, 0xE0 | (ide_devices[drive].Drive << 4));
     ide_write(ide_devices[drive].Channel, ATA_REG_SECCOUNT0, 1); // Set sector count to 1
@@ -251,13 +230,14 @@ void ide_read_sector(unsigned int drive, unsigned int sector, unsigned char *buf
     ide_write(ide_devices[drive].Channel, ATA_REG_LBA2, (sector >> 16) & 0xFF);
     ide_write(ide_devices[drive].Channel, ATA_REG_COMMAND, ATA_CMD_READ_PIO);
 
-    //pooling
-    while (ide_polling(ide_devices[drive].Channel, 1));
+    uint8_t drive_state = ide_polling(ide_devices[drive].Channel);
+    if (drive_state & ATA_SR_ERR) return false;
 
     ide_read_buffer(ide_devices[drive].Channel, ATA_REG_DATA, (unsigned int *)buffer, 128);
+    return true;
 }
 
-void ide_write_sector(unsigned int drive, unsigned int sector, unsigned char *buffer) {
+bool ide_write_sector(unsigned int drive, unsigned int sector, unsigned char *buffer) {
     //issue the write command
     ide_write(ide_devices[drive].Channel, ATA_REG_HDDEVSEL, 0xE0 | (ide_devices[drive].Drive << 4));
     ide_write(ide_devices[drive].Channel, ATA_REG_SECCOUNT0, 1); // Set sector count to 1
@@ -266,9 +246,12 @@ void ide_write_sector(unsigned int drive, unsigned int sector, unsigned char *bu
     ide_write(ide_devices[drive].Channel, ATA_REG_LBA2, (sector >> 16) & 0xFF);
     ide_write(ide_devices[drive].Channel, ATA_REG_COMMAND, ATA_CMD_WRITE_PIO);
 
+    uint8_t drive_state = ide_polling(ide_devices[drive].Channel);
+    if (drive_state & ATA_SR_ERR) return false;
+
     ide_write_buffer(ide_devices[drive].Channel, ATA_REG_DATA, (unsigned int *)buffer, 128);
 
-    //polling
-    while (ide_polling(ide_devices[drive].Channel, 1));
+    drive_state = ide_polling(ide_devices[drive].Channel);
+    return (drive_state & ATA_SR_ERR) == 0;
 }
 
