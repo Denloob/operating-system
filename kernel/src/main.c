@@ -41,7 +41,7 @@ static void init_idt();
 IDEChannelRegisters channels[2];
 ide_device ide_devices[4];
 
-void test_ide();
+int ide_init();
 
 void __attribute__((section(".entry"), sysv_abi)) kernel_main(uint32_t param_mmu_map_base_address, uint32_t param_memory_map, uint32_t param_memory_map_length)
 {
@@ -84,9 +84,8 @@ void __attribute__((section(".entry"), sysv_abi)) kernel_main(uint32_t param_mmu
     
     //IDE scan
     puts("Starting IDE scan");
-    test_ide();
+    const int drive = ide_init();
 
-    const int drive = 0;
     const int sector = 160;
 
     uint8_t buffer[512] = "Hello";
@@ -149,18 +148,28 @@ static void init_idt()
     asm volatile("lidt %0" : : "m"(idtd));
 }
 
-void test_ide() {
+int ide_init() {
     ide_initialize(BAR0, BAR1, BAR2, BAR3, BAR4);
+    int primary_drive_number = -1;
     for (int i = 0; i < 4; i++) 
     {
-        if (ide_devices[i].Reserved)
+        if (!ide_devices[i].Reserved)
+            continue;
+
+        printf("IDE Device %d:\n", i);
+        printf("  Model: %s\n", ide_devices[i].Model);
+        printf("  Type: %s\n", ide_devices[i].Type == IDE_ATA ? "ATA" : "ATAPI");
+        printf("  Size: %d sectors\n", ide_devices[i].Size);
+        printf("  Channel: %s\n", ide_devices[i].Channel == ATA_PRIMARY ? "Primary" : "Secondary");
+        printf("  Drive: %s\n", ide_devices[i].Drive == ATA_MASTER ? "Master" : "Slave");
+        if (ide_devices[i].Channel == ATA_PRIMARY && ide_devices[i].Size && ide_devices[i].Drive == ATA_MASTER)
         {
-            printf("IDE Device %d:\n", i);
-            printf("  Model: %s\n", ide_devices[i].Model);
-            printf("  Type: %s\n", ide_devices[i].Type == IDE_ATA ? "ATA" : "ATAPI");
-            printf("  Size: %d sectors\n", ide_devices[i].Size);
-            printf("  Channel: %s\n", ide_devices[i].Channel == ATA_PRIMARY ? "Primary" : "Secondary");
-            printf("  Drive: %s\n", ide_devices[i].Drive == ATA_MASTER ? "Master" : "Slave");
+            primary_drive_number = i;
         }
     }
+
+    assert(primary_drive_number >= 0 && "Main (IDE) drive was not found");
+    printf("[*] Selected device %d: %s\n", primary_drive_number,
+           ide_devices[primary_drive_number].Model);
+    return primary_drive_number;
 }
