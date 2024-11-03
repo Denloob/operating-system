@@ -3,9 +3,6 @@
 #include "IDE.h"
 
 uint8_t ide_buf[2048];
-volatile unsigned static char ide_irq_invoked;
-unsigned static char atapi_packet[12] = {0xA8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-
 
 
 void ide_write(uint8_t channel, uint8_t reg, uint8_t data) 
