@@ -2,13 +2,13 @@
 #include <stdint.h>
 #include "IDE.h"
 
-unsigned char ide_buf[2048] = {0};
+uint8_t ide_buf[2048] = {0};
 volatile unsigned static char ide_irq_invoked = 0;
 unsigned static char atapi_packet[12] = {0xA8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
 
 
-void ide_write(unsigned char channel, unsigned char reg, unsigned char data) 
+void ide_write(uint8_t channel, uint8_t reg, uint8_t data) 
 {
    if (reg > 0x07 && reg < 0x0C)
       ide_write(channel, ATA_REG_CONTROL, 0x80 | channels[channel].nIEN);
@@ -25,9 +25,9 @@ void ide_write(unsigned char channel, unsigned char reg, unsigned char data)
 }
 
 
-unsigned char ide_read(unsigned char channel, unsigned char reg)
+uint8_t ide_read(uint8_t channel, uint8_t reg)
 {
-   unsigned char result;
+   uint8_t result;
    if (reg > 0x07 && reg < 0x0C)
       ide_write(channel, ATA_REG_CONTROL, 0x80 | channels[channel].nIEN);
    if (reg < 0x08)
@@ -43,7 +43,7 @@ unsigned char ide_read(unsigned char channel, unsigned char reg)
    return result;
 }
 
-void ide_read_buffer(unsigned char channel, unsigned char reg , unsigned int *buffer,unsigned int quads)
+void ide_read_buffer(uint8_t channel, uint8_t reg , uint32_t *buffer,uint32_t quads)
 {
    if (reg > 0x07 && reg < 0x0C)
       ide_write(channel, ATA_REG_CONTROL, 0x80 | channels[channel].nIEN);
@@ -59,7 +59,7 @@ void ide_read_buffer(unsigned char channel, unsigned char reg , unsigned int *bu
       ide_write(channel, ATA_REG_CONTROL, channels[channel].nIEN);
 }
 
-unsigned char ide_polling(unsigned char channel) 
+uint8_t ide_polling(uint8_t channel) 
 {
 
    // (I) Delay 400 nanosecond for BSY to be set:
@@ -69,14 +69,14 @@ unsigned char ide_polling(unsigned char channel)
 
    // (II) Wait for BSY to be cleared:
    // -------------------------------------------------
-   unsigned char state;
+   uint8_t state;
    while ((state = ide_read(channel, ATA_REG_STATUS) & ATA_SR_BSY))
       ; // Wait for BSY to be zero.
 
    return state;
 }
 
-unsigned char ide_print_error(unsigned int drive, unsigned char err)
+uint8_t ide_print_error(uint32_t drive, uint8_t err)
 {
    if (err == 0)
       return err;
@@ -84,7 +84,7 @@ unsigned char ide_print_error(unsigned int drive, unsigned char err)
    printf("IDE:");
    if (err == 1) {printf("- Device Fault\n     "); err = 19;}
    else if (err == 2) {
-      unsigned char st = ide_read(ide_devices[drive].Channel, ATA_REG_ERROR);
+      uint8_t st = ide_read(ide_devices[drive].Channel, ATA_REG_ERROR);
       if (st & ATA_ER_AMNF)   {printf("- No Address Mark Found\n     ");   err = 7;}
       if (st & ATA_ER_TK0NF)   {printf("- No Media or Media Error\n     ");   err = 3;}
       if (st & ATA_ER_ABRT)   {printf("- Command Aborted\n     ");      err = 20;}
@@ -106,7 +106,7 @@ unsigned char ide_print_error(unsigned int drive, unsigned char err)
 
 
 
-void ide_initialize(unsigned int BAR0, unsigned int BAR1, unsigned int BAR2, unsigned int BAR3, unsigned int BAR4) 
+void ide_initialize(uint32_t BAR0, uint32_t BAR1, uint32_t BAR2, uint32_t BAR3, uint32_t BAR4) 
 {
 
    int j, k, count = 0;
@@ -129,7 +129,7 @@ void ide_initialize(unsigned int BAR0, unsigned int BAR1, unsigned int BAR2, uns
    for (int i = 0; i < 2; i++)
       for (j = 0; j < 2; j++) {
 
-         unsigned char err = 0, type = IDE_ATA, status;
+         uint8_t err = 0, type = IDE_ATA, status;
          ide_devices[count].Reserved = 0; // Assuming that no drive here.
 
          // (I) Select Drive:
@@ -153,8 +153,8 @@ void ide_initialize(unsigned int BAR0, unsigned int BAR1, unsigned int BAR2, uns
          // (IV) Probe for ATAPI Devices:
 
          if (err != 0) {
-            unsigned char cl = ide_read(i, ATA_REG_LBA1);
-            unsigned char ch = ide_read(i, ATA_REG_LBA2);
+            uint8_t cl = ide_read(i, ATA_REG_LBA1);
+            uint8_t ch = ide_read(i, ATA_REG_LBA2);
 
             if (cl == 0x14 && ch == 0xEB)
                type = IDE_ATAPI;
@@ -168,24 +168,24 @@ void ide_initialize(unsigned int BAR0, unsigned int BAR1, unsigned int BAR2, uns
          }
 
          // (V) Read Identification Space of the Device:
-         ide_read_buffer(i, ATA_REG_DATA, (unsigned int *) ide_buf, 128);
+         ide_read_buffer(i, ATA_REG_DATA, (uint32_t *) ide_buf, 128);
 
          // (VI) Read Device Parameters:
          ide_devices[count].Reserved     = 1;
          ide_devices[count].Type         = type;
          ide_devices[count].Channel      = i;
          ide_devices[count].Drive        = j;
-         ide_devices[count].Signature    = *((unsigned short *)(ide_buf + ATA_IDENT_DEVICETYPE));
-         ide_devices[count].Capabilities = *((unsigned short *)(ide_buf + ATA_IDENT_CAPABILITIES));
-         ide_devices[count].CommandSets  = *((unsigned int *)(ide_buf + ATA_IDENT_COMMANDSETS));
+         ide_devices[count].Signature    = *((uint16_t *)(ide_buf + ATA_IDENT_DEVICETYPE));
+         ide_devices[count].Capabilities = *((uint16_t *)(ide_buf + ATA_IDENT_CAPABILITIES));
+         ide_devices[count].CommandSets  = *((uint32_t *)(ide_buf + ATA_IDENT_COMMANDSETS));
 
          // (VII) Get Size:
          if (ide_devices[count].CommandSets & (1 << 26))
             // Device uses 48-Bit Addressing:
-            ide_devices[count].Size   = *((unsigned int *)(ide_buf + ATA_IDENT_MAX_LBA_EXT));
+            ide_devices[count].Size   = *((uint32_t *)(ide_buf + ATA_IDENT_MAX_LBA_EXT));
          else
             // Device uses CHS or 28-bit Addressing:
-            ide_devices[count].Size   = *((unsigned int *)(ide_buf + ATA_IDENT_MAX_LBA));
+            ide_devices[count].Size   = *((uint32_t *)(ide_buf + ATA_IDENT_MAX_LBA));
 
          // (VIII) String indicates model of device (like Western Digital HDD and SONY DVD-RW...):
          for(k = 0; k < 40; k += 2) {
@@ -206,12 +206,12 @@ void ide_initialize(unsigned int BAR0, unsigned int BAR1, unsigned int BAR2, uns
       }
 }
 
-void ide_write_buffer(unsigned char channel, unsigned char reg, unsigned int *buffer, unsigned int quads) {
+void ide_write_buffer(uint8_t channel, uint8_t reg, uint32_t *buffer, uint32_t quads) {
     if (reg > 0x07 && reg < 0x0C) {
         ide_write(channel, ATA_REG_CONTROL, 0x80 | channels[channel].nIEN);
     }
 
-    for (unsigned int i = 0; i < quads; i++)
+    for (uint32_t i = 0; i < quads; i++)
     {
         out_dword(channels[channel].base + reg - 0x00, buffer[i]);
     }
@@ -221,7 +221,7 @@ void ide_write_buffer(unsigned char channel, unsigned char reg, unsigned int *bu
     }
 }
 
-bool ide_read_sector(unsigned int drive, unsigned int sector, unsigned char *buffer) {
+bool ide_read_sector(uint32_t drive, uint32_t sector, uint8_t *buffer) {
     //issue read command
     ide_write(ide_devices[drive].Channel, ATA_REG_HDDEVSEL, 0xE0 | (ide_devices[drive].Drive << 4));
     ide_write(ide_devices[drive].Channel, ATA_REG_SECCOUNT0, 1); // Set sector count to 1
@@ -233,11 +233,11 @@ bool ide_read_sector(unsigned int drive, unsigned int sector, unsigned char *buf
     uint8_t drive_state = ide_polling(ide_devices[drive].Channel);
     if (drive_state & ATA_SR_ERR) return false;
 
-    ide_read_buffer(ide_devices[drive].Channel, ATA_REG_DATA, (unsigned int *)buffer, 128);
+    ide_read_buffer(ide_devices[drive].Channel, ATA_REG_DATA, (uint32_t *)buffer, 128);
     return true;
 }
 
-bool ide_write_sector(unsigned int drive, unsigned int sector, unsigned char *buffer) {
+bool ide_write_sector(uint32_t drive, uint32_t sector, uint8_t *buffer) {
     //issue the write command
     ide_write(ide_devices[drive].Channel, ATA_REG_HDDEVSEL, 0xE0 | (ide_devices[drive].Drive << 4));
     ide_write(ide_devices[drive].Channel, ATA_REG_SECCOUNT0, 1); // Set sector count to 1
@@ -249,7 +249,7 @@ bool ide_write_sector(unsigned int drive, unsigned int sector, unsigned char *bu
     uint8_t drive_state = ide_polling(ide_devices[drive].Channel);
     if (drive_state & ATA_SR_ERR) return false;
 
-    ide_write_buffer(ide_devices[drive].Channel, ATA_REG_DATA, (unsigned int *)buffer, 128);
+    ide_write_buffer(ide_devices[drive].Channel, ATA_REG_DATA, (uint32_t *)buffer, 128);
 
     drive_state = ide_polling(ide_devices[drive].Channel);
     return (drive_state & ATA_SR_ERR) == 0;

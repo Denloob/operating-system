@@ -114,43 +114,43 @@
 
 typedef struct
 {
-   unsigned short base;  // I/O Base.
-   unsigned short ctrl;  // Control Base
-   unsigned short bmide; // Bus Master IDE
-   unsigned char  nIEN;  // nIEN (No Interrupt);
+   uint16_t base;  // I/O Base.
+   uint16_t ctrl;  // Control Base
+   uint16_t bmide; // Bus Master IDE
+   uint8_t  nIEN;  // nIEN (No Interrupt);
 }  IDEChannelRegisters;
 
 typedef struct
 {
-   unsigned char  Reserved;    // 0 (Empty) or 1 (This Drive really exists).
-   unsigned char  Channel;     // 0 (Primary Channel) or 1 (Secondary Channel).
-   unsigned char  Drive;       // 0 (Master Drive) or 1 (Slave Drive).
-   unsigned short Type;        // 0: ATA, 1:ATAPI.
-   unsigned short Signature;   // Drive Signature
-   unsigned short Capabilities;// Features.
-   unsigned int   CommandSets; // Command Sets Supported.
-   unsigned int   Size;        // Size in Sectors.
-   unsigned char  Model[41];   // Model in string.
+   uint8_t  Reserved;    // 0 (Empty) or 1 (This Drive really exists).
+   uint8_t  Channel;     // 0 (Primary Channel) or 1 (Secondary Channel).
+   uint8_t  Drive;       // 0 (Master Drive) or 1 (Slave Drive).
+   uint16_t Type;        // 0: ATA, 1:ATAPI.
+   uint16_t Signature;   // Drive Signature
+   uint16_t Capabilities;// Features.
+   uint32_t CommandSets; // Command Sets Supported.
+   uint32_t Size;        // Size in Sectors.
+   uint8_t  Model[41];   // Model in string.
 } ide_device;
 
 extern IDEChannelRegisters channels[2];
 
 extern ide_device ide_devices[4];
 
-void ide_write(unsigned char channel, unsigned char reg, unsigned char data);
+void ide_write(uint8_t channel, uint8_t reg, uint8_t data);
 
-unsigned char ide_read(unsigned char channel, unsigned char reg);
+uint8_t ide_read(uint8_t channel, uint8_t reg);
 
-void ide_read_buffer(unsigned char channel, unsigned char reg, unsigned int *buffer, unsigned int quads);
+void ide_read_buffer(uint8_t channel, uint8_t reg, uint32_t *buffer, uint32_t quads);
 
-unsigned char ide_polling(unsigned char channel);
+uint8_t ide_polling(uint8_t channel);
 
-unsigned char ide_print_error(unsigned int drive, unsigned char err);
+uint8_t ide_print_error(uint32_t drive, uint8_t err);
 
-void ide_initialize(unsigned int BAR0, unsigned int BAR1, unsigned int BAR2, unsigned int BAR3, unsigned int BAR4);
+void ide_initialize(uint32_t BAR0, uint32_t BAR1, uint32_t BAR2, uint32_t BAR3, uint32_t BAR4);
 
-void ide_write_buffer(unsigned char channel, unsigned char reg, unsigned int *buffer, unsigned int quads);
+void ide_write_buffer(uint8_t channel, uint8_t reg, uint32_t *buffer, uint32_t quads);
 
-bool ide_read_sector(unsigned int drive, unsigned int sector, unsigned char *buffer);
+bool ide_read_sector(uint32_t drive, uint32_t sector, uint8_t *buffer);
 
-bool ide_write_sector(unsigned int drive, unsigned int sector, unsigned char *buffer);
+bool ide_write_sector(uint32_t drive, uint32_t sector, uint8_t *buffer);
