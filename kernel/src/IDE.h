@@ -143,7 +143,7 @@ uint8_t ide_read(uint8_t channel, uint8_t reg);
 
 void ide_read_buffer(uint8_t channel, uint8_t reg, uint32_t *buffer, uint32_t quads);
 
-uint8_t ide_polling(uint8_t channel);
+uint8_t ide_polling(uint8_t channel, bool wait_for_drq);
 
 uint8_t ide_print_error(uint32_t drive, uint8_t err);
 

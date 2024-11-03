@@ -59,7 +59,7 @@ void ide_read_buffer(uint8_t channel, uint8_t reg , uint32_t *buffer,uint32_t qu
       ide_write(channel, ATA_REG_CONTROL, channels[channel].nIEN);
 }
 
-uint8_t ide_polling(uint8_t channel) 
+uint8_t ide_polling(uint8_t channel, bool wait_for_drq)
 {
 
    // (I) Delay 400 nanosecond for BSY to be set:
@@ -67,10 +67,9 @@ uint8_t ide_polling(uint8_t channel)
    for(int i = 0; i < 4; i++)
       ide_read(channel, ATA_REG_ALTSTATUS); // Reading the Alternate Status port wastes 100ns; loop four times.
 
-   // (II) Wait for BSY to be cleared:
-   // -------------------------------------------------
+   // Wait for BSY to be cleared. If `wait_for_drq` is true, also wait for data request to be ready (ATA_SR_DRQ bit set)
    uint8_t state;
-   while ((state = ide_read(channel, ATA_REG_STATUS), state & ATA_SR_BSY))
+   while ((state = ide_read(channel, ATA_REG_STATUS), state & ATA_SR_BSY) || (wait_for_drq && (state & ATA_SR_DRQ) == 0))
       ; // Wait for BSY to be zero.
 
    return state;
@@ -230,7 +229,7 @@ bool ide_read_sector(uint32_t drive, uint32_t sector, uint8_t *buffer) {
     ide_write(ide_devices[drive].Channel, ATA_REG_LBA2, (sector >> 16) & 0xFF);
     ide_write(ide_devices[drive].Channel, ATA_REG_COMMAND, ATA_CMD_READ_PIO);
 
-    uint8_t drive_state = ide_polling(ide_devices[drive].Channel);
+    uint8_t drive_state = ide_polling(ide_devices[drive].Channel, true);
     if (drive_state & ATA_SR_ERR) return false;
 
     ide_read_buffer(ide_devices[drive].Channel, ATA_REG_DATA, (uint32_t *)buffer, 128);
@@ -246,12 +245,12 @@ bool ide_write_sector(uint32_t drive, uint32_t sector, uint8_t *buffer) {
     ide_write(ide_devices[drive].Channel, ATA_REG_LBA2, (sector >> 16) & 0xFF);
     ide_write(ide_devices[drive].Channel, ATA_REG_COMMAND, ATA_CMD_WRITE_PIO);
 
-    uint8_t drive_state = ide_polling(ide_devices[drive].Channel);
+    uint8_t drive_state = ide_polling(ide_devices[drive].Channel, true);
     if (drive_state & ATA_SR_ERR) return false;
 
     ide_write_buffer(ide_devices[drive].Channel, ATA_REG_DATA, (uint32_t *)buffer, 128);
 
-    drive_state = ide_polling(ide_devices[drive].Channel);
+    drive_state = ide_polling(ide_devices[drive].Channel, false);
     return (drive_state & ATA_SR_ERR) == 0;
 }
 
