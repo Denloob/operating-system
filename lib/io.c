@@ -281,6 +281,8 @@ int io_wait_key_raw()
 
 char key_to_char(int keycode)
 {
+    // TODO: initialize the keyboard by setting the scancode set to 1
+
     // @see https://wiki.osdev.org/PS/2_Keyboard#Scan_Code_Set_1
     switch (keycode)
     {
