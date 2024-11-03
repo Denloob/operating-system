@@ -70,7 +70,7 @@ uint8_t ide_polling(uint8_t channel)
    // (II) Wait for BSY to be cleared:
    // -------------------------------------------------
    uint8_t state;
-   while ((state = ide_read(channel, ATA_REG_STATUS) & ATA_SR_BSY))
+   while ((state = ide_read(channel, ATA_REG_STATUS), state & ATA_SR_BSY))
       ; // Wait for BSY to be zero.
 
    return state;
