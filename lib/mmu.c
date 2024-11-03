@@ -60,7 +60,7 @@ void mmu_map_deallocate(void *address)
 
 mmu_PageTableEntry *mmu_page_allocate(uint64_t virtual, uint64_t physical)
 {
-    mmu_PageTableEntry *page = mmu_page((void *)virtual);
+    mmu_PageTableEntry *page = mmu_page(virtual);
     mmu_page_table_entry_address_set(page, (uint64_t)physical);
     page->present = true;
 
@@ -186,10 +186,9 @@ mmu_PageTableEntry *mmu_page_existing(void *address)
     return entry;
 }
 
-mmu_PageTableEntry *mmu_page(void *address)
+mmu_PageTableEntry *mmu_page(uint64_t address)
 {
-    uint64_t address64 = (uint64_t)address;
-    mmu_PageIndexes page_indexes = *(mmu_PageIndexes *)&address64;
+    mmu_PageIndexes page_indexes = *(mmu_PageIndexes *)&address;
 
 
     // We set read_write to `true` for all layers except last one,
