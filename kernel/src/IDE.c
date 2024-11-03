@@ -226,3 +226,49 @@ void ide_initialize(unsigned int BAR0, unsigned int BAR1, unsigned int BAR2, uns
             ide_devices[i].Model);
       }
 }
+
+void ide_write_buffer(unsigned char channel, unsigned char reg, unsigned int *buffer, unsigned int quads) {
+    if (reg > 0x07 && reg < 0x0C) {
+        ide_write(channel, ATA_REG_CONTROL, 0x80 | channels[channel].nIEN);
+    }
+
+    for (unsigned int i = 0; i < quads; i++)
+    {
+        out_dword(channels[channel].base + reg - 0x00, buffer[i]);
+    }
+
+    if (reg > 0x07 && reg < 0x0C) {
+        ide_write(channel, ATA_REG_CONTROL, channels[channel].nIEN);
+    }
+}
+
+void ide_read_sector(unsigned int drive, unsigned int sector, unsigned char *buffer) {
+    //issue read command
+    ide_write(ide_devices[drive].Channel, ATA_REG_HDDEVSEL, 0xE0 | (ide_devices[drive].Drive << 4));
+    ide_write(ide_devices[drive].Channel, ATA_REG_SECCOUNT0, 1); // Set sector count to 1
+    ide_write(ide_devices[drive].Channel, ATA_REG_LBA0, sector & 0xFF);
+    ide_write(ide_devices[drive].Channel, ATA_REG_LBA1, (sector >> 8) & 0xFF);
+    ide_write(ide_devices[drive].Channel, ATA_REG_LBA2, (sector >> 16) & 0xFF);
+    ide_write(ide_devices[drive].Channel, ATA_REG_COMMAND, ATA_CMD_READ_PIO);
+
+    //pooling
+    while (ide_polling(ide_devices[drive].Channel, 1));
+
+    ide_read_buffer(ide_devices[drive].Channel, ATA_REG_DATA, (unsigned int *)buffer, 256);
+}
+
+void ide_write_sector(unsigned int drive, unsigned int sector, unsigned char *buffer) {
+    //issue the write command
+    ide_write(ide_devices[drive].Channel, ATA_REG_HDDEVSEL, 0xE0 | (ide_devices[drive].Drive << 4));
+    ide_write(ide_devices[drive].Channel, ATA_REG_SECCOUNT0, 1); // Set sector count to 1
+    ide_write(ide_devices[drive].Channel, ATA_REG_LBA0, sector & 0xFF);
+    ide_write(ide_devices[drive].Channel, ATA_REG_LBA1, (sector >> 8) & 0xFF);
+    ide_write(ide_devices[drive].Channel, ATA_REG_LBA2, (sector >> 16) & 0xFF);
+    ide_write(ide_devices[drive].Channel, ATA_REG_COMMAND, ATA_CMD_WRITE_PIO);
+
+    ide_write_buffer(ide_devices[drive].Channel, ATA_REG_DATA, (unsigned int *)buffer, 256);
+
+    //polling
+    while (ide_polling(ide_devices[drive].Channel, 1));
+}
+

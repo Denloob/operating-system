@@ -146,3 +146,9 @@ unsigned char ide_polling(unsigned char channel, unsigned int advanced_check);
 unsigned char ide_print_error(unsigned int drive, unsigned char err);
 
 void ide_initialize(unsigned int BAR0, unsigned int BAR1, unsigned int BAR2, unsigned int BAR3, unsigned int BAR4);
+
+void ide_write_buffer(unsigned char channel, unsigned char reg, unsigned int *buffer, unsigned int quads);
+
+void ide_read_sector(unsigned int drive, unsigned int sector, unsigned char *buffer);
+
+void ide_write_sector(unsigned int drive, unsigned int sector, unsigned char *buffer);
