@@ -78,7 +78,7 @@ void start(uint16_t drive_id)
     uint64_t new_stack_physical_addr = 0;
     success = range_pop_of_size(memory_map, memory_map_length, new_stack_size, &new_stack_physical_addr);
     assert(success && "No consecutive physical RAM for the stack found");
-    printf("[*] Chose physical address %llx for the stack\n", new_stack_physical_addr);
+    printf("[*] Chose physical address 0x%llx for the stack\n", new_stack_physical_addr);
 
     mmu_map_range(new_stack_physical_addr, new_stack_physical_addr + new_stack_size, KERNEL_STACK_VIRTUAL_ADDRESS_END - new_stack_size, MMU_READ_WRITE);
 
