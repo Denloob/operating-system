@@ -178,3 +178,19 @@ int range_cmp(range_Range *range, range_Range *other)
         return -1;
     return 0;
 }
+
+bool range_pop_of_size(range_Range *range_arr, uint64_t length, uint64_t target_range_size, uint64_t *addr_out)
+{
+    for (int i = 0; i < length; i++)
+    {
+        if (range_arr[i].size >= target_range_size)
+        {
+            *addr_out = range_arr[i].begin;
+            range_arr[i].begin += target_range_size;
+            range_arr[i].size -= target_range_size;
+            return true;
+        }
+    }
+
+    return false;
+}
