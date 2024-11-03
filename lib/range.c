@@ -181,6 +181,8 @@ int range_cmp(range_Range *range, range_Range *other)
 
 bool range_pop_of_size(range_Range *range_arr, uint64_t length, uint64_t target_range_size, uint64_t *addr_out)
 {
+    assert((target_range_size & 0xfff) == 0 && "The range length has to be page aligned"); // This is technically not a `range` feature, but if it ever becomes a problem, separate it into two functions.
+
     for (int i = 0; i < length; i++)
     {
         if (range_arr[i].size >= target_range_size)
