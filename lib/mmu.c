@@ -8,8 +8,7 @@
 
 
 #define TABLE_LENGTH 512
-#define KILOBYTE 4096
-#define PAGE_SIZE KILOBYTE
+#define PAGE_SIZE 0x1000
 #define PAGE_ALIGN_UP(address)   (((address) + PAGE_SIZE - 1) & ~(PAGE_SIZE - 1))
 #define PAGE_ALIGN_DOWN(address) ((address) & ~(PAGE_SIZE - 1))
 
@@ -33,7 +32,7 @@ mmu_PageMapEntry *g_pml4 = 0;
 #define BOOTLOADER_STAGE2_BEGIN 0
 
 #define STACK_END 0x8000
-#define STACK_BEGIN (STACK_END - KILOBYTE * 3)
+#define STACK_BEGIN (STACK_END - PAGE_SIZE * 3)
 
 #define VGA_BEGIN 0xb8000
 #define VGA_END 0xb8fa0
@@ -228,7 +227,7 @@ void mmu_map_range(uint64_t physical_begin, uint64_t physical_end,
                    uint64_t virtual_begin, int flags)
 {
     for (uint64_t virt = virtual_begin & (~0xfff), phys = physical_begin & (~0xfff);
-         phys < physical_end; phys += KILOBYTE, virt += KILOBYTE)
+         phys < physical_end; phys += PAGE_SIZE, virt += PAGE_SIZE)
     {
         mmu_PageTableEntry *page = mmu_page_allocate(virt, phys);
         page->read_write = flags & MMU_READ_WRITE;
@@ -249,7 +248,7 @@ void mmu_page_range_set_flags(void *virtual_address_begin, void *virtual_address
     uint64_t virtual_begin = (uint64_t)virtual_address_begin & (~0xfff);
     uint64_t virtual_end = (uint64_t)virtual_address_end;
 
-    for (uint64_t virt = virtual_begin; virt < virtual_end; virt += KILOBYTE)
+    for (uint64_t virt = virtual_begin; virt < virtual_end; virt += PAGE_SIZE)
     {
         mmu_page_set_flags(virtual_address_end, new_flags);
     }
