@@ -2,8 +2,8 @@
 #include <stdint.h>
 #include "IDE.h"
 
-uint8_t ide_buf[2048] = {0};
-volatile unsigned static char ide_irq_invoked = 0;
+uint8_t ide_buf[2048];
+volatile unsigned static char ide_irq_invoked;
 unsigned static char atapi_packet[12] = {0xA8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
 
