@@ -20,6 +20,8 @@ typedef void (*kernel_main)(Drive drive);
 #define KERNEL_BEGIN 0x8000000
 #define KERNEL_BASE_ADDRESS (kernel_main)KERNEL_BEGIN
 
+#define KERNEL_STACK_VIRTUAL_ADDRESS_END 0x7ffffffff000
+
 #define MAX_DRIVE_READ_ADDRESS (0x100000 - 1) // Under one mebibyte
 
 #define MEMORY_MAP_MAX_LENGTH (0x1000 / sizeof(range_Range)) // HACK: having all the ranges fit inside a single page makes implementation easier.
@@ -72,12 +74,20 @@ void start(uint16_t drive_id)
     mmu_map_range((uint64_t)kernel_physical_address, (uint64_t)kernel_physical_address + kernel_size, KERNEL_BEGIN, MMU_READ_WRITE);
     mmu_map_range((uint64_t)memory_map, (uint64_t)(memory_map + PAGE_SIZE), (uint64_t)memory_map, MMU_READ_WRITE | MMU_EXECUTE_DISABLE);
 
+    const uint64_t new_stack_size = PAGE_SIZE * 5;
+    uint64_t new_stack_physical_addr = 0;
+    success = range_pop_of_size(memory_map, memory_map_length, new_stack_size, &new_stack_physical_addr);
+    assert(success && "No consecutive physical RAM for the stack found");
+    printf("[*] Chose physical address %llx for the stack\n", new_stack_physical_addr);
+
+    mmu_map_range(new_stack_physical_addr, new_stack_physical_addr + new_stack_size, KERNEL_STACK_VIRTUAL_ADDRESS_END - new_stack_size, MMU_READ_WRITE);
+
     main_gdt_long_mode_init();
 
     printf("\n[+] Coordinates locked, warp core stable\n");
     printf("Press any key to launch...\n");
     io_wait_key_raw();
-    main_long_mode_jump_to(KERNEL_BASE_ADDRESS, (uint32_t)mmu_map_base_address, (uint32_t)memory_map, (uint32_t)memory_map_length);
+    main_long_mode_jump_to(KERNEL_BASE_ADDRESS, KERNEL_STACK_VIRTUAL_ADDRESS_END, (uint32_t)mmu_map_base_address, (uint32_t)memory_map, (uint32_t)memory_map_length);
 }
 
 void main_gdt_long_mode_init()
