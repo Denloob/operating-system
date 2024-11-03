@@ -85,7 +85,25 @@ void __attribute__((section(".entry"), sysv_abi)) kernel_main(uint32_t param_mmu
     //IDE scan
     puts("Starting IDE scan");
     test_ide();
-    //memory allocation test
+
+    unsigned int drive = 0;
+    unsigned int sector = 170;
+
+    unsigned char buffer[512] = "Hello";
+
+    ide_write_sector(drive, sector, buffer);
+    ide_read_sector(drive, sector, buffer);
+
+    for (int i = 0; i < 512; i++)
+    {
+        printf("%c", buffer[i]);
+    }
+    printf("\n");
+
+
+
+
+
     void *block1 = kernel_malloc(10);  // allocate 8 kb
 
     if (block1) {
