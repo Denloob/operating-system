@@ -88,7 +88,7 @@ void color_command()
     }
 
     while (key_to_char(io_input_keyboard_key()) != target_key);
-    // TODO: returning back doesn't work currently, I'll fix later
+
     vga_mode_text();
     io_clear_vga();
 }
