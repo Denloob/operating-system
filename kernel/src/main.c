@@ -66,8 +66,9 @@ void __attribute__((section(".entry"), sysv_abi)) kernel_main(uint32_t param_mmu
     mmu_map_range(bss_physical_address, bss_physical_address + bss_size, (uint64_t)&__bss_start, MMU_READ_WRITE | MMU_EXECUTE_DISABLE);
 
     const uint64_t vga_address = (uint64_t)VGA_GRAPHICS_ADDRESS;
-    const uint64_t vga_size = VGA_GRAPHICS_WIDTH * VGA_GRAPHICS_HEIGHT;
+    const uint64_t vga_size = 32 * PAGE_SIZE; // 0xA0000..0xBFFFF
     mmu_map_range(vga_address, vga_address + vga_size, vga_address, MMU_READ_WRITE | MMU_EXECUTE_DISABLE);
+
     mmu_tlb_flush_all();
 
     memset(&__bss_start, 0, (uint64_t)&__bss_end - (uint64_t)&__bss_start);
