@@ -64,9 +64,8 @@ void color_command()
 {
     io_clear_vga();
     const char target_key = 'q';
-    const char target_key_upper = target_key | ('a' - 'A');
-    printf("To exit the color palette, press '%c'.\n", target_key_upper);
-    printf("Press '%c' to enter the palette...", target_key_upper);
+    printf("To exit the color palette, press '%c'.\n", target_key);
+    printf("Press '%c' to enter the palette...", target_key);
 
     int key;
     while (key_to_char(io_input_keyboard_key()) != target_key);
