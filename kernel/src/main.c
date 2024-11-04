@@ -11,6 +11,7 @@
 #include "PCI.h"
 #include "assert.h"
 #include "IDE.h"
+#include "vga.h"
 
 #define PAGE_SIZE 0x1000
 #define PAGE_ALIGN_UP(address)   (((address) + PAGE_SIZE - 1) & ~(PAGE_SIZE - 1))
@@ -63,6 +64,10 @@ void __attribute__((section(".entry"), sysv_abi)) kernel_main(uint32_t param_mmu
         memory_map, memory_map_length, bss_size, &bss_physical_address);
     assert(bss_physical_address_found && "Couldn't find a memory region for kernel bss section");
     mmu_map_range(bss_physical_address, bss_physical_address + bss_size, (uint64_t)&__bss_start, MMU_READ_WRITE | MMU_EXECUTE_DISABLE);
+
+    const uint64_t vga_address = (uint64_t)VGA_GRAPHICS_ADDRESS;
+    const uint64_t vga_size = VGA_GRAPHICS_WIDTH * VGA_GRAPHICS_HEIGHT;
+    mmu_map_range(vga_address, vga_address + vga_size, vga_address, MMU_READ_WRITE | MMU_EXECUTE_DISABLE);
     mmu_tlb_flush_all();
 
     memset(&__bss_start, 0, (uint64_t)&__bss_end - (uint64_t)&__bss_start);
