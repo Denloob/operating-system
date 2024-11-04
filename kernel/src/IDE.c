@@ -2,9 +2,6 @@
 #include <stdint.h>
 #include "IDE.h"
 
-uint8_t ide_buf[2048];
-
-
 void ide_write(uint8_t channel, uint8_t reg, uint8_t data) 
 {
    if (reg > 0x07 && reg < 0x0C)
@@ -164,6 +161,7 @@ void ide_initialize(uint32_t BAR0, uint32_t BAR1, uint32_t BAR2, uint32_t BAR3, 
          }
 
          // (V) Read Identification Space of the Device:
+         uint8_t ide_buf[512];
          ide_read_buffer(i, ATA_REG_DATA, (uint32_t *) ide_buf, 128);
 
          // (VI) Read Device Parameters:
