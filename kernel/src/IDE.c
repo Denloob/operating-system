@@ -2,6 +2,9 @@
 #include <stdint.h>
 #include "IDE.h"
 
+#define SECTOR_SIZE_BYTES 512
+#define SECTOR_SIZE_QUADS (512 / 4)
+
 void ide_write(uint8_t channel, uint8_t reg, uint8_t data) 
 {
    if (reg > 0x07 && reg < 0x0C)
@@ -161,8 +164,8 @@ void ide_initialize(uint32_t BAR0, uint32_t BAR1, uint32_t BAR2, uint32_t BAR3, 
          }
 
          // (V) Read Identification Space of the Device:
-         uint8_t ide_buf[512];
-         ide_read_buffer(i, ATA_REG_DATA, (uint32_t *) ide_buf, 128);
+         uint8_t ide_buf[SECTOR_SIZE_BYTES];
+         ide_read_buffer(i, ATA_REG_DATA, (uint32_t *) ide_buf, SECTOR_SIZE_QUADS);
 
          // (VI) Read Device Parameters:
          ide_devices[count].Reserved     = 1;
@@ -227,7 +230,7 @@ bool ide_read_sector(uint32_t drive, uint32_t sector, uint8_t *buffer) {
     uint8_t drive_state = ide_polling(ide_devices[drive].Channel, true);
     if (drive_state & ATA_SR_ERR) return false;
 
-    ide_read_buffer(ide_devices[drive].Channel, ATA_REG_DATA, (uint32_t *)buffer, 128);
+    ide_read_buffer(ide_devices[drive].Channel, ATA_REG_DATA, (uint32_t *)buffer, SECTOR_SIZE_QUADS);
     return true;
 }
 
@@ -243,7 +246,7 @@ bool ide_write_sector(uint32_t drive, uint32_t sector, uint8_t *buffer) {
     uint8_t drive_state = ide_polling(ide_devices[drive].Channel, true);
     if (drive_state & ATA_SR_ERR) return false;
 
-    ide_write_buffer(ide_devices[drive].Channel, ATA_REG_DATA, (uint32_t *)buffer, 128);
+    ide_write_buffer(ide_devices[drive].Channel, ATA_REG_DATA, (uint32_t *)buffer, SECTOR_SIZE_QUADS);
 
     drive_state = ide_polling(ide_devices[drive].Channel, false);
     return (drive_state & ATA_SR_ERR) == 0;
