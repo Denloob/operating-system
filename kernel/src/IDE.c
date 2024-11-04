@@ -231,7 +231,9 @@ bool ide_read_sector(uint32_t drive, uint32_t sector, uint8_t *buffer) {
     if (drive_state & ATA_SR_ERR) return false;
 
     ide_read_buffer(ide_devices[drive].Channel, ATA_REG_DATA, (uint32_t *)buffer, SECTOR_SIZE_QUADS);
-    return true;
+
+    drive_state = ide_polling(ide_devices[drive].Channel, false);
+    return (drive_state & ATA_SR_ERR) == 0;
 }
 
 bool ide_write_sector(uint32_t drive, uint32_t sector, uint8_t *buffer) {
