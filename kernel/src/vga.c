@@ -29,6 +29,8 @@
 #define VGA_NUM_REGS        (1 + VGA_NUM_SEQ_REGS + VGA_NUM_CRTC_REGS + \
                                 VGA_NUM_GC_REGS + VGA_NUM_AC_REGS)
 
+#define VGA_FONT_HEIGHT 16
+
 // NOLINTBEGIN(readability-magic-numbers)
 
 // @brief - VGA registers for 320x200 256bit color mode
@@ -141,7 +143,30 @@ static void set_plane(uint32_t pane)
     out_byte(VGA_SEQ_DATA, pane_mask);
 }
 
-static void write_font(uint8_t *font_buf, long font_buf_size_bytes)
+/**
+ * @brief VGA framebuffer is at 0xA0000, 0xB0000, or 0xB8000 depending on bits in GC 6
+ */
+static uint8_t *vga_get_framebuffer()
+{
+    out_byte(VGA_GC_INDEX, 6);
+    uint32_t seg = in_byte(VGA_GC_DATA);
+    seg >>= 2;
+    seg &= 3;
+    switch (seg)
+    {
+        default:
+        case 0:
+        case 1:
+            return (uint8_t *)0xA0000;
+        case 2:
+            return (uint8_t *)0xB0000;
+        case 3:
+            return (uint8_t *)0xB8000;
+    }
+
+    assert(false && "Unexpected GC value from VGA");
+}
+static void write_font(uint8_t *font_buf)
 {
     uint8_t seq2, seq4, gc4, gc5, gc6;
 
@@ -170,8 +195,12 @@ assume: chain-4 addressing already off */
     out_byte(VGA_GC_DATA, gc6 & ~0x02);
     /* write font to plane P4 */
     set_plane(2);
-    /* write font 0 (to write font 1, offset VGA_GRAPHICS_ADDRESS by 0x4000)*/
-    memmove((void *)VGA_GRAPHICS_ADDRESS, font_buf, font_buf_size_bytes);
+    /* write font 0 (to write font 1, offset the framebuffer by 0x4000)*/
+	for(int i = 0; i < 256; i++)
+	{
+		memmove(vga_get_framebuffer() + i * 32, font_buf, VGA_FONT_HEIGHT);
+		font_buf += VGA_FONT_HEIGHT;
+	}
     /* restore registers */
     out_byte(VGA_SEQ_INDEX, 2);
     out_byte(VGA_SEQ_DATA, seq2);
@@ -194,7 +223,7 @@ void vga_mode_graphics()
 void vga_mode_text()
 {
     write_regs(g_80x25_text);
-    write_font(g_8x16_font, sizeof(g_8x16_font));
+    write_font(g_8x16_font);
 }
 
 // NOLINTBEGIN(readability-magic-numbers)
