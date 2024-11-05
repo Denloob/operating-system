@@ -222,20 +222,20 @@ void vga_color_index(uint8_t color_index)
     out_byte(VGA_DAC_WRITE_INDEX, color_index); // Set the index
 }
 
-void vga_color_write_color(uint8_t *rgb)
+void vga_color_write_color(uint8_t red, uint8_t green, uint8_t blue)
 {
-    out_byte(VGA_DAC_DATA, rgb[0]);
-    out_byte(VGA_DAC_DATA, rgb[1]);
-    out_byte(VGA_DAC_DATA, rgb[2]);
+    out_byte(VGA_DAC_DATA, red << 1);
+    out_byte(VGA_DAC_DATA, green << 1);
+    out_byte(VGA_DAC_DATA, blue << 1);
 }
 
-void vga_color_palette(uint8_t color_index, uint8_t *palette, uint32_t palette_length)
+void vga_color_palette(uint8_t color_index, const uint8_t *palette, uint32_t palette_length)
 {
     vga_color_index(color_index);
 
     for (int i = 0; i < palette_length * 3; i++)
     {
-        out_byte(VGA_DAC_DATA, palette[i] << 2);
+        out_byte(VGA_DAC_DATA, palette[i] << 1);
     }
 }
 
@@ -243,9 +243,7 @@ void vga_color(uint8_t color_index, uint8_t red, uint8_t green, uint8_t blue)
 {
     vga_color_index(color_index);
 
-    out_byte(VGA_DAC_DATA, red);
-    out_byte(VGA_DAC_DATA, green);
-    out_byte(VGA_DAC_DATA, blue);
+    vga_color_write_color(red, green, blue);
 }
 
 void vga_mode_graphics()

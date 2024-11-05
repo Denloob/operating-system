@@ -39,13 +39,11 @@ void vga_color(uint8_t color_index, uint8_t red, uint8_t green, uint8_t blue);
 void vga_color_index(uint8_t color_index);
 
 /**
- * @brief - Writes the 3 colors at `rgb` to the current color. Set the color
+ * @brief - Writes the 3 given colors to the current color index. Set the color
  *          index with `vga_color_index` and then call this function as many
- *          times as needed.
+ *          times as needed, as index is auto incremented.
  *
- * @param rgb - Pointer to 3 8 bit integers, each representing a color (Red,Green,Blue)
- *              for the palette at the current index.
  * @warning - Before calling this function call vga_color_index
  * @see - vga_color_index
  */
-void vga_color_write_color(const uint8_t *rgb);
+void vga_color_write_color(uint8_t red, uint8_t green, uint8_t blue);
