@@ -1,4 +1,6 @@
 #include "IDT.h"
+#include "bmp.h"
+#include "bmp_image.h"
 #include "error.isr.h"
 #include "io.h"
 #include "io.isr.h"
@@ -126,6 +128,13 @@ void __attribute__((section(".entry"), sysv_abi)) kernel_main(uint32_t param_mmu
     //the printf is using zero padding 
     printf("Current Time: %d:%02d:%02d\n", hours, minutes, seconds);
     printf("Current Date: %d-%d-%d\n", day, month, year);
+
+    vga_mode_graphics();
+    memset((uint8_t *)VGA_GRAPHICS_ADDRESS, 0xf, VGA_GRAPHICS_WIDTH*VGA_GRAPHICS_HEIGHT);
+
+    bmp_draw_at(0, 0, bmp_image, bmp_image_len);
+    io_input_keyboard_key();
+    asm ("cli; hlt");
 
     while(true)
     {
