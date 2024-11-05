@@ -10,12 +10,14 @@
 #define VGA_MISC_WRITE      0x3C2
 #define VGA_SEQ_INDEX       0x3C4
 #define VGA_SEQ_DATA        0x3C5
+#define VGA_DAC_MASK        0x3C6 // Color palette mask
 #define VGA_DAC_READ_INDEX  0x3C7
 #define VGA_DAC_WRITE_INDEX 0x3C8
 #define VGA_DAC_DATA        0x3C9
 #define VGA_MISC_READ       0x3CC
 #define VGA_GC_INDEX        0x3CE
 #define VGA_GC_DATA         0x3CF
+
 
 /*          COLOR emulation     MONO emulation */
 #define VGA_CRTC_INDEX      0x3D4   /* 0x3B4 */
@@ -214,6 +216,37 @@ assume: chain-4 addressing already off */
     out_byte(VGA_GC_DATA, gc6);
 }
 
+void vga_color_index(uint8_t color_index)
+{
+    out_byte(VGA_DAC_MASK, 0xff);               // Mask all register so we could update any of them
+    out_byte(VGA_DAC_WRITE_INDEX, color_index); // Set the index
+}
+
+void vga_color_write_color(uint8_t *rgb)
+{
+    out_byte(VGA_DAC_DATA, rgb[0]);
+    out_byte(VGA_DAC_DATA, rgb[1]);
+    out_byte(VGA_DAC_DATA, rgb[2]);
+}
+
+void vga_color_palette(uint8_t color_index, uint8_t *palette, uint32_t palette_length)
+{
+    vga_color_index(color_index);
+
+    for (int i = 0; i < palette_length * 3; i++)
+    {
+        out_byte(VGA_DAC_DATA, palette[i] << 2);
+    }
+}
+
+void vga_color(uint8_t color_index, uint8_t red, uint8_t green, uint8_t blue)
+{
+    vga_color_index(color_index);
+
+    out_byte(VGA_DAC_DATA, red);
+    out_byte(VGA_DAC_DATA, green);
+    out_byte(VGA_DAC_DATA, blue);
+}
 
 void vga_mode_graphics()
 {
