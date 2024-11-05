@@ -1,11 +1,15 @@
 #include "error.isr.h"
 #include "io.h"
 #include "isr.h"
+#include "vga.h"
 #include <stdint.h>
 
 static void __attribute__((used, sysv_abi))
 error_isr_general_protection_fault_impl(isr_InterruptFrame *frame, uint64_t error)
 {
+    vga_mode_text();
+    io_clear_vga();
+
     printf("\nGeneral protection fault: RIP=0x%llx ; Error Code = 0x%llx\n",
            frame->rip, error);
     printf("Press any key to continue\n");
@@ -35,6 +39,9 @@ typedef struct
 void __attribute__((used, sysv_abi))
 error_isr_page_fault_impl(isr_InterruptFrame *frame, PageFaultErrorCode error)
 {
+    vga_mode_text();
+    io_clear_vga();
+
     uint64_t cr2;
     asm volatile ("mov %0, cr2" : "=r"(cr2));
     printf("\nPage Fault: RIP=0x%llx; Virtual address cause: %llx\n", frame->rip, cr2);
