@@ -128,7 +128,32 @@ void __attribute__((section(".entry"), sysv_abi)) kernel_main(uint32_t param_mmu
     //the printf is using zero padding 
     printf("Current Time: %d:%02d:%02d\n", hours, minutes, seconds);
     printf("Current Date: %d-%d-%d\n", day, month, year);
-
+/*
+    uint8_t read_data[512];
+    ide_read_bytes(drive, 0, read_data, 3, 8);
+    printf("Initial read data: ");
+    for (int i = 0; i < 8; i++) {
+        printf("%c ", (char)read_data[i]);
+    }
+    printf("\n");
+    const char *write_data = "gcc+eroc";
+    for (int i = 0; i < 8; i++) 
+    {
+        read_data[i+3] = write_data[i];
+    }
+    if (!ide_write_bytes(drive, 0, read_data,3,8))
+    {
+        printf("Failed to write modified data to sector.\n");
+    }
+    printf("Data written: \"%s\"\n", write_data);
+    ide_read_bytes(drive, 0, read_data, 3, 8);
+    printf("Read data after write: ");
+    for (int i = 0; i < 8; i++) 
+    {
+        printf("%c ", (char)read_data[i]);
+    }
+    printf("\n");
+*/
     vga_mode_graphics();
     memset((uint8_t *)VGA_GRAPHICS_ADDRESS, 0xf, VGA_GRAPHICS_WIDTH*VGA_GRAPHICS_HEIGHT);
 
