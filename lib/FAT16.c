@@ -75,7 +75,7 @@ bool fat16_read_root_directory(Drive *drive, fat16_BootSector *bpb, fat16_DirEnt
     uint32_t size = sizeof(fat16_DirEntry) * bpb->rootEntryCount;
 
 #ifdef DRIVE_SUPPORTS_UNALIGNED
-    return drive_read(drive, sector_address, dir_entries_arr, size);
+    return drive_read(drive, sector_address, (uint8_t *)dir_entries_arr, size);
 #else
     // First, if any, we read all the data that's multiple of SECTOR_SIZE (aligned)
     // then, we read what's left over if any.
