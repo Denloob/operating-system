@@ -236,7 +236,8 @@ bool ide_read_sector(uint32_t drive, uint32_t sector, uint8_t *buffer) {
     return (drive_state & ATA_SR_ERR) == 0;
 }
 
-bool ide_write_sector(uint32_t drive, uint32_t sector, uint8_t *buffer) {
+bool ide_write_sector(uint32_t drive, uint32_t sector, uint8_t *buffer) 
+{
     //issue the write command
     ide_write(ide_devices[drive].Channel, ATA_REG_HDDEVSEL, 0xE0 | (ide_devices[drive].Drive << 4));
     ide_write(ide_devices[drive].Channel, ATA_REG_SECCOUNT0, 1); // Set sector count to 1
@@ -254,3 +255,31 @@ bool ide_write_sector(uint32_t drive, uint32_t sector, uint8_t *buffer) {
     return (drive_state & ATA_SR_ERR) == 0;
 }
 
+
+bool ide_read_bytes(uint32_t drive, uint32_t sector, uint8_t *buffer, uint32_t start, uint32_t length)
+{
+    //check if we read insine a sector range
+    if(start+length > SECTOR_SIZE_BYTES) return false;
+
+    uint8_t sector_buffer[SECTOR_SIZE_BYTES];
+    if(!ide_read_sector(drive, sector, sector_buffer)) return false;
+    for(uint32_t i = 0; i<length; i++)
+    {
+        buffer[i] = sector_buffer[start + i];
+    }
+    return true;
+}
+
+bool ide_write_bytes(uint32_t drive, uint32_t sector, const uint8_t *buffer, uint32_t start, uint32_t length)
+{
+    if(start + length > SECTOR_SIZE_BYTES) return false;
+
+    uint8_t sector_buffer[SECTOR_SIZE_BYTES];
+    if(!ide_read_sector(drive, sector, sector_buffer)) return false;
+
+    for(uint32_t i = 0; i<length; i++)
+    {
+        sector_buffer[start+i] = buffer[i];
+    }
+    return ide_write_sector(drive, sector, buffer);
+}
