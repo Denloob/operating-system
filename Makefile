@@ -33,6 +33,9 @@ QEMU_DEBUG_OPTIONS := -gdb tcp::1234 -S
 run: $(IMAGE_NAME).img
 	$(EMU) -hda $< $(QEMU_LOG_OPTIONS) $(QEMU_MISC_OPTIONS)
 
+runb: # Run, don't build
+	$(EMU) -hda $(IMAGE_NAME).img $(QEMU_LOG_OPTIONS) $(QEMU_MISC_OPTIONS)
+
 debug: $(IMAGE_NAME).img
 	$(EMU) -hda $< $(QEMU_LOG_OPTIONS) $(QEMU_MISC_OPTIONS) $(QEMU_DEBUG_OPTIONS)
 
