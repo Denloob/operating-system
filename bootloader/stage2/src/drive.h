@@ -25,4 +25,4 @@ void drive_lba_to_chs(Drive *drive, uint32_t lba, drive_CHS *ret);
 
 bool drive_init(Drive *drive, uint16_t drive_id);
 
-bool drive_read(Drive *drive, uint32_t address, uint8_t *buffer, uint32_t size);
+bool drive_read(Drive *drive, uint64_t address, uint8_t *buffer, uint32_t size);

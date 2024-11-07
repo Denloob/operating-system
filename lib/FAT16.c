@@ -32,7 +32,7 @@ bool fat16_read_sectors(Drive *drive, uint32_t sector, uint8_t *buffer,
 {
     if (count == TAKE_DEFAULT_VALUE)
         count = SECTOR_SIZE;
-    return drive_read(drive, sector, buffer, count * SECTOR_SIZE);
+    return drive_read(drive, sector * SECTOR_SIZE, buffer, count * SECTOR_SIZE);
 }
 
 
@@ -51,7 +51,7 @@ bool fat16_read_next_root_entry(Drive *drive, fat16_DirReader *reader, fat16_Dir
     if (reader->current_sector >= reader->root_dir_end) return false;
 
     uint8_t sector_buf[SECTOR_SIZE];
-    if (!drive_read(drive, reader->current_sector, sector_buf, SECTOR_SIZE))
+    if (!fat16_read_sectors(drive, reader->current_sector, sector_buf, 1))
         return false;
     *entry = *(fat16_DirEntry *)(sector_buf + reader->entry_offset);
 
@@ -71,28 +71,33 @@ bool fat16_read_root_directory(Drive *drive, fat16_BootSector *bpb, fat16_DirEnt
     assert(dir_entries_len >= bpb->rootEntryCount && "fat16_read_root_directory: all entries must fix inside the array");
 
     uint32_t sector_offset = bpb->reservedSectors + bpb->FATSize * bpb->numFATs;
+    uint64_t sector_address = sector_offset * SECTOR_SIZE;
     uint32_t size = sizeof(fat16_DirEntry) * bpb->rootEntryCount;
 
+#ifdef DRIVE_SUPPORTS_UNALIGNED
+    return drive_read(drive, sector_address, dir_entries_arr, size);
+#else
     // First, if any, we read all the data that's multiple of SECTOR_SIZE (aligned)
     // then, we read what's left over if any.
     uint32_t size_leftover_part2 = size % SECTOR_SIZE;
     uint32_t size_aligned_part1 = size - size_leftover_part2;
     if (size_aligned_part1)
     {
-        bool success = drive_read(drive, sector_offset, (uint8_t *)dir_entries_arr, size_aligned_part1);
+        bool success = drive_read(drive, sector_address, (uint8_t *)dir_entries_arr, size_aligned_part1);
         if (!success) return false;
     }
 
     if (size_leftover_part2)
     {
         uint8_t tmp_buf[SECTOR_SIZE];
-        bool success = drive_read(drive, sector_offset + size_aligned_part1 / SECTOR_SIZE, tmp_buf, SECTOR_SIZE);
+        bool success = drive_read(drive, sector_address + size_aligned_part1, tmp_buf, SECTOR_SIZE);
         if (!success) return false;
 
         memmove((uint8_t *)dir_entries_arr + size_aligned_part1, tmp_buf, size_leftover_part2);
     }
 
     return true;
+#endif
 }
 
 bool fat16_find_file(Drive *drive, fat16_BootSector *bpb, const char *filename, fat16_DirEntry *out_file)

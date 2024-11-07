@@ -11,7 +11,7 @@ bool drive_init(Drive *drive, int drive_id)
 }
 
 #define IMPL_DRIVE_READ_WRITE(func_name, ide_func, ide_func_bytes, buffer_type)    \
-bool func_name(Drive *drive, uint32_t address, buffer_type buffer, uint32_t size)  \
+bool func_name(Drive *drive, uint64_t address, buffer_type buffer, uint32_t size)  \
 {                                                                                  \
     const uint32_t offset = address % SECTOR_SIZE;                                 \
     if (offset != 0)                                                               \
