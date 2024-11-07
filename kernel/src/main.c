@@ -1,6 +1,7 @@
 #include "IDT.h"
 #include "bmp.h"
 #include "bmp_image.h"
+#include "drive.h"
 #include "error.isr.h"
 #include "io.h"
 #include "io.isr.h"
@@ -92,15 +93,15 @@ void __attribute__((section(".entry"), sysv_abi)) kernel_main(uint32_t param_mmu
     
     //IDE scan
     puts("Starting IDE scan");
-    const int drive = ide_init();
+    const int drive_id = ide_init();
 
     const int sector = 160;
 
     uint8_t buffer[512] = "Hello";
 
-    assert(ide_write_sector(drive, sector, buffer));
+    assert(ide_write_sector(drive_id, sector, buffer));
     memset(buffer, 0, sizeof(buffer));
-    assert(ide_read_sector(drive, sector, buffer));
+    assert(ide_read_sector(drive_id, sector, buffer));
 
     puts((char *)buffer);
 
@@ -128,32 +129,18 @@ void __attribute__((section(".entry"), sysv_abi)) kernel_main(uint32_t param_mmu
     //the printf is using zero padding 
     printf("Current Time: %d:%02d:%02d\n", hours, minutes, seconds);
     printf("Current Date: %d-%d-%d\n", day, month, year);
-/*
-    uint8_t read_data[512];
-    ide_read_bytes(drive, 0, read_data, 3, 8);
-    printf("Initial read data: ");
-    for (int i = 0; i < 8; i++) {
-        printf("%c ", (char)read_data[i]);
-    }
-    printf("\n");
-    const char *write_data = "gcc+eroc";
-    for (int i = 0; i < 8; i++) 
-    {
-        read_data[i+3] = write_data[i];
-    }
-    if (!ide_write_bytes(drive, 0, read_data,3,8))
-    {
-        printf("Failed to write modified data to sector.\n");
-    }
-    printf("Data written: \"%s\"\n", write_data);
-    ide_read_bytes(drive, 0, read_data, 3, 8);
-    printf("Read data after write: ");
-    for (int i = 0; i < 8; i++) 
-    {
-        printf("%c ", (char)read_data[i]);
-    }
-    printf("\n");
-*/
+
+    Drive drive;
+    drive_init(&drive, drive_id);
+
+    uint8_t read_data[9] = {0};
+    drive_read(&drive, 3, read_data, 8);
+    printf("Read data: %s\n", read_data);
+    drive_write(&drive, 3, (const uint8_t *)"gcc+eroc", 8);
+    drive_read(&drive, 3, read_data, 8);
+    printf("Read data after write: %s\n", read_data);
+    asm ("cli; hlt");
+
     vga_mode_graphics();
     memset((uint8_t *)VGA_GRAPHICS_ADDRESS, 0xf, VGA_GRAPHICS_WIDTH*VGA_GRAPHICS_HEIGHT);
 
