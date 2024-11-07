@@ -281,5 +281,5 @@ bool ide_write_bytes(uint32_t drive, uint32_t sector, const uint8_t *buffer, uin
     {
         sector_buffer[start+i] = buffer[i];
     }
-    return ide_write_sector(drive, sector, buffer);
+    return ide_write_sector(drive, sector, sector_buffer);
 }
