@@ -203,7 +203,7 @@ void ide_initialize(uint32_t BAR0, uint32_t BAR1, uint32_t BAR2, uint32_t BAR3, 
       }
 }
 
-void ide_write_buffer(uint8_t channel, uint8_t reg, uint32_t *buffer, uint32_t quads) {
+void ide_write_buffer(uint8_t channel, uint8_t reg, const uint32_t *buffer, uint32_t quads) {
     if (reg > 0x07 && reg < 0x0C) {
         ide_write(channel, ATA_REG_CONTROL, 0x80 | channels[channel].nIEN);
     }
@@ -236,7 +236,7 @@ bool ide_read_sector(uint32_t drive, uint32_t sector, uint8_t *buffer) {
     return (drive_state & ATA_SR_ERR) == 0;
 }
 
-bool ide_write_sector(uint32_t drive, uint32_t sector, uint8_t *buffer) 
+bool ide_write_sector(uint32_t drive, uint32_t sector, const uint8_t *buffer) 
 {
     //issue the write command
     ide_write(ide_devices[drive].Channel, ATA_REG_HDDEVSEL, 0xE0 | (ide_devices[drive].Drive << 4));
@@ -249,7 +249,7 @@ bool ide_write_sector(uint32_t drive, uint32_t sector, uint8_t *buffer)
     uint8_t drive_state = ide_polling(ide_devices[drive].Channel, true);
     if (drive_state & ATA_SR_ERR) return false;
 
-    ide_write_buffer(ide_devices[drive].Channel, ATA_REG_DATA, (uint32_t *)buffer, SECTOR_SIZE_QUADS);
+    ide_write_buffer(ide_devices[drive].Channel, ATA_REG_DATA, (const uint32_t *)buffer, SECTOR_SIZE_QUADS);
 
     drive_state = ide_polling(ide_devices[drive].Channel, false);
     return (drive_state & ATA_SR_ERR) == 0;

@@ -149,12 +149,12 @@ uint8_t ide_print_error(uint32_t drive, uint8_t err);
 
 void ide_initialize(uint32_t BAR0, uint32_t BAR1, uint32_t BAR2, uint32_t BAR3, uint32_t BAR4);
 
-void ide_write_buffer(uint8_t channel, uint8_t reg, uint32_t *buffer, uint32_t quads);
+void ide_write_buffer(uint8_t channel, uint8_t reg, const uint32_t *buffer, uint32_t quads);
 
 //handle io opertaions in sectors
 bool ide_read_sector(uint32_t drive, uint32_t sector, uint8_t *buffer);
 
-bool ide_write_sector(uint32_t drive, uint32_t sector, uint8_t *buffer);
+bool ide_write_sector(uint32_t drive, uint32_t sector, const uint8_t *buffer);
 
 //handle io operations in bytes
 bool ide_read_bytes(uint32_t drive, uint32_t sector, uint8_t *buffer, uint32_t start, uint32_t length);
