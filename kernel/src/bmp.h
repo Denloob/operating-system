@@ -1,5 +1,6 @@
 #pragma once
 
+#include "file.h"
 #include <stdint.h>
 
 #define bmp_MAGIC_NUMBER 0x4d42 /* The string BM ('MB' because little endian) */
@@ -63,3 +64,13 @@ uint32_t bmp_get_color_palette_length(const bmp_DIBHeader *dib);
  * @param bmp_array_length - The length of the `bmp` in RAM.
  */
 void bmp_draw_at(int x, int y, const uint8_t *bmp, uint64_t bmp_array_length);
+
+/**
+ * @brief - Draw the bmp in the given file at `x` and `y` in VGA.
+ * @note - VGA must already be in graphics mode.
+ *
+ * @param x    - Horizontal offset of the image from top left of VGA.
+ * @param y    - Vertical offset of the image form top left of VGA.
+ * @param file - The file of the bmp to draw
+ */
+void bmp_draw_from_file_at(int x_offset, int y_offset, FILE *file);
