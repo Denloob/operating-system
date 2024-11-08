@@ -64,7 +64,7 @@ void start(uint16_t drive_id)
     assert(kernel_physical_address + kernel_size < MAX_DRIVE_READ_ADDRESS && "The address chosen for kernel ");
     printf("[*] Chose kernel location - 0x%lx\n", kernel_physical_address);
 
-    success = fat16_read(&file, (void *)kernel_physical_address);
+    success = fat16_read(&file, (void *)kernel_physical_address, math_ALIGN_UP(kernel_size, SECTOR_SIZE), 0);
     assert(success && "fat16_read");
 
     printf("[*] Initializing paging\n");

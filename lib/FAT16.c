@@ -119,12 +119,35 @@ bool fat16_find_file(Drive *drive, fat16_BootSector *bpb, const char *filename, 
     return false;
 }
 
-bool fat16_read_file(fat16_DirEntry *fileEntry, Drive *drive, fat16_BootSector *bpb,
-                     uint8_t *out_buffer)
+typedef struct {
+    uint8_t buf[SECTOR_SIZE];
+    uint32_t cached_sector;
+    bool valid; // true iff cache contains anything. Do not read cache unless true.
+} FatCache;
+
+bool get_next_cluster(Drive *drive, fat16_BootSector *bpb, uint16_t cur_cluster, uint16_t *next_cluster, FatCache *cache)
 {
-    uint8_t cur_fat[SECTOR_SIZE];
-    uint32_t cur_fat_sector = 0;
-    bool cur_fat_offset_set = false; // NOTE: DO NOT use cur_fat_offset when this is false
+    const uint32_t fat_offset = cur_cluster * 2;
+    const uint32_t fat_sector = fat_offset / SECTOR_SIZE;
+    const uint32_t fat_entry_offset = fat_offset % SECTOR_SIZE;
+    if (!cache->valid || cache->cached_sector != fat_sector)
+    {
+        bool success = fat16_read_FAT_at(drive, bpb, cache->buf, fat_sector);
+        if (!success) return false;
+
+        cache->cached_sector = fat_sector;
+        cache->valid = true;
+    }
+
+    *next_cluster = *(uint16_t *)&cache->buf[fat_entry_offset];
+    return true;
+}
+
+bool fat16_read_file(fat16_DirEntry *fileEntry, Drive *drive, fat16_BootSector *bpb,
+                     uint8_t *out_buffer, uint64_t buffer_size, uint64_t file_offset)
+{
+    // TODO: also return how many bytes we actually read
+    FatCache cache = {0};
 
     const uint32_t rootDirectoryEnd =
         (bpb->reservedSectors + bpb->FATSize * bpb->numFATs) +
@@ -132,35 +155,40 @@ bool fat16_read_file(fat16_DirEntry *fileEntry, Drive *drive, fat16_BootSector *
 
 
     uint16_t cur_cluster = fileEntry->firstClusterLow;
+    while (file_offset / SECTOR_SIZE != 0)
+    {
+        bool success = get_next_cluster(drive, bpb, cur_cluster, &cur_cluster, &cache);
+        if (!success || cur_cluster >= 0xFF8) return false;
+
+        file_offset -= SECTOR_SIZE;
+    }
+
+    uint64_t space_in_buffer_left = buffer_size;
+
     //read each cluster , get the next cluster (almost the same idea as going threw linked list)
-    do
+    while (cur_cluster < 0xFF8 && space_in_buffer_left > 0)
     {
         //cluster to sector
         uint32_t lba =
             rootDirectoryEnd + (cur_cluster - 2) * bpb->sectorsPerCluster;
+        uint32_t address = lba * SECTOR_SIZE + file_offset;
+        file_offset = 0; // First time, if there's an offset (!= 0), we will start at it, but after that the offset is basically ignored.
+
+        uint32_t read_size = SECTOR_SIZE;
+        if (read_size > space_in_buffer_left) read_size = space_in_buffer_left;
         //read cluster
-        if (!fat16_read_sectors(drive, lba, out_buffer, bpb->sectorsPerCluster))
+        if (!drive_read(drive, address, out_buffer, read_size))
         {
             return false;
         }
+        space_in_buffer_left -= read_size;
 
         out_buffer += bpb->sectorsPerCluster * bpb->bytesPerSector;
 
-        // Get the next cluster number in the file allocation table
-        const uint32_t fat_offset = cur_cluster * 2;
-        const uint32_t fat_sector = fat_offset / SECTOR_SIZE;
-        const uint32_t fat_entry_offset = fat_offset % SECTOR_SIZE;
-        if (!cur_fat_offset_set || cur_fat_sector != fat_sector)
-        {
-            bool success = fat16_read_FAT_at(drive, bpb, cur_fat, fat_sector);
-            if (!success) return false;
-
-            cur_fat_sector = fat_sector;
-            cur_fat_offset_set = true;
-        }
-
-        cur_cluster = *(uint16_t *)&cur_fat[fat_entry_offset];
-    } while (cur_cluster < 0xFF8);
+        // Get the next cluster
+        bool success = get_next_cluster(drive, bpb, cur_cluster, &cur_cluster, &cache);
+        if (!success) return false;
+    };
 
     return true;
 }
@@ -188,10 +216,10 @@ bool fat16_open(fat16_Ref *fat16, char *path, fat16_File *out_file)
     return true;
 }
 
-bool fat16_read(fat16_File *file, uint8_t *out_buffer)
+bool fat16_read(fat16_File *file, uint8_t *out_buffer, uint64_t buffer_size, uint64_t file_offset)
 {
     assert(file && out_buffer);
-    return fat16_read_file(&file->file_entry, file->ref->drive, &file->ref->bpb, out_buffer);
+    return fat16_read_file(&file->file_entry, file->ref->drive, &file->ref->bpb, out_buffer, buffer_size, file_offset);
 }
 
 uint32_t fat16_cluster_to_sector(fat16_Ref *fat16, uint16_t cluster)
