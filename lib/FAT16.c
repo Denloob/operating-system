@@ -172,10 +172,10 @@ uint64_t fat16_read_file(fat16_DirEntry *fileEntry, Drive *drive, fat16_BootSect
         uint32_t lba =
             rootDirectoryEnd + (cur_cluster - 2) * bpb->sectorsPerCluster;
         uint32_t address = lba * SECTOR_SIZE + file_offset;
+        uint32_t read_size = SECTOR_SIZE - file_offset;
+        if (read_size > space_in_buffer_left) read_size = space_in_buffer_left;
         file_offset = 0; // First time, if there's an offset (!= 0), we will start at it, but after that the offset is basically ignored.
 
-        uint32_t read_size = SECTOR_SIZE;
-        if (read_size > space_in_buffer_left) read_size = space_in_buffer_left;
         //read cluster
 #ifdef DRIVE_SUPPORTS_VERBOSE
         uint64_t bytes_read_cur = drive_read_verbose(drive, address, out_buffer, read_size);
