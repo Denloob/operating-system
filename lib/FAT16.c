@@ -143,10 +143,10 @@ bool get_next_cluster(Drive *drive, fat16_BootSector *bpb, uint16_t cur_cluster,
     return true;
 }
 
-bool fat16_read_file(fat16_DirEntry *fileEntry, Drive *drive, fat16_BootSector *bpb,
+uint64_t fat16_read_file(fat16_DirEntry *fileEntry, Drive *drive, fat16_BootSector *bpb,
                      uint8_t *out_buffer, uint64_t buffer_size, uint64_t file_offset)
 {
-    // TODO: also return how many bytes we actually read
+    uint64_t bytes_read = 0;
     FatCache cache = {0};
 
     const uint32_t rootDirectoryEnd =
@@ -177,20 +177,31 @@ bool fat16_read_file(fat16_DirEntry *fileEntry, Drive *drive, fat16_BootSector *
         uint32_t read_size = SECTOR_SIZE;
         if (read_size > space_in_buffer_left) read_size = space_in_buffer_left;
         //read cluster
-        if (!drive_read(drive, address, out_buffer, read_size))
+#ifdef DRIVE_SUPPORTS_VERBOSE
+        uint64_t bytes_read_cur = drive_read_verbose(drive, address, out_buffer, read_size);
+        bool success = bytes_read_cur == read_size;
+        bytes_read += bytes_read_cur;
+#else
+        bool success = bytes_read = drive_read(drive, address, out_buffer, read_size);
+#endif
+        if (!success)
         {
-            return false;
+            return bytes_read;
         }
         space_in_buffer_left -= read_size;
 
         out_buffer += bpb->sectorsPerCluster * bpb->bytesPerSector;
 
         // Get the next cluster
-        bool success = get_next_cluster(drive, bpb, cur_cluster, &cur_cluster, &cache);
+        success = get_next_cluster(drive, bpb, cur_cluster, &cur_cluster, &cache);
         if (!success) return false;
     };
 
+#ifdef DRIVE_SUPPORTS_VERBOSE
+    return bytes_read;
+#else
     return true;
+#endif
 }
 
 bool fat16_ref_init(fat16_Ref *fat16, Drive *drive)
@@ -216,7 +227,7 @@ bool fat16_open(fat16_Ref *fat16, char *path, fat16_File *out_file)
     return true;
 }
 
-bool fat16_read(fat16_File *file, uint8_t *out_buffer, uint64_t buffer_size, uint64_t file_offset)
+uint64_t fat16_read(fat16_File *file, uint8_t *out_buffer, uint64_t buffer_size, uint64_t file_offset)
 {
     assert(file && out_buffer);
     return fat16_read_file(&file->file_entry, file->ref->drive, &file->ref->bpb, out_buffer, buffer_size, file_offset);

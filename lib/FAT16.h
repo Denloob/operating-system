@@ -126,11 +126,13 @@ bool fat16_open(fat16_Ref *fat16, char *path, fat16_File *out_file); //changed t
  * @param out_buffer[out] - The buffer where the read part will be written
  * @param buffer_size     - The size of the `out_buffer`
  * @param file_offset     - The offset into the file from which to read
- * @return if succeeded
+ * @return
+ *          When drive is verbose: the amount of bytes read
+ *          Otherwise: 0 on fail, positive otherwise
  *
  * @see fat16_ref_init
  */
-bool fat16_read(fat16_File *file, uint8_t *out_buffer, uint64_t buffer_size, uint64_t file_offset);
+uint64_t fat16_read(fat16_File *file, uint8_t *out_buffer, uint64_t buffer_size, uint64_t file_offset);
 
 /**
  * @brief converts a cluster to sector.
