@@ -4,13 +4,14 @@
 #include "bitmap.h"
 #include "memory.h"
 #include "assert.h"
+#include "math.h"
 #include <stdint.h>
 
 
 #define TABLE_LENGTH 512
 #define PAGE_SIZE 0x1000
-#define PAGE_ALIGN_UP(address)   (((address) + PAGE_SIZE - 1) & ~(PAGE_SIZE - 1))
-#define PAGE_ALIGN_DOWN(address) ((address) & ~(PAGE_SIZE - 1))
+#define PAGE_ALIGN_UP(address)   math_ALIGN_UP(address, PAGE_SIZE)
+#define PAGE_ALIGN_DOWN(address) math_ALIGN_DOWN(address, PAGE_SIZE)
 
 #define TABLE_SIZE_BYTES (TABLE_LENGTH * sizeof(mmu_PageMapEntry))
 

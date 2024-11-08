@@ -1,4 +1,5 @@
 #include "FAT16.h"
+#include "math.h"
 #include "range.h"
 #include "assert.h"
 #include "bios.h"
@@ -13,8 +14,8 @@
 extern char __end;
 
 #define PAGE_SIZE 0x1000
-#define PAGE_ALIGN_UP(address)   (((address) + PAGE_SIZE - 1) & ~(PAGE_SIZE - 1))
-#define PAGE_ALIGN_DOWN(address) ((address) & ~(PAGE_SIZE - 1))
+#define PAGE_ALIGN_UP(address)   math_ALIGN_UP(address, PAGE_SIZE)
+#define PAGE_ALIGN_DOWN(address) math_ALIGN_DOWN(address, PAGE_SIZE)
 
 typedef void (*kernel_main)(Drive drive);
 #define KERNEL_BEGIN 0x8000000
