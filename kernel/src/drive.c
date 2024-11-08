@@ -10,9 +10,10 @@ bool drive_init(Drive *drive, int drive_id)
     return true;
 }
 
-#define IMPL_DRIVE_READ_WRITE(func_name, ide_func, ide_func_bytes, buffer_type)    \
-bool func_name(Drive *drive, uint64_t address, buffer_type buffer, uint32_t size)  \
+#define IMPL_DRIVE_READ_WRITE_VERBOSE(func_name, ide_func, ide_func_bytes, buffer_type)    \
+uint64_t func_name(Drive *drive, uint64_t address, buffer_type buffer, uint32_t size)  \
 {                                                                                  \
+    uint64_t bytes_read = 0;                                                       \
     const uint32_t offset = address % SECTOR_SIZE;                                 \
     if (offset != 0)                                                               \
     {                                                                              \
@@ -23,14 +24,15 @@ bool func_name(Drive *drive, uint64_t address, buffer_type buffer, uint32_t size
         bool success = ide_func_bytes(drive->id, address / SECTOR_SIZE, buffer,    \
                                       offset, partial_size);                       \
         if (!success)                                                              \
-            return false;                                                          \
+            return bytes_read;                                                     \
+        bytes_read += partial_size;                                                \
         size -= partial_size;                                                      \
         address += partial_size;                                                   \
         buffer += partial_size;                                                    \
     }                                                                              \
                                                                                    \
     if (size == 0)                                                                 \
-        return true;                                                               \
+        return bytes_read;                                                         \
                                                                                    \
     const uint32_t size_remainder = size % SECTOR_SIZE;                            \
     size -= size_remainder;                                                        \
@@ -44,7 +46,8 @@ bool func_name(Drive *drive, uint64_t address, buffer_type buffer, uint32_t size
         {                                                                          \
             bool success = ide_func(drive->id, sector, buffer);                    \
             if (!success)                                                          \
-                return false;                                                      \
+                return bytes_read;                                                 \
+            bytes_read += SECTOR_SIZE;                                             \
         }                                                                          \
     }                                                                              \
     address += size;                                                               \
@@ -54,11 +57,22 @@ bool func_name(Drive *drive, uint64_t address, buffer_type buffer, uint32_t size
         bool success = ide_func_bytes(drive->id, address / SECTOR_SIZE, buffer, 0, \
                                       size_remainder);                             \
         if (!success)                                                              \
-            return false;                                                          \
+            return bytes_read;                                                     \
+        bytes_read += size_remainder;                                              \
     }                                                                              \
                                                                                    \
-    return true;                                                                   \
+    return bytes_read;                                                             \
 }                                                                                  \
 
-IMPL_DRIVE_READ_WRITE(drive_read, ide_read_sector, ide_read_bytes, uint8_t *);
-IMPL_DRIVE_READ_WRITE(drive_write, ide_write_sector, ide_write_bytes, const uint8_t *);
+IMPL_DRIVE_READ_WRITE_VERBOSE(drive_read_verbose, ide_read_sector, ide_read_bytes, uint8_t *);
+IMPL_DRIVE_READ_WRITE_VERBOSE(drive_write_verbose, ide_write_sector, ide_write_bytes, const uint8_t *);
+
+bool drive_read(Drive *drive, uint64_t address, uint8_t *buffer, uint32_t size)
+{
+    return drive_read_verbose(drive, address, buffer, size) == size;
+}
+
+bool drive_write(Drive *drive, uint64_t address, const uint8_t *buffer, uint32_t size)
+{
+    return drive_write_verbose(drive, address, buffer, size) == size;
+}
