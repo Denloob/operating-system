@@ -3,7 +3,10 @@
 
 size_t fread(void *ptr, size_t size, size_t count, FILE *stream)
 {
-    return fat16_read(&stream->file, ptr, size * count, stream->offset);
+    size_t bytes_read = fat16_read(&stream->file, ptr, size * count, stream->offset);
+    stream->offset += bytes_read;
+
+    return bytes_read;
 }
 
 size_t fwrite(void *ptr, size_t size, size_t count, FILE *stream)
