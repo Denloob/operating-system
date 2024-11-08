@@ -22,9 +22,10 @@ bool fat16_read_BPB(Drive *drive, fat16_BootSector *bpb)
     return true;
 }
 
-bool fat16_read_FAT(Drive *drive, fat16_BootSector *bpb, uint8_t *FAT)
+bool fat16_read_FAT_at(Drive *drive, fat16_BootSector *bpb, uint8_t FAT[static SECTOR_SIZE], uint32_t sector_offset)
 {
-    return fat16_read_sectors(drive, bpb->reservedSectors, FAT, /* bpb->FATSize */ 1 ); // HACK: the FAT should be loaded dynamically.
+    assert(sector_offset < bpb->FATSize);
+    return fat16_read_sectors(drive, bpb->reservedSectors + sector_offset, FAT, 1);
 }
 
 bool fat16_read_sectors(Drive *drive, uint32_t sector, uint8_t *buffer,
@@ -119,20 +120,24 @@ bool fat16_find_file(Drive *drive, fat16_BootSector *bpb, const char *filename, 
 }
 
 bool fat16_read_file(fat16_DirEntry *fileEntry, Drive *drive, fat16_BootSector *bpb,
-                     uint8_t *out_buffer, uint16_t *FAT)
+                     uint8_t *out_buffer)
 {
+    uint8_t cur_fat[SECTOR_SIZE];
+    uint32_t cur_fat_sector = 0;
+    bool cur_fat_offset_set = false; // NOTE: DO NOT use cur_fat_offset when this is false
+
     const uint32_t rootDirectoryEnd =
         (bpb->reservedSectors + bpb->FATSize * bpb->numFATs) +
         (bpb->rootEntryCount * sizeof(fat16_DirEntry) + SECTOR_SIZE - 1) / SECTOR_SIZE;
 
 
-    uint16_t currCluster = fileEntry->firstClusterLow;
+    uint16_t cur_cluster = fileEntry->firstClusterLow;
     //read each cluster , get the next cluster (almost the same idea as going threw linked list)
     do
     {
         //cluster to sector
         uint32_t lba =
-            rootDirectoryEnd + (currCluster - 2) * bpb->sectorsPerCluster;
+            rootDirectoryEnd + (cur_cluster - 2) * bpb->sectorsPerCluster;
         //read cluster
         if (!fat16_read_sectors(drive, lba, out_buffer, bpb->sectorsPerCluster))
         {
@@ -141,8 +146,21 @@ bool fat16_read_file(fat16_DirEntry *fileEntry, Drive *drive, fat16_BootSector *
 
         out_buffer += bpb->sectorsPerCluster * bpb->bytesPerSector;
 
-        currCluster = FAT[currCluster];
-    } while (currCluster < 0xFF8);
+        // Get the next cluster number in the file allocation table
+        const uint32_t fat_offset = cur_cluster * 2;
+        const uint32_t fat_sector = fat_offset / SECTOR_SIZE;
+        const uint32_t fat_entry_offset = fat_offset % SECTOR_SIZE;
+        if (!cur_fat_offset_set || cur_fat_sector != fat_sector)
+        {
+            bool success = fat16_read_FAT_at(drive, bpb, cur_fat, fat_sector);
+            if (!success) return false;
+
+            cur_fat_sector = fat_sector;
+            cur_fat_offset_set = true;
+        }
+
+        cur_cluster = *(uint16_t *)&cur_fat[fat_entry_offset];
+    } while (cur_cluster < 0xFF8);
 
     return true;
 }
@@ -173,15 +191,7 @@ bool fat16_open(fat16_Ref *fat16, char *path, fat16_File *out_file)
 bool fat16_read(fat16_File *file, uint8_t *out_buffer)
 {
     assert(file && out_buffer);
-
-    uint8_t fat[/*file->ref->bpb.FATSize * SECTOR_SIZE*/ SECTOR_SIZE]; // HACK: the fat should be read dynamically
-    bool success = fat16_read_FAT(file->ref->drive, &file->ref->bpb, (uint8_t *)&fat);
-    if (!success) return false;
-
-    success = fat16_read_file(&file->file_entry , file->ref->drive , &file->ref->bpb ,out_buffer, (uint16_t *)fat); // TODO: it's not a good idea to read the whole FAT into memory.
-    if (!success) return false;
-
-    return true;
+    return fat16_read_file(&file->file_entry, file->ref->drive, &file->ref->bpb, out_buffer);
 }
 
 uint32_t fat16_cluster_to_sector(fat16_Ref *fat16, uint16_t cluster)
