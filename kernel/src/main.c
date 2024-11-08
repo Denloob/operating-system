@@ -1,4 +1,6 @@
 #include "IDT.h"
+#include "file.h"
+#include "FAT16.h"
 #include "bmp.h"
 #include "bmp_image.h"
 #include "drive.h"
@@ -95,16 +97,6 @@ void __attribute__((section(".entry"), sysv_abi)) kernel_main(uint32_t param_mmu
     puts("Starting IDE scan");
     const int drive_id = ide_init();
 
-    const int sector = 160;
-
-    uint8_t buffer[512] = "Hello";
-
-    assert(ide_write_sector(drive_id, sector, buffer));
-    memset(buffer, 0, sizeof(buffer));
-    assert(ide_read_sector(drive_id, sector, buffer));
-
-    puts((char *)buffer);
-
     void *block1 = kernel_malloc(10);  // allocate 8 kb
 
     if (block1) {
@@ -133,19 +125,20 @@ void __attribute__((section(".entry"), sysv_abi)) kernel_main(uint32_t param_mmu
     Drive drive;
     drive_init(&drive, drive_id);
 
-    uint8_t read_data[9] = {0};
-    drive_read(&drive, 3, read_data, 8);
-    printf("Read data: %s\n", read_data);
-    drive_write(&drive, 3, (const uint8_t *)"gcc+eroc", 8);
-    drive_read(&drive, 3, read_data, 8);
-    printf("Read data after write: %s\n", read_data);
-    asm ("cli; hlt");
+    fat16_Ref fat16;
+    bool success = fat16_ref_init(&fat16, &drive);
+    assert(success && "fat16_ref_init");
+
+    FILE file;
+    memset(&file, 0, sizeof(file)); // HACK: GCC tries to optimize `= {0}` with SIMD, but we don't have the FPU initialized, so we get a GPF.
+
+    success = fat16_open(&fat16, "IMAGE   BMP", &file.file);
+    assert(success && "fat16_open");
 
     vga_mode_graphics();
     memset((uint8_t *)VGA_GRAPHICS_ADDRESS, 0xf, VGA_GRAPHICS_WIDTH*VGA_GRAPHICS_HEIGHT);
 
-    bmp_draw_at(0, 0, bmp_image, bmp_image_len);
-    io_input_keyboard_key();
+    bmp_draw_from_file_at(0, 0, &file);
     asm ("cli; hlt");
 
     while(true)
