@@ -37,7 +37,9 @@ bool func_name(Drive *drive, uint64_t address, buffer_type buffer, uint32_t size
                                                                                    \
     if (size)                                                                      \
     {                                                                              \
-        for (uint32_t sector = address / SECTOR_SIZE; sector < size / SECTOR_SIZE; \
+        uint32_t sectors_begin = address / SECTOR_SIZE;                            \
+        uint32_t sectors_end   = sectors_begin + size / SECTOR_SIZE;               \
+        for (uint32_t sector = sectors_begin; sector < sectors_end;                \
              sector++, buffer += SECTOR_SIZE)                                      \
         {                                                                          \
             bool success = ide_func(drive->id, sector, buffer);                    \
