@@ -181,16 +181,16 @@ uint64_t fat16_read_file(fat16_DirEntry *fileEntry, Drive *drive, fat16_BootSect
         uint64_t bytes_read_cur = drive_read_verbose(drive, address, out_buffer, read_size);
         bool success = bytes_read_cur == read_size;
         bytes_read += bytes_read_cur;
+        out_buffer += bytes_read_cur;
 #else
         bool success = bytes_read = drive_read(drive, address, out_buffer, read_size);
+        out_buffer += bpb->sectorsPerCluster * bpb->bytesPerSector;
 #endif
         if (!success)
         {
             return bytes_read;
         }
         space_in_buffer_left -= read_size;
-
-        out_buffer += bpb->sectorsPerCluster * bpb->bytesPerSector;
 
         // Get the next cluster
         success = get_next_cluster(drive, bpb, cur_cluster, &cur_cluster, &cache);
