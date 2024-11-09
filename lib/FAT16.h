@@ -7,7 +7,8 @@
 
 #define SECTOR_SIZE 512
 #define FAT16_CLUSTER_FREE 0x0000
-#define FAT16_CLUSTER_EOF  0xFFFF
+#define FAT16_CLUSTER_EOF  0xFFF8 // anything above or equal to this = EOF
+#define FAT16_CLUSTER_BAD  0xFFF7
 
 // FAT16-specific structures
 

@@ -8,8 +8,6 @@
 
 #define SECTOR_SIZE 512
 #define TAKE_DEFAULT_VALUE -1
-#define FAT16_CLUSTER_FREE 0x0000
-#define FAT16_CLUSTER_EOF  0xFFFF
 #define FAT16_FILENAME_SIZE 8
 #define FAT16_EXTENSION_SIZE 3
 #define FAT16_FULL_FILENAME_SIZE (FAT16_FILENAME_SIZE + FAT16_EXTENSION_SIZE)
@@ -181,7 +179,7 @@ uint64_t fat16_read_file(fat16_DirEntry *fileEntry, Drive *drive, fat16_BootSect
     while (file_offset / SECTOR_SIZE != 0)
     {
         bool success = get_next_cluster(drive, bpb, cur_cluster, &cur_cluster, &cache);
-        if (!success || cur_cluster >= 0xFF8) return false;
+        if (!success || cur_cluster >= FAT16_CLUSTER_EOF) return false;
 
         file_offset -= SECTOR_SIZE;
     }
@@ -189,7 +187,7 @@ uint64_t fat16_read_file(fat16_DirEntry *fileEntry, Drive *drive, fat16_BootSect
     uint64_t space_in_buffer_left = buffer_size;
 
     //read each cluster , get the next cluster (almost the same idea as going threw linked list)
-    while (cur_cluster < 0xFF8 && space_in_buffer_left > 0)
+    while (cur_cluster < FAT16_CLUSTER_EOF && space_in_buffer_left > 0)
     {
         //cluster to sector
         uint32_t lba =
