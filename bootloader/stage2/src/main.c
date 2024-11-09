@@ -52,7 +52,7 @@ void start(uint16_t drive_id)
 
     printf("[*] Loading the kernel\n");
     fat16_File file;
-    success = fat16_open(&fat16, "KERNEL  BIN", &file); //  HACK: fat16 should be case insensitive!
+    success = fat16_open(&fat16, "kernel  bin", &file);
     assert(success && "fat16_open");
 
     const uint64_t kernel_size = file.file_entry.fileSize;

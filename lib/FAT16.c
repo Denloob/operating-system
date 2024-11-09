@@ -1,6 +1,7 @@
 #include "FAT16.h"
 #include "drive.h"
 #include "memory.h"
+#include "string.h"
 #include "assert.h"
 #include <stdbool.h>
 #include <stdint.h>
@@ -109,7 +110,7 @@ bool fat16_find_file(Drive *drive, fat16_BootSector *bpb, const char *filename, 
     fat16_DirEntry entry;
     while (fat16_read_next_root_entry(drive, &reader, &entry)) 
     {
-        if (memcmp(filename, entry.filename, FAT16_FILENAME_SIZE) == 0) 
+        if (strncasecmp(filename, entry.filename, FAT16_FILENAME_SIZE) == 0) 
         {
             *out_file = entry;
             return true;
