@@ -10,7 +10,9 @@
 #define TAKE_DEFAULT_VALUE -1
 #define FAT16_CLUSTER_FREE 0x0000
 #define FAT16_CLUSTER_EOF  0xFFFF
-#define FAT16_FILENAME_SIZE (8+3) //(filename + extension)
+#define FAT16_FILENAME_SIZE 8
+#define FAT16_EXTENSION_SIZE 3
+#define FAT16_FULL_FILENAME_SIZE (FAT16_FILENAME_SIZE + FAT16_EXTENSION_SIZE)
 
 bool fat16_read_BPB(Drive *drive, fat16_BootSector *bpb)
 {
@@ -102,6 +104,23 @@ bool fat16_read_root_directory(Drive *drive, fat16_BootSector *bpb, fat16_DirEnt
 #endif
 }
 
+/**
+ * @brief - Convert a filename like `kernel.bin` into fat16-padded name like `kernel  bin`.
+ */
+void filename_to_fat16_filename(const char *filename, char out_buf[static FAT16_FULL_FILENAME_SIZE])
+{
+    memset(out_buf, ' ', FAT16_FULL_FILENAME_SIZE);
+
+    char *dot = memrchr(filename, '.', FAT16_FILENAME_SIZE + 1);
+    assert(dot != NULL && "Invalid path");
+
+    size_t extension_len = strlen(dot) - 1;
+    assert(extension_len <= 3 && "Extensions longer than 3 bytes are not supported");
+
+    memmove(out_buf,                       filename, dot - filename);
+    memmove(out_buf + FAT16_FILENAME_SIZE, dot + 1,  extension_len);
+}
+
 bool fat16_find_file(Drive *drive, fat16_BootSector *bpb, const char *filename, fat16_DirEntry *out_file)
 {
     fat16_DirReader reader;
@@ -110,7 +129,10 @@ bool fat16_find_file(Drive *drive, fat16_BootSector *bpb, const char *filename, 
     fat16_DirEntry entry;
     while (fat16_read_next_root_entry(drive, &reader, &entry)) 
     {
-        if (strncasecmp(filename, entry.filename, FAT16_FILENAME_SIZE) == 0) 
+        char fat16_filename[FAT16_FULL_FILENAME_SIZE];
+        filename_to_fat16_filename(filename, fat16_filename);
+
+        if (strncasecmp(fat16_filename, (const char *)entry.filename, FAT16_FULL_FILENAME_SIZE) == 0) 
         {
             *out_file = entry;
             return true;
