@@ -1,5 +1,6 @@
 #include "memory.h"
 #include <stddef.h>
+#include <stdint.h>
 
 #define PAGE_SIZE 4096  // 4 KB
 #define MEMORY_SIZE (1024 * 1024 * 128)  //128 MB
@@ -120,3 +121,22 @@ void kfree(void *ptr , int size)
     }
 }
 
+
+void *memchr(const void *s_in, int c_in, size_t n)
+{
+    if (n == 0)
+        return NULL;
+
+    uint8_t c = c_in;
+    const uint8_t *s = s_in;
+
+    while (n--)
+    {
+        if (*s == c)
+            return (void *)s;
+
+        s++;
+    }
+
+    return NULL;
+}
