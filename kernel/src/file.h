@@ -16,5 +16,5 @@ typedef enum {
 
 size_t fread(void *ptr, size_t size, size_t count, FILE *stream);
 size_t fwrite(void *ptr, size_t size, size_t count, FILE *stream);
-int fseek(FILE *stream, uint64_t offset, file_Whence whence);
+int fseek(FILE *stream, int64_t offset, file_Whence whence);
 long ftell(FILE *stream);
