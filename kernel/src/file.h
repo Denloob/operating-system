@@ -1,7 +1,7 @@
 #pragma once
 
 #include "FAT16.h"
-#include "types.h"
+#include <stddef.h>
 
 typedef struct {
     fat16_File file;
