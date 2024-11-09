@@ -127,10 +127,7 @@ bool fat16_find_file(Drive *drive, fat16_BootSector *bpb, const char *filename, 
     fat16_DirEntry entry;
     while (fat16_read_next_root_entry(drive, &reader, &entry)) 
     {
-        char fat16_filename[FAT16_FULL_FILENAME_SIZE];
-        filename_to_fat16_filename(filename, fat16_filename);
-
-        if (strncasecmp(fat16_filename, (const char *)entry.filename, FAT16_FULL_FILENAME_SIZE) == 0) 
+        if (strncasecmp(filename, (const char *)entry.filename, FAT16_FULL_FILENAME_SIZE) == 0) 
         {
             *out_file = entry;
             return true;
@@ -290,8 +287,11 @@ bool fat16_open(fat16_Ref *fat16, const char *path, fat16_File *out_file)
 
     out_file->ref = fat16;
 
+    char fat16_filename[FAT16_FULL_FILENAME_SIZE];
+    filename_to_fat16_filename(path, fat16_filename);
+
     fat16_DirEntry dir_entry;
-    if (!fat16_find_file(fat16->drive, &fat16->bpb, path, &dir_entry)) 
+    if (!fat16_find_file(fat16->drive, &fat16->bpb, fat16_filename, &dir_entry)) 
     {
         return false;
     }
