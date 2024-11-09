@@ -1,5 +1,6 @@
 #include "memory.h"
 #include <stddef.h>
+#include <stdint.h>
 
 void *memmove(void *dest, const void *src, int len)
 {
@@ -41,3 +42,20 @@ int memcmp(const void *ptr1, const void *ptr2, size_t num)
     return 0;
 }
 
+
+void *memrchr(const void *s_in, int c_in, size_t n)
+{
+    if (n == 0)
+        return NULL;
+
+    uint8_t c = c_in;
+    const uint8_t *s = s_in + n;
+
+    while (n--)
+    {
+        if (*--s == c)
+            return (void *)s;
+    }
+
+    return NULL;
+}

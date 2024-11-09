@@ -140,3 +140,20 @@ void *memchr(const void *s_in, int c_in, size_t n)
 
     return NULL;
 }
+
+void *memrchr(const void *s_in, int c_in, size_t n)
+{
+    if (n == 0)
+        return NULL;
+
+    uint8_t c = c_in;
+    const uint8_t *s = s_in + n;
+
+    while (n--)
+    {
+        if (*--s == c)
+            return (void *)s;
+    }
+
+    return NULL;
+}
