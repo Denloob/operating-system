@@ -73,4 +73,4 @@ void bmp_draw_at(int x, int y, const uint8_t *bmp, uint64_t bmp_array_length);
  * @param y    - Vertical offset of the image form top left of VGA.
  * @param file - The file of the bmp to draw
  */
-void bmp_draw_from_file_at(int x_offset, int y_offset, FILE *file);
+void bmp_draw_from_stream_at(int x_offset, int y_offset, FILE *file);

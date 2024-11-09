@@ -27,17 +27,15 @@ uint32_t bmp_get_color_palette_length(const bmp_DIBHeader *dib)
     return 2 << (dib->bits_per_pixel - 1);
 }
 
-void bmp_draw_from_file_at(int x_offset, int y_offset, FILE *file)
+void bmp_draw_from_stream_at(int x_offset, int y_offset, FILE *stream)
 {
-    fseek(file, 0, SEEK_SET);
-
     bmp_FileHeader header;
-    size_t items_read = fread(&header, sizeof(header), 1, file);
+    size_t items_read = fread(&header, sizeof(header), 1, stream);
     assert(items_read && "fread bmp header");
     assert(header.type == bmp_MAGIC_NUMBER && "Must be a valid bitmap");
 
     bmp_DIBHeader dib_header;
-    items_read = fread(&dib_header, sizeof(dib_header), 1, file);
+    items_read = fread(&dib_header, sizeof(dib_header), 1, stream);
     assert(items_read && "fread bmp dib");
     assert(dib_header.size   == sizeof(dib_header));
     assert(dib_header.width  == VGA_GRAPHICS_WIDTH);
@@ -50,7 +48,7 @@ void bmp_draw_from_file_at(int x_offset, int y_offset, FILE *file)
     bmp_ColorTableEntry color_palette[256] = {0}; // 256 colors in our VGA mode
     assert(palette_length <= 256);
 
-    items_read = fread(&color_palette, 4, palette_length, file);
+    items_read = fread(&color_palette, 4, palette_length, stream);
     assert(items_read == palette_length);
     bmp_load_color_palette(&dib_header, color_palette);
 
@@ -64,7 +62,7 @@ void bmp_draw_from_file_at(int x_offset, int y_offset, FILE *file)
 
     for (int y = 0; y < dib_header.height; y++)
     {
-        items_read = fread(row_pixels, 1, VGA_GRAPHICS_WIDTH, file);
+        items_read = fread(row_pixels, 1, VGA_GRAPHICS_WIDTH, stream);
         assert(items_read == bmp_file_row_width && "BMP row read failed");
 
         uint8_t vga_y = y_offset + VGA_GRAPHICS_HEIGHT - y - 1; // In BMP, the rows are reversed, aka first row is the last image raw
