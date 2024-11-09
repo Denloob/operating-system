@@ -13,6 +13,7 @@ $(IMAGE_NAME).img: $(BOOTLOADER) $(KERNEL) initfat16
 	./util/initfat16/bin/initfat16 $@
 
 	mcopy $(KERNEL) a:
+	mcopy ./assets/video.bmp a:
 
 .PHONY: initfat16
 initfat16:

@@ -49,6 +49,12 @@ ide_device ide_devices[4];
 
 int ide_init();
 
+void sleep(uint64_t cycles)
+{
+    // TODO: HACK: this really shouldn't be implemented this way, instead a clock should be used.
+    while (cycles--) { asm volatile("nop"); }
+}
+
 void __attribute__((section(".entry"), sysv_abi)) kernel_main(uint32_t param_mmu_map_base_address, uint32_t param_memory_map, uint32_t param_memory_map_length)
 {
     uint64_t mmu_map_base_address = param_mmu_map_base_address;
@@ -132,14 +138,63 @@ void __attribute__((section(".entry"), sysv_abi)) kernel_main(uint32_t param_mmu
     FILE file;
     memset(&file, 0, sizeof(file)); // HACK: GCC tries to optimize `= {0}` with SIMD, but we don't have the FPU initialized, so we get a GPF.
 
-    success = fat16_open(&fat16, "IMAGE   BMP", &file.file);
+    success = fat16_open(&fat16, "video.bmp", &file.file);
     assert(success && "fat16_open");
 
-    vga_mode_graphics();
-    memset((uint8_t *)VGA_GRAPHICS_ADDRESS, 0xf, VGA_GRAPHICS_WIDTH*VGA_GRAPHICS_HEIGHT);
+    fseek(&file, 0, SEEK_END);
+    uint64_t filesize = ftell(&file);
+    fseek(&file, 0, SEEK_SET);
 
-    bmp_draw_from_file_at(0, 0, &file);
-    asm ("cli; hlt");
+    vga_mode_graphics();
+    while (ftell(&file) < filesize)
+    {
+        bmp_draw_from_stream_at(0, 0, &file);
+
+        sleep(5000000);
+    }
+
+
+    sleep(300000000);
+    vga_mode_text();
+    io_clear_vga();
+    uint64_t rsp;
+    asm volatile ("mov %0, rsp": "=r"(rsp));
+    printf("0x%lx\n", rsp);
+    printf("Welcome to ");
+    sleep(100000000);
+
+    char str[] = "AMONG OS\n";
+    for (int i = 0; i < sizeof(str); i++)
+    {
+        sleep(100000000);
+        putc(str[i]);
+    }
+char *amongus[] = {
+    "           S#####@G#%S        \n",
+    "        S%#$-SS----S%#S#S     \n",
+    "        S#S       SSS*S##S    \n",
+    "       S#S   S@S###%%%%###%   \n",
+    "       ##^  S##S^       *S%SS \n",
+    "  S#%@@#P   X###S          #S \n",
+    " S#PSSS#X   S####SG###@@@@### \n",
+    " X#X  ##X    S#############$S \n",
+    " S#X  ##X     SS%####$%%-S#X  \n",
+    " ##^  ##X                X#S  \n",
+    " ##   ##X                X##  \n",
+    " ##   ##X                X##  \n",
+    " %#S  ##X                X#X  \n",
+    " S#SS ##X                ##S  \n",
+    "  -%####S     S##S@@@@S S##   \n",
+    "       ##     ##X S#S^  X#X   \n",
+    "       ##     ##X S#S   S#S   \n",
+    "       %#G%SS%##^ *S####$S    \n",
+    "       *-S%%%%S^\n",
+};
+    for (int i = 0; i < sizeof(amongus) / sizeof(*amongus); i++)
+    {
+        sleep(30000000);
+        put(amongus[i]);
+    }
 
     while(true)
     {
