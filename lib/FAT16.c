@@ -284,7 +284,7 @@ bool fat16_ref_init(fat16_Ref *fat16, Drive *drive)
     return fat16_read_BPB(drive, &fat16->bpb);
 }
 
-bool fat16_open(fat16_Ref *fat16, char *path, fat16_File *out_file)
+bool fat16_open(fat16_Ref *fat16, const char *path, fat16_File *out_file)
 {
     assert(fat16 && path && out_file);
 

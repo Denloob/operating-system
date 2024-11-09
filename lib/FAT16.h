@@ -120,7 +120,7 @@ bool fat16_ref_init(fat16_Ref *fat16, Drive *drive);
  *
  * @see fat16_ref_init
  */
-bool fat16_open(fat16_Ref *fat16, char *path, fat16_File *out_file); //changed the function to work with the new algo 
+bool fat16_open(fat16_Ref *fat16, const char *path, fat16_File *out_file); //changed the function to work with the new algo 
 
 /**
  * @brief Reads the whole file contents into out_buffer.
