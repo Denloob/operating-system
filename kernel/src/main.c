@@ -10,6 +10,7 @@
 #include "io_keyboard.h"
 #include "mmu.h"
 #include "pic.h"
+#include "pit.h"
 #include "shell.h"
 #include "memory.h"
 #include "RTC.h"
@@ -88,9 +89,15 @@ void __attribute__((section(".entry"), sysv_abi)) kernel_main(uint32_t param_mmu
 
     PIC_remap(0x20, 0x70);
     pic_mask_all();
+
     pic_clear_mask(pic_IRQ_KEYBOARD);
     idt_register(0x20 + pic_IRQ_KEYBOARD, IDT_gate_type_INTERRUPT, io_isr_keyboard_event);
     io_input_keyboard_key = io_keyboard_wait_key;
+
+    pic_clear_mask(pic_IRQ_TIMER);
+    idt_register(0x20 + pic_IRQ_TIMER, IDT_gate_type_INTERRUPT, pit_isr_clock);
+    pit_init();
+
     asm volatile ("sti");
 
     init_memory();
