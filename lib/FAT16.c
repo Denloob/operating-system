@@ -108,7 +108,7 @@ bool fat16_read_root_directory(Drive *drive, fat16_BootSector *bpb, fat16_DirEnt
 void filename_to_fat16_filename(const char *filename, char out_buf[static FAT16_FULL_FILENAME_SIZE])
 {
     memset(out_buf, ' ', FAT16_FULL_FILENAME_SIZE);
-
+    printf("file name: %s \n" , filename);
     char *dot = memrchr(filename, '.', FAT16_FILENAME_SIZE + 1);
     assert(dot != NULL && "Invalid path");
 
@@ -164,6 +164,60 @@ bool get_next_cluster(Drive *drive, fat16_BootSector *bpb, uint16_t cur_cluster,
     return true;
 }
 
+
+bool fat16_get_file_chain(Drive *drive, fat16_BootSector *bpb, const char *filename, uint16_t *out_array)
+{
+    fat16_DirEntry fileEntry;
+    if (!fat16_find_file(drive, bpb, filename, &fileEntry))
+    {
+        return false;
+    }
+
+    uint16_t curr_cluster = fileEntry.firstClusterLow;
+    uint16_t *chain_ptr = out_array;
+    uint16_t range_start = curr_cluster;
+    uint16_t range_length = 0;
+    FatCache cache = {0};
+
+    while (curr_cluster < FAT16_CLUSTER_EOF)
+    {
+        range_length++;  //found 1 more cluster to the current range
+
+        uint16_t next_cluster;
+
+        //read next FAT cluster
+        if (!get_next_cluster(drive, bpb, curr_cluster, &next_cluster, &cache))
+        {
+            return false;
+        }
+
+        // Check if its realeted for current chunk
+        if (next_cluster != curr_cluster + 1 || next_cluster >= FAT16_CLUSTER_EOF)
+        {
+            //chunk ended
+            *chain_ptr++ = range_start;
+            *chain_ptr++ = range_length;
+
+            //reset chunk
+            range_start = next_cluster;
+            range_length = 0;
+        }
+
+        curr_cluster = next_cluster;
+    }
+
+    //register last chunk
+    if (range_length > 0)
+    {
+        *chain_ptr++ = range_start;
+        *chain_ptr++ = range_length;
+    }
+
+    *chain_ptr = FAT16_CLUSTER_EOF;  //end of arr
+    return true;
+}
+
+
 uint64_t fat16_read_file(fat16_DirEntry *fileEntry, Drive *drive, fat16_BootSector *bpb,
                      uint8_t *out_buffer, uint64_t buffer_size, uint64_t file_offset)
 {
@@ -173,7 +227,6 @@ uint64_t fat16_read_file(fat16_DirEntry *fileEntry, Drive *drive, fat16_BootSect
     const uint32_t rootDirectoryEnd =
         (bpb->reservedSectors + bpb->FATSize * bpb->numFATs) +
         (bpb->rootEntryCount * sizeof(fat16_DirEntry) + SECTOR_SIZE - 1) / SECTOR_SIZE;
-
 
     uint16_t cur_cluster = fileEntry->firstClusterLow;
     while (file_offset / SECTOR_SIZE != 0)
@@ -224,7 +277,6 @@ uint64_t fat16_read_file(fat16_DirEntry *fileEntry, Drive *drive, fat16_BootSect
     return true;
 #endif
 }
-
 bool fat16_ref_init(fat16_Ref *fat16, Drive *drive)
 {
     assert(fat16 && drive);

@@ -89,6 +89,8 @@ bool fat16_read_root_directory(Drive *drive, fat16_BootSector *bpb, fat16_DirEnt
 //new ver of fat16_find_file
 bool fat16_find_file(Drive *drive, fat16_BootSector *bpb, const char *filename, fat16_DirEntry *out_file);
 
+bool fat16_get_file_chain(Drive *drive , fat16_BootSector *bpb , const char *filename , uint16_t *out_array);
+
 typedef struct
 {
     fat16_BootSector bpb;
