@@ -1,4 +1,5 @@
 #include "IDT.h"
+#include "mmap.h"
 #include "file.h"
 #include "FAT16.h"
 #include "bmp.h"
@@ -56,6 +57,7 @@ void __attribute__((section(".entry"), sysv_abi)) kernel_main(uint32_t param_mmu
     uint64_t mmu_map_base_address = param_mmu_map_base_address;
     range_Range *memory_map = (void *)(uint64_t)param_memory_map;
     uint64_t memory_map_length = param_memory_map_length;
+    mmap_init(memory_map, memory_map_length);
 
     io_clear_vga();
 
@@ -66,11 +68,8 @@ void __attribute__((section(".entry"), sysv_abi)) kernel_main(uint32_t param_mmu
     mmu_page_range_set_flags(&__data_start, &__data_end, MMU_READ_WRITE | MMU_EXECUTE_DISABLE);
 
     uint64_t bss_size = PAGE_ALIGN_UP((uint64_t)&__bss_end - (uint64_t)&__bss_start);
-    uint64_t bss_physical_address = 0;
-    bool bss_physical_address_found = range_pop_of_size(
-        memory_map, memory_map_length, bss_size, &bss_physical_address);
-    assert(bss_physical_address_found && "Couldn't find a memory region for kernel bss section");
-    mmu_map_range(bss_physical_address, bss_physical_address + bss_size, (uint64_t)&__bss_start, MMU_READ_WRITE | MMU_EXECUTE_DISABLE);
+    res rs = mmap(&__bss_start, bss_size, MMAP_PROT_READ | MMAP_PROT_WRITE);
+    assert(IS_OK(rs) && "Couldn't find a memory region for kernel bss section");
 
     const uint64_t vga_address = (uint64_t)VGA_GRAPHICS_ADDRESS;
     const uint64_t vga_size = 32 * PAGE_SIZE; // 0xA0000..0xBFFFF
