@@ -12,7 +12,7 @@
 
 #define PIT_DIVIDER (PIT_FREQUENCY_HZ / TARGET_FREQUENCY_HZ) // The reload value for the PIT aka the divider
 
-volatile uint64_t g_pit_ms_counter;
+static volatile uint64_t g_pit_ms_counter;
 
 void __attribute__((naked)) pit_isr_clock()
 {
@@ -44,4 +44,9 @@ void pit_init()
 
     set_pit_count(PIT_DIVIDER);
     sti();
+}
+
+uint64_t pit_ms_counter()
+{
+    return g_pit_ms_counter;
 }
