@@ -2,6 +2,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include "compiler_macros.h"
 #include "range.h"
 #include "res.h"
 
@@ -34,4 +35,4 @@ void mmap_init(range_Range *mmap_base, uint64_t length);
  * @param prot The protections for the region.
  * @return res_OK or one of the errors defined above.
  */
-res mmap(void *addr, size_t size, mmap_Protection prot);
+res mmap(void *addr, size_t size, mmap_Protection prot) WUR;
