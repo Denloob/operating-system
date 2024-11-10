@@ -8,8 +8,8 @@ ASM := nasm
 
 CC := x86_64-elf-gcc
 LD := x86_64-elf-ld
-CFLAGS := -ffreestanding -nostdlib -masm=intel -fno-zero-initialized-in-bss
-ISRCFLAGS := -mgeneral-regs-only -mno-red-zone
+CFLAGS := -ffreestanding -nostdlib -masm=intel -fno-zero-initialized-in-bss -mno-red-zone
+ISRCFLAGS := -mgeneral-regs-only
 LDFLAGS := -nostdlib -T linker.ld -Map=$(BIN_DIR)/$(IMAGE_NAME).map
 LDLIBS := -L${TOOLCHAIN_PATH}/lib/gcc/x86_64-elf/14.2.0 -lgcc
 DEPFLAGS = -MT $@ -MMD -MP -MF $(DEP_DIR)/obj/$*.d
