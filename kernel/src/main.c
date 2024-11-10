@@ -17,6 +17,7 @@
 #include "PCI.h"
 #include "assert.h"
 #include "IDE.h"
+#include "time.h"
 #include "vga.h"
 
 #define PAGE_SIZE 0x1000
@@ -49,12 +50,6 @@ IDEChannelRegisters channels[2];
 ide_device ide_devices[4];
 
 int ide_init();
-
-void sleep(uint64_t cycles)
-{
-    // TODO: HACK: this really shouldn't be implemented this way, instead a clock should be used.
-    while (cycles--) { asm volatile("nop"); }
-}
 
 void __attribute__((section(".entry"), sysv_abi)) kernel_main(uint32_t param_mmu_map_base_address, uint32_t param_memory_map, uint32_t param_memory_map_length)
 {
@@ -155,25 +150,26 @@ void __attribute__((section(".entry"), sysv_abi)) kernel_main(uint32_t param_mmu
     vga_mode_graphics();
     while (ftell(&file) < filesize)
     {
+        const uint64_t time_before = pit_ms_counter();
+
         bmp_draw_from_stream_at(0, 0, &file);
 
-        sleep(5000000);
+        const uint64_t time_delta = pit_ms_counter() - time_before;
+        const uint64_t ms_between_frames = 40;
+        if (time_delta < ms_between_frames)
+            sleep_ms(ms_between_frames - time_delta);
     }
 
-
-    sleep(300000000);
+    sleep_ms(500);
     vga_mode_text();
     io_clear_vga();
-    uint64_t rsp;
-    asm volatile ("mov %0, rsp": "=r"(rsp));
-    printf("0x%lx\n", rsp);
     printf("Welcome to ");
-    sleep(100000000);
+    sleep_ms(500);
 
     char str[] = "AMONG OS\n";
     for (int i = 0; i < sizeof(str); i++)
     {
-        sleep(100000000);
+        sleep_ms(300);
         putc(str[i]);
     }
 char *amongus[] = {
@@ -199,7 +195,7 @@ char *amongus[] = {
 };
     for (int i = 0; i < sizeof(amongus) / sizeof(*amongus); i++)
     {
-        sleep(30000000);
+        sleep_ms(70);
         put(amongus[i]);
     }
 
