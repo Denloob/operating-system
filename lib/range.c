@@ -179,6 +179,23 @@ int range_cmp(range_Range *range, range_Range *other)
     return 0;
 }
 
+/**
+ * @brief - Given a range `target`, and a size `wanted_length`, reduces
+ *              the size of the `target` by wanted_length and returns a pointer
+ *              to now not-occupied region.
+ * @note - `wanted_length` must fit in the `target`. If their size match exactly,
+ *           the `target` size will become 0.
+ */
+uint64_t extract_subrange_from(range_Range *target, uint64_t wanted_length)
+{
+    assert(target->size >= wanted_length);
+    uint64_t ret = target->begin;
+    target->begin += wanted_length;
+    target->size -= wanted_length;
+
+    return ret;
+}
+
 bool range_pop_of_size(range_Range *range_arr, uint64_t length, uint64_t target_range_size, uint64_t *addr_out)
 {
     assert((target_range_size & 0xfff) == 0 && "The range length has to be page aligned"); // This is technically not a `range` feature, but if it ever becomes a problem, separate it into two functions.
@@ -187,12 +204,42 @@ bool range_pop_of_size(range_Range *range_arr, uint64_t length, uint64_t target_
     {
         if (range_arr[i].size >= target_range_size)
         {
-            *addr_out = range_arr[i].begin;
-            range_arr[i].begin += target_range_size;
-            range_arr[i].size -= target_range_size;
-            return true;
+             *addr_out = extract_subrange_from(&range_arr[i], target_range_size);
+              return true;
         }
     }
 
     return false;
+}
+
+bool range_pop_of_size_or_less(range_Range *range_arr, uint64_t length, uint64_t max_range_size, uint64_t *addr_out, uint64_t *size_out)
+{
+    assert((max_range_size & 0xfff) == 0 && "The max range length has to be page aligned");
+
+    if (length == 0) return false;
+
+    range_Range *largest_range = NULL;
+    for (int i = 0; i < length; i++)
+    {
+        // The ideal scenario, we return an address of the exact size requested
+        if (range_arr[i].size >= max_range_size)
+        {
+            *addr_out = extract_subrange_from(&range_arr[i], max_range_size);
+            if (size_out) *size_out = max_range_size;
+
+            return true;
+        }
+
+        if (largest_range == NULL || range_arr[i].size > largest_range->size)
+        {
+            largest_range = &range_arr[i];
+        }
+    }
+
+    // No range of the requested size was found, so return the largest possible range.
+    *addr_out = largest_range->begin;
+    if (size_out) *size_out = largest_range->size;
+    largest_range->size = 0;
+
+    return true;
 }

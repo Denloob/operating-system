@@ -58,3 +58,17 @@ uint64_t range_remove_empty(range_Range *range_arr, uint64_t length);
  * @return `true` on success, false on failure.
  */
 bool range_pop_of_size(range_Range *range_arr, uint64_t length, uint64_t target_range_size, uint64_t *addr_out);
+
+/**
+ * @brief - Finds a remove a subrange of the specified size or less from an array of ranges.
+ *
+ * @see - range_pop_of_size
+ *
+ * @param max_range_size - The maximum range size to pop. The popped range can be
+ *                          either of this size, or less.
+ * @param addr_out[out]  - Pointer to store the beginning address of the removed subrange.
+ * @param size_out[out]  - Pointer to store the actual size of the popped range.
+ *                          If NULL, nothing is written into it.
+ * @return `true` on success, false on failure
+ */
+bool range_pop_of_size_or_less(range_Range *range_arr, uint64_t length, uint64_t max_range_size, uint64_t *addr_out, uint64_t *size_out);
