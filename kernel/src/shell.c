@@ -67,7 +67,6 @@ void color_command()
     printf("To exit the color palette, press '%c'.\n", target_key);
     printf("Press '%c' to enter the palette...", target_key);
 
-    int key;
     while (key_to_char(io_input_keyboard_key()) != target_key);
     vga_mode_graphics();
     memset((uint8_t *)VGA_GRAPHICS_ADDRESS, 0xf, VGA_GRAPHICS_WIDTH*VGA_GRAPHICS_HEIGHT);
