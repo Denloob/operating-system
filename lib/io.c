@@ -56,7 +56,7 @@ void putc(char ch)
     *g_vga_it++ = VGA_COLOR_WHITE;
 }
 
-void put(char *str)
+void put(const char *str)
 {
     while (*str)
     {
@@ -64,7 +64,7 @@ void put(char *str)
     }
 }
 
-void puts(char *str)
+void puts(const char *str)
 {
     put(str);
     putc('\n');
@@ -137,7 +137,7 @@ define_ttoa(itoa, int)
 define_ttoa(ltoa, long)
 define_ttoa(lltoa, long long)
 
-void printf(char *fmt, ...)
+void printf(const char *fmt, ...)
 {
     va_list args;
     va_start(args, fmt);

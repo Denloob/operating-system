@@ -4,9 +4,9 @@
 #include <stdint.h>
 #include <stddef.h>
 
-void put(char *str);
+void put(const char *str);
 void putc(char ch);
-void puts(char *str);
+void puts(const char *str);
 
 static inline void sti()
 {
@@ -59,7 +59,7 @@ void repeated_in_dword(uint16_t port , uint32_t *out , uint64_t count);
 char *itoa(int value, char *str, size_t size, int base);
 char *ltoa(long value, char *str, size_t size, int base);
 char *lltoa(long long value, char *str, size_t size, int base);
-void printf(char *fmt, ...);
+void printf(const char *fmt, ...);
 
 void io_clear_vga();
 

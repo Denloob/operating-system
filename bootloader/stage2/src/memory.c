@@ -11,7 +11,7 @@ void *memmove(void *dest, const void *src, int len)
       *d++ = *s++;
   else
     {
-      char *lasts = s + (len-1);
+      const char *lasts = s + (len-1);
       char *lastd = d + (len-1);
       while (len--)
         *lastd-- = *lasts--;
