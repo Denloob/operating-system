@@ -140,7 +140,7 @@ void mmu_table_init(void *address)
 
 void mmu_tlb_flush(size_t virtual_address)
 {
-    __asm__ volatile("invlpg (%0)" : : "m"(virtual_address) : "memory");
+    __asm__ volatile("invlpg [%0]" : : "r"(virtual_address) : "memory");
 }
 
 void mmu_tlb_flush_all()
