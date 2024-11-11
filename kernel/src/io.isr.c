@@ -15,7 +15,6 @@ static void __attribute__((used, sysv_abi)) io_isr_keyboard_event_impl(isr_Inter
 {
     defer({ pic_send_EOI(pic_IRQ_KEYBOARD); });
 
-    // TODO: When booting, if you start spamming key presses in the bootloader, this interrupt will not run. Maybe we need to reset something in the keyboard?
     int key = in_byte(KEYBOARD_PORT);
     if (!(get_key_type(key) & KCT_IS_PRESS))
     {

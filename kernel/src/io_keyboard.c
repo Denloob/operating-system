@@ -1,5 +1,6 @@
 #include "io.isr.h"
 #include "io.h"
+#include "res.h"
 #include <stdbool.h>
 
 int io_keyboard_wait_key()
@@ -18,4 +19,27 @@ int io_keyboard_wait_key()
     sti();
 
     return key;
+}
+
+res io_keyboard_reset_and_self_test()
+{
+#define KEYBOARD_PORT 0x60
+
+#define RESEND 0xFE
+#define SELF_TEST_PASSED 0xAA
+
+#define PERFORM_SELF_TEST 0xFF
+
+    uint8_t response;
+    do
+    {
+        out_byte(KEYBOARD_PORT, PERFORM_SELF_TEST);
+        io_delay();
+    } while ((response = in_byte(KEYBOARD_PORT)) == RESEND);
+
+    const uint8_t test_result = in_byte(KEYBOARD_PORT);
+    if (test_result == SELF_TEST_PASSED)
+        return res_OK;
+
+    return res_SELF_TEST_FAILED;
 }
