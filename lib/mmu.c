@@ -138,7 +138,7 @@ void mmu_table_init(void *address)
     memset(address, 0, TABLE_SIZE_BYTES);
 }
 
-void mmu_tlb_flush(size_t virtual_address)
+void mmu_tlb_flush(void *virtual_address)
 {
     __asm__ volatile("invlpg [%0]" : : "r"(virtual_address) : "memory");
 }

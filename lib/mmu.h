@@ -64,7 +64,7 @@ mmu_PageTableEntry *mmu_page_existing(void *address);
 void mmu_page_set_flags(void *virtual_address, int new_flags);
 void mmu_page_range_set_flags(void *virtual_address_begin, void *virtual_address_end, int new_flags);
 void mmu_table_init(void *address);
-void mmu_tlb_flush(size_t virtual_address);
+void mmu_tlb_flush(void *virtual_address);
 void mmu_tlb_flush_all();
 mmu_PageMapEntry *mmu_page_map_get_address_of(mmu_PageMapEntry *entry);
 mmu_PageTableEntry *mmu_page(uint64_t address);
