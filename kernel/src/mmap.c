@@ -101,3 +101,33 @@ res mmap(void *addr, size_t size, mmap_Protection prot)
 
     return res_OK;
 }
+
+void munmap(void *in_addr, size_t size)
+{
+    uint8_t *addr = in_addr;
+
+    range_Range cur = {0};
+
+    for (uint8_t *it = addr; it < addr + size; it += PAGE_SIZE)
+    {
+        mmu_PageTableEntry *page = mmu_page_existing(it);
+        uint64_t physical_page_addr = mmu_page_table_entry_address_get(page);
+
+        bool is_right_after_current_range = cur.begin + cur.size == physical_page_addr;
+        if (is_right_after_current_range)
+        {
+            cur.size += PAGE_SIZE;
+            continue;
+        }
+
+        phys_memory_add(&cur);
+
+        cur.begin = physical_page_addr;
+        cur.size = PAGE_SIZE;
+    }
+
+    if (cur.size != 0)
+    {
+        phys_memory_add(&cur);
+    }
+}

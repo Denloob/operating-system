@@ -36,3 +36,17 @@ void mmap_init(range_Range *mmap_base, uint64_t length);
  * @return res_OK or one of the errors defined above.
  */
 res mmap(void *addr, size_t size, mmap_Protection prot) WUR;
+
+/**
+ * @brief Unmap memory pages.
+ * @note  Ideally, only call it on addresses and sizes from mmap.
+ *          However,
+ *          it is ok to use this to unmap *page aligned* addresses, with
+ *          *page aligned* size, even if it does not come from mmap
+ *          when it's actual physical ram memory. Do this only if you know what
+ *          you are doing.
+ *
+ * @param addr The address to unmap.
+ * @param size The size of the region to unmap.
+ */
+void munmap(void *addr, size_t size);
