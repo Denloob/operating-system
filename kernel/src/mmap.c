@@ -116,6 +116,9 @@ void munmap(void *in_addr, size_t size)
         mmu_PageTableEntry *page = mmu_page_existing(it);
         uint64_t physical_page_addr = mmu_page_table_entry_address_get(page);
 
+        page->present = 0;
+        mmu_tlb_flush(it);
+
         bool is_right_after_current_range = cur.begin + cur.size == physical_page_addr;
         if (is_right_after_current_range)
         {
