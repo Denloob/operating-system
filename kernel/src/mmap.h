@@ -30,7 +30,7 @@ void mmap_init(range_Range *mmap_base, uint64_t length);
  * @brief Map a memory region starting from address of size `size` with `prot`
  *          protections.
  *
- * @param addr The beginning of the (virtual) memory region.
+ * @param addr The (page aligned) beginning of the (virtual) memory region.
  * @param size The size of the region.
  * @param prot The protections for the region.
  * @return res_OK or one of the errors defined above.
@@ -46,7 +46,7 @@ res mmap(void *addr, size_t size, mmap_Protection prot) WUR;
  *          when it's actual physical ram memory. Do this only if you know what
  *          you are doing.
  *
- * @param addr The address to unmap.
+ * @param addr The (page aligned) address to unmap.
  * @param size The size of the region to unmap.
  */
 void munmap(void *addr, size_t size);

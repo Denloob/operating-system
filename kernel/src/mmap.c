@@ -74,6 +74,7 @@ int prot_to_mmu_flags(mmap_Protection prot)
 res mmap(void *addr, size_t size, mmap_Protection prot)
 {
     assert(g_phys_memory_map.base);
+    assert(((uint64_t)addr & 0xfff) == 0 && "addr must be page aligned");
 
     if ((prot & MMAP_PROT_READ) == 0) return res_mmap_MUST_BE_READABLE;
     const int mmu_flags = prot_to_mmu_flags(prot);
@@ -105,6 +106,8 @@ res mmap(void *addr, size_t size, mmap_Protection prot)
 void munmap(void *in_addr, size_t size)
 {
     uint8_t *addr = in_addr;
+
+    assert(((uint64_t)addr & 0xfff) == 0 && "addr must be page aligned");
 
     range_Range cur = {0};
 
