@@ -18,6 +18,17 @@ static inline void cli()
     asm volatile ("cli" : : : "memory");
 }
 
+static inline void hlt()
+{
+    asm volatile ("hlt" : : : "memory");
+}
+
+ __attribute__((noreturn)) static inline void cli_hlt()
+{
+    asm volatile ("cli; hlt" : : : "memory");
+    __builtin_unreachable();
+}
+
 static inline void out_byte(uint16_t port, uint8_t val)
 {
     __asm__ volatile("out %1, %0" : : "a"(val), "Nd"(port) : "memory");
