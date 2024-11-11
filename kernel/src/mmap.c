@@ -9,6 +9,7 @@
 #define PAGE_ALIGN_UP(address)   math_ALIGN_UP(address, PAGE_SIZE)
 #define PAGE_ALIGN_DOWN(address) math_ALIGN_DOWN(address, PAGE_SIZE)
 
+#define MEMORY_MAP_MAX_LENGTH (0x1000 / sizeof(range_Range)) // NOTE: this has to be synced with the define in the bootloader (same macro name).
 struct {
     range_Range *base;
     uint64_t length;
@@ -18,6 +19,24 @@ void mmap_init(range_Range *mmap_base, uint64_t length)
 {
     g_phys_memory_map.base = mmap_base;
     g_phys_memory_map.length = length;
+}
+
+// WARNING: this invalidates all g_phys_memory_map.base iterators and moves indexes
+void phys_memory_add(const range_Range *range)
+{
+    uint64_t *const len = &g_phys_memory_map.length;
+    range_Range *const base = g_phys_memory_map.base;
+
+    assert(!(*len > MEMORY_MAP_MAX_LENGTH) && "How did len become larger than allowed?");
+    if (*len == MEMORY_MAP_MAX_LENGTH)
+    {
+        *len = range_defragment(base, *len);
+    }
+
+    assert(*len < MEMORY_MAP_MAX_LENGTH && "Ran out of memory for the physical memory map. Dynamic memory map is unsupported"); // TODO: support resizing the memory map
+
+    base[*len] = *range;
+    (*len)++;
 }
 
 /**

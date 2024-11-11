@@ -25,6 +25,7 @@ typedef void (*kernel_main)(Drive drive);
 
 #define MAX_DRIVE_READ_ADDRESS (0x100000 - 1) // Under one mebibyte
 
+// NOTE: this has to be synced with the define in the kernel (same macro name).
 #define MEMORY_MAP_MAX_LENGTH (0x1000 / sizeof(range_Range)) // HACK: having all the ranges fit inside a single page makes implementation easier.
 // Following number is chosen because the range 0x00007E00..0x0007FFFF should be free of use.
 #define MEMORY_MAP_PHYSICAL_ADDR 0x8000
