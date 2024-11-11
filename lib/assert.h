@@ -1,11 +1,12 @@
+#pragma once
+
+#include "macro_utils.h"
 #include "io.h"
 
-#define assert(expr)                                                           \
-    do                                                                         \
-    {                                                                          \
-        if (!(expr))                                                           \
-        {                                                                      \
-            puts(#expr);                                                       \
-            asm("cli; hlt");                                                   \
-        }                                                                      \
-    } while (0)
+__attribute__((noreturn))
+void assert_fail(const char *assertion, const char *file,
+                 const char *line, const char *function);
+
+#define assert(expr)                                                                \
+    (expr) ? (void)0                                                                \
+           : assert_fail(#expr, __FILE__, STR(__LINE__), __PRETTY_FUNCTION__)
