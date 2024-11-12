@@ -10,6 +10,7 @@
 #define FAT16_CLUSTER_EOF  0xFFF8 // anything above or equal to this = EOF
 #define FAT16_CLUSTER_BAD  0xFFF7
 
+#define MAX_CHAIN_LEN 50
 // FAT16-specific structures
 
 typedef struct
@@ -101,6 +102,7 @@ typedef struct
 {
     fat16_Ref *ref;
     fat16_DirEntry file_entry;
+    uint16_t chain[MAX_CHAIN_LEN];
 } fat16_File;
 
 /**

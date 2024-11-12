@@ -180,7 +180,7 @@ bool fat16_get_file_chain(Drive *drive, fat16_BootSector *bpb, const char *filen
     {
         range_length++;  //found 1 more cluster to the current range
 
-        uint16_t next_cluster;
+           uint16_t next_cluster;
 
         //read next FAT cluster
         if (!get_next_cluster(drive, bpb, curr_cluster, &next_cluster, &cache))
@@ -215,9 +215,10 @@ bool fat16_get_file_chain(Drive *drive, fat16_BootSector *bpb, const char *filen
 }
 
 
-uint64_t fat16_read_file(fat16_DirEntry *fileEntry, Drive *drive, fat16_BootSector *bpb,
-                     uint8_t *out_buffer, uint64_t buffer_size, uint64_t file_offset)
+uint64_t fat16_read_file(fat16_File *file, Drive *drive, fat16_BootSector *bpb,
+                     uint8_t *out_buffer, uint64_t buffer_size, uint64_t file_offset )
 {
+    fat16_DirEntry fileEntry = file->file_entry;
     uint64_t bytes_read = 0;
     FatCache cache = {0};
 
@@ -225,6 +226,37 @@ uint64_t fat16_read_file(fat16_DirEntry *fileEntry, Drive *drive, fat16_BootSect
         (bpb->reservedSectors + bpb->FATSize * bpb->numFATs) +
         (bpb->rootEntryCount * sizeof(fat16_DirEntry) + SECTOR_SIZE - 1) / SECTOR_SIZE;
 
+    uint16_t index = 0;
+    uint16_t first_chain_cluster = file->chain[index];
+    uint16_t first_chain_size = file->chain[index+1];
+    uint16_t cur_cluster = first_chain_cluster;
+    uint32_t skip_cluster_amount = file_offset / SECTOR_SIZE;
+
+    for(uint16_t i = 0; i<skip_cluster_amount;i++)
+    {
+        if(first_chain_size > 0)
+        {
+            first_chain_size = first_chain_cluster - 1;
+            cur_cluster = cur_cluster + 1;
+        }
+        else
+        {
+            index = index+1;
+            first_chain_cluster = file->chain[index];
+            if(first_chain_cluster == FAT16_CLUSTER_EOF)
+            {
+                return -1;
+            }
+            else
+            {
+                first_chain_size = file->chain[index+1];
+                cur_cluster = first_chain_cluster;
+            }
+        }
+    }
+    file_offset = file_offset % SECTOR_SIZE;
+    
+    /*
     uint16_t cur_cluster = fileEntry->firstClusterLow;
     while (file_offset / SECTOR_SIZE != 0)
     {
@@ -233,7 +265,7 @@ uint64_t fat16_read_file(fat16_DirEntry *fileEntry, Drive *drive, fat16_BootSect
 
         file_offset -= SECTOR_SIZE;
     }
-
+    */
     uint64_t space_in_buffer_left = buffer_size;
 
     //read each cluster , get the next cluster (almost the same idea as going threw linked list)
@@ -297,13 +329,15 @@ bool fat16_open(fat16_Ref *fat16, const char *path, fat16_File *out_file)
     }
 
     out_file->file_entry = dir_entry;
+    fat16_get_file_chain(fat16->drive, &fat16->bpb, fat16_filename, out_file->chain);
+ 
     return true;
 }
 
 uint64_t fat16_read(fat16_File *file, uint8_t *out_buffer, uint64_t buffer_size, uint64_t file_offset)
 {
     assert(file && out_buffer);
-    return fat16_read_file(&file->file_entry, file->ref->drive, &file->ref->bpb, out_buffer, buffer_size, file_offset);
+    return fat16_read_file(file, file->ref->drive, &file->ref->bpb, out_buffer, buffer_size, file_offset);
 }
 
 uint32_t fat16_cluster_to_sector(fat16_Ref *fat16, uint16_t cluster)
