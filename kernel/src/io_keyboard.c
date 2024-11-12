@@ -1,4 +1,5 @@
 #include "io.isr.h"
+#include "io_keyboard.h"
 #include "io.h"
 #include "res.h"
 #include <stdbool.h>
