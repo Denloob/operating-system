@@ -1,4 +1,5 @@
 #include "IDT.h"
+#include "kmalloc.h"
 #include "mmap.h"
 #include "file.h"
 #include "FAT16.h"
@@ -95,8 +96,6 @@ void __attribute__((section(".entry"), sysv_abi)) kernel_main(uint32_t param_mmu
     assert(IS_OK(io_keyboard_reset_and_self_test()) && "Keyboard self test failed. Reboot and try again.");
     asm volatile ("sti");
 
-    init_memory();
-
     //PCI scan test
     puts("Starting PCI scan");
     pci_scan_for_ide();
@@ -105,18 +104,6 @@ void __attribute__((section(".entry"), sysv_abi)) kernel_main(uint32_t param_mmu
     puts("Starting IDE scan");
     const int drive_id = ide_init();
 
-    void *block1 = kernel_malloc(10);  // allocate 8 kb
-
-    if (block1) {
-        puts("Allocated block1 at");
-    } else {
-        puts("Failed to allocate block1");
-    }
-
-    kfree(block1, 8192);  
-    puts("Freed block1");
-
-    
     // Get current time
     uint8_t hours, minutes, seconds;
     get_time(&hours, &minutes, &seconds);
