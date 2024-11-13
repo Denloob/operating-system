@@ -22,17 +22,17 @@ main_long_mode_jump_to:
     mov ebp, esp
 
     %define .addr [ebp + 8]
-    %define .stack_base [ebp + 12]
-    %define .param1 [ebp + 20]
-    %define .param2 [ebp + 24]
-    %define .param3 [ebp + 28]
+    %define .stack_base [ebp + 16]
+    %define .param1 [ebp + 24]
+    %define .param2 [ebp + 28]
+    %define .param3 [ebp + 32]
 
     lgdt [main_gdt_descriptor]         ; Load the 64-bit global descriptor table.
     jmp 0x8:.long_init       ; Set the code segment and enter 64-bit long mode.
 .long_init:
     [bits 64]
 
-    mov eax, .addr
+    mov rax, .addr
     mov edi, .param1
     mov esi, .param2
     mov edx, .param3

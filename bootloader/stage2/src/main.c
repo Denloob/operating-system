@@ -18,8 +18,8 @@ extern char __end;
 #define PAGE_ALIGN_DOWN(address) math_ALIGN_DOWN(address, PAGE_SIZE)
 
 typedef void (*kernel_main)(Drive drive);
-#define KERNEL_BEGIN 0x8000000
-#define KERNEL_BASE_ADDRESS (kernel_main)KERNEL_BEGIN
+#define KERNEL_BEGIN 0xffffffff80000000
+#define KERNEL_BASE_ADDRESS KERNEL_BEGIN
 
 #define KERNEL_STACK_VIRTUAL_ADDRESS_END 0x7ffffffff000
 
