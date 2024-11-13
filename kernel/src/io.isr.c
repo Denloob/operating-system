@@ -7,9 +7,9 @@
 // @see io.c
 #define KEYBOARD_PORT 0x60
 
-int io_keyboard_buffer[IO_KEYBOARD_BUFFER_SIZE];
-uint8_t io_keyboard_buffer_head;
-uint8_t io_keyboard_buffer_tail;
+volatile int io_keyboard_buffer[IO_KEYBOARD_BUFFER_SIZE];
+volatile uint8_t io_keyboard_buffer_head;
+volatile uint8_t io_keyboard_buffer_tail;
 
 static void __attribute__((used, sysv_abi)) io_isr_keyboard_event_impl(isr_InterruptFrame *frame)
 {
