@@ -172,8 +172,8 @@ mmu_PageMapEntry *mmu_page_map_get_or_allocate_of(mmu_PageMapEntry *entry)
 
 mmu_PageTableEntry *mmu_page_existing(void *address)
 {
-    uint64_t address64 = (uint64_t)address;
-    mmu_PageIndexes page_indexes = *(mmu_PageIndexes *)&address64;
+    mmu_PageIndexes page_indexes = {0};
+    memmove(&page_indexes, &address, sizeof(address));
 
     mmu_PageMapEntry *pml4_entry = g_pml4 + page_indexes.level4;
     mmu_PageMapEntry *pml3 = mmu_page_map_get_address_of(pml4_entry);
@@ -189,7 +189,8 @@ mmu_PageTableEntry *mmu_page_existing(void *address)
 
 mmu_PageTableEntry *mmu_page(uint64_t address)
 {
-    mmu_PageIndexes page_indexes = *(mmu_PageIndexes *)&address;
+    mmu_PageIndexes page_indexes = {0};
+    memmove(&page_indexes, &address, sizeof(address));
 
 
     // We set read_write to `true` for all layers except last one,
