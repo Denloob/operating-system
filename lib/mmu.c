@@ -172,6 +172,9 @@ mmu_PageMapEntry *mmu_page_map_get_or_allocate_of(mmu_PageMapEntry *entry)
 
 mmu_PageTableEntry *mmu_page_existing(void *address)
 {
+    const bool is_valid_virtual_address = ((uint64_t)address < 0x0000800000000000 || (uint64_t)address > 0xFFFF7FFFFFFFFFFF);
+    assert(is_valid_virtual_address && "Highest 16 bits of an address must be the same (aka either canonical address, or non-canonical)");
+
     mmu_PageIndexes page_indexes = {0};
     memmove(&page_indexes, &address, sizeof(address));
 
@@ -189,6 +192,9 @@ mmu_PageTableEntry *mmu_page_existing(void *address)
 
 mmu_PageTableEntry *mmu_page(uint64_t address)
 {
+    const bool is_valid_virtual_address = (address < 0x0000800000000000 || address > 0xFFFF7FFFFFFFFFFF);
+    assert(is_valid_virtual_address && "Highest 16 bits of an address must be the same (aka either canonical address, or non-canonical)");
+
     mmu_PageIndexes page_indexes = {0};
     memmove(&page_indexes, &address, sizeof(address));
 
