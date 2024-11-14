@@ -7,3 +7,4 @@
 
 typedef const char *res;
 #define res_OK (res)NULL
+#define res_INVALID_ARG "Invalid argument"

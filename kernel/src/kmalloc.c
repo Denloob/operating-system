@@ -1,4 +1,6 @@
 #include "kmalloc.h"
+#include "brk.h"
+#include "compiler_macros.h"
 #include "math.h"
 #include "memory.h"
 #include "assert.h"
@@ -54,33 +56,44 @@ struct malloc_state
     malloc_chunk *top; // The top free chunk
 };
 
-/*
- * We will be mapping the kernel heap at a constant address, and then growing
- * it from there if we need it.
- */
-#define HEAP_BEGIN (void *)0x555000000
-#define MMAP(addr, size)                                                       \
-    mmap(addr, size, MMAP_PROT_READ | MMAP_PROT_WRITE)
-
 static malloc_state main_arena;
 static bool is_malloc_initialized = false;
-
-static void malloc_grow_heap()
-{
-    main_arena.top = (void *)PAGE_ALIGN_UP((size_t)main_arena.top);
-    res rs = MMAP(main_arena.top, PAGE_SIZE);
-    assert(IS_OK(rs));
-}
 
 static void malloc_initialize()
 {
     is_malloc_initialized = true;
 
-    main_arena.top = HEAP_BEGIN;
-    res rs = MMAP(HEAP_BEGIN, PAGE_SIZE);
+    void *allocated_addr;
+    res rs = sbrk(PAGE_SIZE, &allocated_addr);
     assert(IS_OK(rs));
 
+    main_arena.top = allocated_addr;
     main_arena.top->chunk_size = PAGE_SIZE | MALLOC_CHUNK_PREV_IN_USE;
+}
+
+/**
+ * @brief - Grow the malloc heap enough, so a **chunk** of size wanted_size would
+ *              fit.
+ *
+ * @return res_OK on success
+ */
+WUR static res malloc_grow_heap(size_t wanted_size)
+{
+    size_t top_size = main_arena.top->chunk_size;
+    assert(wanted_size > top_size && "asked to grow heap when the requested size fits already");
+
+    size_t needed_size_left = wanted_size - top_size;
+    size_t size_increase = PAGE_ALIGN_UP(needed_size_left);
+    res rs = sbrk(size_increase, NULL);
+    if (IS_OK(rs))
+    {
+        size_t new_chunk_size;
+        bool overflow = __builtin_add_overflow(main_arena.top->chunk_size, size_increase, &new_chunk_size);
+        if (overflow)
+            return res_INVALID_ARG;
+    }
+
+    return rs;
 }
 
 /*
@@ -96,11 +109,16 @@ void *kmalloc(size_t size)
 
     size_t victim_size = math_ALIGN_UP(size + CHUNK_PARTIAL_HEADER_SIZE, CHUNK_SIZE_ALIGN);
 
-    // TODO: check if victim can fit inside current heap
+    size_t top_size = main_arena.top->chunk_size;
+    if (top_size < victim_size)
+    {
+        res rs = malloc_grow_heap(victim_size);
+        if (IS_ERR(rs))
+            return NULL;
+    }
 
     // Allocate a chunk from the top of the heap
     malloc_chunk *victim = main_arena.top;
-    size_t top_size = main_arena.top->chunk_size;
 
     victim->chunk_size = victim_size | (top_size & MALLOC_CHUNK_PREV_IN_USE);
     main_arena.top = next_chunk(victim);
