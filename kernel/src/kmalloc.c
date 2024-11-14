@@ -108,6 +108,7 @@ void *kmalloc(size_t size)
     // TODO: if size is large enough, mmap it instead
 
     size_t victim_size = math_ALIGN_UP(size + CHUNK_PARTIAL_HEADER_SIZE, CHUNK_SIZE_ALIGN);
+    if (victim_size < MIN_CHUNK_SIZE) victim_size = MIN_CHUNK_SIZE;
 
     size_t top_size = main_arena.top->chunk_size;
     if (top_size < victim_size)
