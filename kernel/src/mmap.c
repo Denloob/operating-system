@@ -90,6 +90,7 @@ res mmap(void *addr, size_t size, mmap_Protection prot)
         uint64_t allocated_size;
         bool success = allocate_physical_memory(size_aligned,
                                                 &allocated_phys_addr, &allocated_size);
+        // TODO: on fail, deallocate all the allocated memory
         if (!success) return res_mmap_OUT_OF_MEMORY;
 
         uint64_t begin = allocated_phys_addr;
