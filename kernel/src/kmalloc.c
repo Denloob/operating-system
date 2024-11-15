@@ -154,23 +154,65 @@ WUR static res malloc_grow_heap(size_t wanted_size)
     return rs;
 }
 
+/**
+ * @brief Check if the heap is big enough to put a chunk of the end of it.
+ *
+ * @param chunk_size - The size of the chunk to test for
+ * @return if it would fit
+ */
+__attribute__((const))
+bool is_heap_big_enough_for_chunk(size_t chunk_size)
+{
+    return chunk_size <= main_arena.top->chunk_size;
+}
+
+/**
+ * @brief - Splits a given chunk in two. The first part is of size `wanted_size`
+ *              and the other one the rest of it.
+ *              In the end of the function, the first part is located at
+ *              `chunk_to_split`, and a pointer to the other part is returned.
+ *
+ * @param chunk_to_split - The chunk you want to split
+ * @param size_of_first  - The size of the first part of the split chunk
+ *
+ * @return - Pointer to the second part of the split (first part == `chunk_to_split`).
+ */
+malloc_chunk *split_chunk_into_two(malloc_chunk *chunk_to_split, size_t wanted_size)
+{
+    size_t original_size = chunk_to_split->chunk_size;
+    size_t original_flags = original_size & MALLOC_CHUNK_PREV_IN_USE;
+
+    malloc_chunk *part1 = chunk_to_split;
+    part1->chunk_size = wanted_size | original_flags;
+
+    malloc_chunk *part2 = next_chunk(part1);
+    part2->chunk_size = original_size - wanted_size;
+    part2->chunk_size |= MALLOC_CHUNK_PREV_IN_USE;
+
+    return part2; // part1 is at `chunk_to_split`, so no need to return it
+}
+
+/**
+ * @brief - Allocate the chunk from the top of the heap, aka the free space on the
+ *              heap which was never allocated before. This is used only as a last
+ *              resort, when there's no other way to reuse previously freed chunks.
+ *
+ * @param victim_size - The size of the **chunk** (not the user request)
+ *                          that needs allocating
+ */
 void *malloc_from_top(size_t victim_size)
 {
-    size_t top_size = main_arena.top->chunk_size;
-    if (top_size < victim_size)
+    if (!is_heap_big_enough_for_chunk(victim_size))
     {
         res rs = malloc_grow_heap(victim_size);
         if (IS_ERR(rs))
             return NULL;
     }
 
-    malloc_chunk *victim = main_arena.top;
+    malloc_chunk *old_top = main_arena.top;
+    main_arena.top = split_chunk_into_two(old_top, victim_size);
 
-    victim->chunk_size = victim_size | (top_size & MALLOC_CHUNK_PREV_IN_USE);
-    main_arena.top = next_chunk(victim);
-    main_arena.top->chunk_size = (top_size - victim_size) | MALLOC_CHUNK_PREV_IN_USE;
-
-    return chunk2addr(victim);
+    return chunk2addr(old_top);
 }
 
 void *malloc_from_bin(size_t victim_size)
