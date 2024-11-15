@@ -155,10 +155,10 @@ WUR static res malloc_grow_heap(size_t wanted_size)
 }
 
 /**
- * @brief Check if the heap is big enough to put a chunk of the end of it.
+ * @brief - Check if the heap is big enough to put a chunk of the end of it.
  *
  * @param chunk_size - The size of the chunk to test for
- * @return if it would fit
+ * @return - if it would fit
  */
 __attribute__((const))
 bool is_heap_big_enough_for_chunk(size_t chunk_size)
@@ -173,7 +173,7 @@ bool is_heap_big_enough_for_chunk(size_t chunk_size)
  *              `chunk_to_split`, and a pointer to the other part is returned.
  *
  * @param chunk_to_split - The chunk you want to split
- * @param size_of_first  - The size of the first part of the split chunk
+ * @param wanted_size    - The size of the first part of the split chunk
  *
  * @return - Pointer to the second part of the split (first part == `chunk_to_split`).
  */
@@ -199,6 +199,7 @@ malloc_chunk *split_chunk_into_two(malloc_chunk *chunk_to_split, size_t wanted_s
  *
  * @param victim_size - The size of the **chunk** (not the user request)
  *                          that needs allocating
+ * @return - Pointer to the allocated memory (not chunk)
  */
 void *malloc_from_top(size_t victim_size)
 {
