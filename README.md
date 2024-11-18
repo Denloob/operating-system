@@ -24,7 +24,7 @@ features of the OS, with some joke references.
 
 ## Building
 
-You will need `wget`, `mtools` and Make (best GNUmake) installed. \
+You will need `wget`, `mtools`, `direnv` and Make (best GNUmake) installed. \
 First, (after cloning the project) install the buildtools with
 ```sh
 make toolchain
