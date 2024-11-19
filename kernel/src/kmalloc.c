@@ -40,11 +40,29 @@ enum {
 #define CHUNK_OVERLAP_OFFSET    (sizeof(size_t)) // prev_chunk_size is located inside previous chunk
 
 #define chunk_size(chunk) ((chunk)->chunk_size & (~0x7))
+#define chunk_flags(chunk) ((chunk)->chunk_size & (0x7))
 
 __attribute__((const))
 malloc_chunk *next_chunk(malloc_chunk *chunk)
 {
      return ((void *)(chunk) + chunk_size(chunk));
+}
+
+__attribute__((const))
+bool is_prev_free(malloc_chunk *chunk)
+{
+    return (chunk->chunk_size & MALLOC_CHUNK_PREV_IN_USE) == 0;
+}
+
+/**
+ * @brief - Get the previous chunk.
+ *          Call this function only is prev is free!
+ */
+__attribute__((const))
+malloc_chunk *prev_chunk(malloc_chunk *chunk)
+{
+    assert(is_prev_free(chunk) && "Cannot get prev chunk unless it's free");
+    return (void *)chunk - chunk->prev_chunk_size;
 }
 
 // Remove `chunk` from a linked list via its `fd` and `bk`.
@@ -98,6 +116,16 @@ struct malloc_state
         malloc_chunk *bk;
     } bins[BIN_COUNT];
 };
+
+/**
+ * @brief Checks if the given chunk (which is not `top`) is free.
+ */
+__attribute__((const))
+bool is_chunk_free(malloc_chunk *chunk)
+{
+    malloc_chunk *next = next_chunk(chunk);
+    return (next->chunk_size & MALLOC_CHUNK_PREV_IN_USE) == 0;
+}
 
 void bin_insert(malloc_bin *bin, malloc_chunk *chunk)
 {
@@ -237,6 +265,95 @@ void *malloc_from_bin(size_t victim_size)
     return NULL;
 }
 
+/**
+ * @brief Combine two consecutive **free** chunks, where first is right before
+ *          the second one. That is, next_chunk(first) == second.
+ *          Additionally, `second` may not be the top chunk.
+ */
+void combine_free_chunks(malloc_chunk *first, malloc_chunk *second)
+{
+    assert(next_chunk(first) == second);
+    assert(is_chunk_free(first) && is_chunk_free(second));
+
+    size_t new_size = chunk_size(first) + chunk_size(second);
+    size_t flags_of_first = chunk_flags(first);
+
+    first->chunk_size = new_size | flags_of_first;
+
+    malloc_chunk *next = next_chunk(second);
+    next->prev_chunk_size = new_size;
+}
+
+/**
+ * @brief Combine the given chunk with the top of the heap.
+ *          The chunk must be right before the top, that is
+ *          next_chunk(chunk) == arena->top.
+ */
+void combine_chunk_with_top(malloc_chunk *chunk, malloc_state *arena)
+{
+    assert(next_chunk(chunk) == arena->top);
+
+    size_t new_top_size = chunk_size(chunk) + chunk_size(arena->top);
+
+    chunk->chunk_size = new_top_size | chunk_flags(chunk);
+    arena->top = chunk;
+}
+
+/**
+ * @brief - Consolidates (merges) the given chunk with the previous chunk, if it's free.
+ *
+ * @param chunk - The chunk to try to consolidate with previous chunk
+ *
+ * @return - Address of the consolidated chunk.
+ */
+malloc_chunk *try_consolidate_previous(malloc_chunk *chunk)
+{
+    if (!is_prev_free(chunk)) return chunk;
+
+    malloc_chunk *prev = prev_chunk(chunk);
+
+    unlink_chunk(chunk);
+
+    combine_free_chunks(prev, chunk);
+    return prev;
+}
+
+/**
+ * @brief - Consolidates (merges) the given chunk with the next chunk, if it's free.
+ *
+ * @param chunk - The chunk to try to consolidate with next chunk
+ */
+void try_consolidate_next(malloc_chunk *chunk, malloc_state *arena)
+{
+    malloc_chunk *next = next_chunk(chunk);
+
+    if (next == arena->top)
+    {
+        unlink_chunk(chunk);
+        combine_chunk_with_top(chunk, arena);
+        return;
+    }
+
+    // We must check this only when we are sure `next != arena->top`.
+    if (!is_chunk_free(next)) return;
+
+    unlink_chunk(next);
+    combine_free_chunks(chunk, next);
+}
+
+/**
+ * @brief Try to consolidate the given chunk with the next/previous one.
+ *          Consolidates if possible, and does nothing otherwise.
+ *
+ * @param chunk The chunk to try to consolidate with the next/prev chunk.
+ */
+void try_consolidate(malloc_chunk *chunk, malloc_state *arena)
+{
+    // NOTE: it's important we first try to consolidate with prev, because a successful consolidation with top would result in `chunk` no longer being a normal chunk
+    chunk = try_consolidate_previous(chunk);
+    try_consolidate_next(chunk, arena);
+}
+
 /*
                    kmalloc / kfree
 */
@@ -271,9 +388,9 @@ void kfree(void *addr)
     next->prev_chunk_size = chunk_size(chunk);
     next->chunk_size &= (~MALLOC_CHUNK_PREV_IN_USE);
 
-    // TODO: consolidate if possible
-
     malloc_bin *unsorted_bin = bin_at(&main_arena, 0);
 
     bin_insert(unsorted_bin, chunk);
+
+    try_consolidate(chunk, &main_arena);
 }
