@@ -365,29 +365,14 @@ bool fat16_add_root_entry(Drive *drive, fat16_BootSector *bpb, fat16_DirEntry *n
     fat16_DirReader reader;
     fat16_init_dir_reader(&reader, bpb);
 
-    uint8_t sector_buf[SECTOR_SIZE]; 
     fat16_DirEntry entry;
-    
     while (fat16_read_next_root_entry(drive, &reader, &entry)) 
     {
-        if (entry.filename[0] == 0x00 || entry.filename[0] == 0xE5) 
-        {
-            uint64_t entry_address = reader.current_sector * SECTOR_SIZE + reader.entry_offset - sizeof(fat16_DirEntry);
+        if (entry.filename[0] != 0x00 && entry.filename[0] != 0xE5) 
+            continue;
 
-            if (!drive_read(drive, entry_address / SECTOR_SIZE * SECTOR_SIZE, sector_buf, SECTOR_SIZE))
-            {
-                return false;
-            }
-
-            uint32_t offset_in_sector = entry_address % SECTOR_SIZE;
-            memmove(sector_buf + offset_in_sector, new_entry, sizeof(fat16_DirEntry));
-
-            if (!drive_write(drive, entry_address / SECTOR_SIZE * SECTOR_SIZE, sector_buf, SECTOR_SIZE))
-            {
-                return false;
-            }
-            return true;
-        }
+        uint64_t entry_address = reader.current_sector * SECTOR_SIZE + reader.entry_offset - sizeof(fat16_DirEntry);
+        return drive_write(drive, entry_address, (uint8_t *)new_entry, sizeof(fat16_DirEntry));
     }
 
     return false;
