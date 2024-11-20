@@ -21,6 +21,7 @@
 #include "IDE.h"
 #include "time.h"
 #include "vga.h"
+#include <stdbool.h>
 
 #define PAGE_SIZE 0x1000
 #define PAGE_ALIGN_UP(address)   (((address) + PAGE_SIZE - 1) & ~(PAGE_SIZE - 1))
@@ -188,12 +189,12 @@ char *amongus[] = {
 
     while(true)
     {
-      char input_buffer[INPUT_BUFFER_SIZE];
-      put("$ ");
-      get_string(input_buffer, INPUT_BUFFER_SIZE);
-
-      parse_command(input_buffer, INPUT_BUFFER_SIZE);
+        char input_buffer[INPUT_BUFFER_SIZE];
+        put("$ ");
+        get_string(input_buffer,INPUT_BUFFER_SIZE);
+        parse_command(input_buffer, INPUT_BUFFER_SIZE);
     }
+
 }
 
 static void init_idt()
