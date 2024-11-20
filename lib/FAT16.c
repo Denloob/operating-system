@@ -351,13 +351,56 @@ bool fat16_write_sectors(Drive *drive, uint32_t sector, const uint8_t *buffer, u
 {
     for (uint32_t i = 0; i < count; i++)
     {
-        //if (!drive_write(drive, sector + i, buffer + (i * SECTOR_SIZE), 1)) // we dont have a drive write yet but assuming we d o
+        if(!drive_write(drive, sector + i, buffer + (i * SECTOR_SIZE), 1))
         {
             return false; // Failed to write to the sector
         }
     }
     return true;
 }
+
+
+bool fat16_add_root_entry(Drive *drive, fat16_BootSector *bpb, fat16_DirEntry *new_entry) 
+{
+    fat16_DirReader reader;
+    fat16_init_dir_reader(&reader, bpb);
+
+    uint8_t sector_buf[SECTOR_SIZE]; 
+    fat16_DirEntry entry;
+    
+    while (fat16_read_next_root_entry(drive, &reader, &entry)) 
+    {
+        if (entry.filename[0] == 0x00 || entry.filename[0] == 0xE5) 
+        {
+            uint64_t entry_address = reader.current_sector * SECTOR_SIZE + reader.entry_offset - sizeof(fat16_DirEntry);
+
+            if (!drive_read(drive, entry_address / SECTOR_SIZE * SECTOR_SIZE, sector_buf, SECTOR_SIZE))
+            {
+                return false;
+            }
+
+            uint32_t offset_in_sector = entry_address % SECTOR_SIZE;
+            memmove(sector_buf + offset_in_sector, new_entry, sizeof(fat16_DirEntry));
+
+            if (!drive_write(drive, entry_address / SECTOR_SIZE * SECTOR_SIZE, sector_buf, SECTOR_SIZE))
+            {
+                return false;
+            }
+            return true;
+        }
+    }
+
+    return false;
+}
+
+/*
+bool fat16_allocate_cluster()
+
+bool fat16_create_file(fat16_Ref *fat16 , const char *filename)
+{
+    fat16_DirEntry 
+}
+*/
 /*
 uint16_t fat16_allocate_cluster(fat16_Ref *fat16)
 {

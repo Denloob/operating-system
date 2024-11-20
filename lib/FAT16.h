@@ -187,3 +187,5 @@ bool fat16_create_empty_file(fat16_Ref *fat16 , const char *filename , const cha
  *@size - the size of the data
  */
 bool fat16_wirte_to_file(fat16_File *file , uint8_t buffer , size_t size);
+
+bool fat16_add_root_entry(Drive *drive, fat16_BootSector *bpb, fat16_DirEntry *new_entry);
