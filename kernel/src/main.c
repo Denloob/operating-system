@@ -199,9 +199,10 @@ char *amongus[] = {
 
 static void init_idt()
 {
-    g_idt = (void *)0x100; // TODO: TEMP: FIXME: VERY temporary!!!
+    static IDTEntry idt_arr[IDT_LENGTH];
+    memset(g_idt, 0, sizeof(idt_arr));
 
-    memset(g_idt, 0, IDT_LENGTH * sizeof(*g_idt));
+    g_idt = idt_arr;
 
     idt_register(0xd, IDT_gate_type_INTERRUPT, error_isr_general_protection_fault);
     idt_register(0xe, IDT_gate_type_INTERRUPT, error_isr_page_fault);
