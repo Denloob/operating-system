@@ -237,9 +237,9 @@ void mmu_map_range(uint64_t physical_begin, uint64_t physical_end,
          phys < physical_end; phys += PAGE_SIZE, virt += PAGE_SIZE)
     {
         mmu_PageTableEntry *page = mmu_page_allocate(virt, phys);
-        page->read_write = flags & MMU_READ_WRITE;
-        page->execute_disable = flags & MMU_EXECUTE_DISABLE;
-        page->user_supervisor = flags & MMU_USER_PAGE;
+        page->read_write = (flags & MMU_READ_WRITE) != 0;
+        page->execute_disable = (flags & MMU_EXECUTE_DISABLE) != 0;
+        page->user_supervisor = (flags & MMU_USER_PAGE) != 0;
     }
 }
 
@@ -247,8 +247,9 @@ void mmu_page_set_flags(void *virtual_address, int new_flags)
 {
     mmu_PageTableEntry *page = mmu_page_existing(virtual_address);
 
-    page->read_write = new_flags & MMU_READ_WRITE;
-    page->execute_disable = new_flags & MMU_EXECUTE_DISABLE;
+    page->read_write = (new_flags & MMU_READ_WRITE) != 0;
+    page->execute_disable = (new_flags & MMU_EXECUTE_DISABLE) != 0;
+    page->user_supervisor = (new_flags & MMU_USER_PAGE) != 0;
 }
 
 void mmu_page_range_set_flags(void *virtual_address_begin, void *virtual_address_end, int new_flags)
