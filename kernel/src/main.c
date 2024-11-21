@@ -107,12 +107,12 @@ void __attribute__((section(".entry"), sysv_abi)) kernel_main(uint32_t param_mmu
 
     // Get current time
     uint8_t hours, minutes, seconds;
-    get_time(&hours, &minutes, &seconds);
+    RTC_get_time(&hours, &minutes, &seconds);
     
     // Get current date
     uint16_t year;
     uint8_t month, day;
-    get_date(&year, &month, &day);
+    RTC_get_date(&year, &month, &day);
 
     //the printf is using zero padding 
     printf("Current Time: %d:%02d:%02d\n", hours, minutes, seconds);

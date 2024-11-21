@@ -10,7 +10,7 @@
  * @param minutes Pointer to store the current minute.
  * @param seconds Pointer to store the current second.
  */
-void get_time(uint8_t *hours, uint8_t *minutes, uint8_t *seconds);
+void RTC_get_time(uint8_t *hours, uint8_t *minutes, uint8_t *seconds);
 
 /**
  * @brief Gets the current date from the RTC.
@@ -19,6 +19,6 @@ void get_time(uint8_t *hours, uint8_t *minutes, uint8_t *seconds);
  * @param month Pointer to store the current month.
  * @param day   Pointer to store the current day of the month.
  */
-void get_date(uint16_t *year, uint8_t *month, uint8_t *day);
+void RTC_get_date(uint16_t *year, uint8_t *month, uint8_t *day);
 
 #endif

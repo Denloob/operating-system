@@ -37,7 +37,7 @@ static uint8_t bcd_to_bin(uint8_t val)
     return (val & 0x0F) + ((val / 16) * 10);
 }
 
-void get_time(uint8_t *hours, uint8_t *minutes, uint8_t *seconds) 
+void RTC_get_time(uint8_t *hours, uint8_t *minutes, uint8_t *seconds) 
 {
     *seconds = bcd_to_bin(read_rtc_register(0x00));
     *minutes = bcd_to_bin(read_rtc_register(0x02));
@@ -51,7 +51,7 @@ void get_time(uint8_t *hours, uint8_t *minutes, uint8_t *seconds)
     }
 }
 
-void get_date(uint16_t *year, uint8_t *month, uint8_t *day) 
+void RTC_get_date(uint16_t *year, uint8_t *month, uint8_t *day) 
 {
     *day   = bcd_to_bin(read_rtc_register(0x07));
     *month = bcd_to_bin(read_rtc_register(0x08));
