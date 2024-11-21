@@ -44,5 +44,5 @@ typedef struct {
 
 typedef struct __attribute__((__packed__)) {
     uint16_t size;
-    uint32_t offset;
+    uint64_t offset;
 } gdt_descriptor;
