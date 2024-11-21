@@ -116,17 +116,6 @@ void main_gdt_long_mode_init()
         .limit_high = 0xf,
         .base_high = 0,
     };
-
-    // TSS
-    *(gdt_system_segment *)(&gdt[3]) = (gdt_system_segment){
-        .limit_low = 0x68,
-        .base_low = 0,
-        .access = GDT_SEG_PRES | GDT_SEG_DESCTYPE_NOT_SYSTEM | GDT_SEG_SIZE_32,
-        .flags = 0xc,
-        .limit_high = 0xf,
-        .base_mid = 0,
-        .base_high = 0,
-    };
 }
 
 void get_memory_map(range_Range **resulting_memory_map, uint64_t *resulting_memory_map_size)

@@ -6,9 +6,6 @@ main_gdt_64bit:
     dq 0
     .Data:
     dq 0
-    .TSS:
-    dq 0
-    dq 0
 
 global main_gdt_descriptor
 main_gdt_descriptor:
