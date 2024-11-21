@@ -105,6 +105,7 @@ typedef struct
     uint16_t chain[MAX_CHAIN_LEN];
 } fat16_File;
 
+
 /**
  * @brief Initialises a fat16 reference struct.
  * @WARN: Invalidating the ref will invalidate all data structures obtained with the ref.
@@ -122,8 +123,7 @@ bool fat16_ref_init(fat16_Ref *fat16, Drive *drive);
  *
  * @see fat16_ref_init
  */
-bool fat16_open(fat16_Ref *fat16, const char *path, fat16_File *out_file); //changed the function to work with the new algo 
-
+bool fat16_open(fat16_Ref *fat16, const char *path, fat16_File *out_file);
 /**
  * @brief Reads the whole file contents into out_buffer.
  *
@@ -150,13 +150,8 @@ uint32_t fat16_cluster_to_sector(fat16_Ref *fat16, uint16_t cluster);
 
 bool fat16_write_sectors(Drive *drive, uint32_t sector, const uint8_t *buffer, uint32_t count);
 
-
-
 /**
  *@brief finds a free clutser in the FAT and returns its number
- *
- *
- *
  */
 uint16_t fat16_allocate_cluster(fat16_Ref *fat16);
 /**
@@ -165,19 +160,15 @@ uint16_t fat16_allocate_cluster(fat16_Ref *fat16);
  */
 uint16_t fat16_get_next_cluster(fat16_Ref *fat16, uint16_t cluster);
 /**
- *@brief the functions links 2 clusters (linking = change values in the FAT)
- */
-bool fat16_set_next_cluster(fat16_Ref *fat16, uint16_t current_cluster, uint16_t next_cluster);
-/**
- *@brief the function creates an empty file and registers it and the FAT , RootDirectory
+ * *@brief the function creates a dir entry 
  *
  *@*fat16 - the fat ref (bpb , drive) 
- *@*filename - the file name
+ *@*filename - the file name for the entry
  @extension - the file extension (exe , com , txt , doc ,   bmp , gif , jpg ...)
  *@attributes - the attributes of the file (0x01 - read only / 0x02 - hidden / 0x04 - system / 0x08 -volume label / 0x10 - directory / 0x20  - archive / 0x0F - long file name) can be 2 things or more for example 0x12 is a hidden directory 
 *@out_file - the variables where the refrence to the file will be stored
  */
-bool fat16_create_empty_file(fat16_Ref *fat16 , const char *filename , const char *extension , uint8_t attributes , fat16_File *out_file);
+bool fat16_create_dir_entry(fat16_Ref *fat16 , const char *filename , const char *extension , uint8_t attributes , fat16_DirEntry *created_entry);
 
 /**
  *@brief the function gets a file and writes content into it
