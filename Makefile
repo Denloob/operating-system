@@ -1,6 +1,7 @@
 EMU := qemu-system-x86_64
 BOOTLOADER := bootloader/bootloader.bin
 KERNEL := kernel/bin/kernel.bin
+DEBUG_SYM := kernel/bin/kernel.sym
 IMAGE_NAME := hdd
 
 all: $(IMAGE_NAME).img
@@ -29,15 +30,34 @@ $(KERNEL):
 
 QEMU_LOG_OPTIONS := -d int,cpu_reset,in_asm,guest_errors -D log.txt
 QEMU_MISC_OPTIONS := -no-reboot -monitor stdio
+
 QEMU_DEBUG_OPTIONS := -gdb tcp::1234 -S
+GDB_COMMAND := gdb $(shell realpath $(DEBUG_SYM)) -ex "target remote localhost:1234"
 
 run: $(IMAGE_NAME).img
 	$(EMU) -hda $< $(QEMU_LOG_OPTIONS) $(QEMU_MISC_OPTIONS)
 
+.PHONY: runb
 runb: # Run, don't build
 	$(EMU) -hda $(IMAGE_NAME).img $(QEMU_LOG_OPTIONS) $(QEMU_MISC_OPTIONS)
 
-debug: $(IMAGE_NAME).img
+.PHONY: $(DEBUG_SYM)
+$(DEBUG_SYM):
+	$(MAKE) debug -C kernel
+
+.PHONY: debug
+debug: $(IMAGE_NAME).img $(DEBUG_SYM)
+	@if [ -n "$$TMUX" ]; then                                                  \
+		tmux new-window -n 'kernel-debug' '$(GDB_COMMAND)';                    \
+	else                                                                       \
+		echo -e '\n';                                                          \
+		echo "Run the following command:";                                     \
+		echo -e '```';                                                         \
+		echo '$(GDB_COMMAND)';                                                 \
+		echo -e '```\n';                                                       \
+		read -p "Then, press enter to start the OS...";                        \
+	fi
+
 	$(EMU) -hda $< $(QEMU_LOG_OPTIONS) $(QEMU_MISC_OPTIONS) $(QEMU_DEBUG_OPTIONS)
 
 clean:
