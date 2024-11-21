@@ -239,6 +239,7 @@ void mmu_map_range(uint64_t physical_begin, uint64_t physical_end,
         mmu_PageTableEntry *page = mmu_page_allocate(virt, phys);
         page->read_write = flags & MMU_READ_WRITE;
         page->execute_disable = flags & MMU_EXECUTE_DISABLE;
+        page->user_supervisor = flags & MMU_USER_PAGE;
     }
 }
 

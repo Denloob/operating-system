@@ -7,6 +7,7 @@
 enum {
     MMU_READ_WRITE      = 0x1,
     MMU_EXECUTE_DISABLE = 0x2,
+    MMU_USER_PAGE       = 0x4,
 };
 
 typedef struct
