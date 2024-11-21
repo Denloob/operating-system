@@ -31,12 +31,21 @@ typedef struct {
     uint64_t base_high : 8;
 } gdt_entry;
 
+#define GDT_SYS_SEG_64BIT_TSS 9
 typedef struct {
     uint64_t limit_low : 16;
     uint64_t base_low : 24;
-    uint64_t access : 8;
+
+    uint64_t type : 4;
+    uint64_t reserved1 : 1; // Thanks to this bit being 0, the CPU knows it's a System Segment and not a GDT entry
+    uint64_t privilege_level : 2;
+    uint64_t present : 1;
     uint64_t limit_high : 4;
-    uint64_t flags : 4;
+
+    uint64_t available1 : 1;
+    uint64_t reserved2 : 1;
+    uint64_t reserved3 : 1;
+    uint64_t granularity : 1;
     uint64_t base_mid : 8;
     uint64_t base_high : 32;
     uint64_t reserved : 32;

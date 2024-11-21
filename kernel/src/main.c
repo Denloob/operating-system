@@ -1,5 +1,7 @@
 #include "IDT.h"
+#include "tss.h"
 #include "kmalloc.h"
+#include "gdt.h"
 #include "mmap.h"
 #include "file.h"
 #include "FAT16.h"
@@ -47,6 +49,7 @@ extern char __entry_start;
 extern char __entry_end;
 
 static void init_idt();
+static void init_gdt_and_tss();
 
 
 IDEChannelRegisters channels[2];
@@ -85,6 +88,8 @@ void __attribute__((section(".entry"), sysv_abi)) kernel_main(uint32_t param_mmu
     memset(&__bss_start, 0, (uint64_t)&__bss_end - (uint64_t)&__bss_start);
 
     init_idt();
+    init_gdt_and_tss();
+
 
     PIC_remap(0x20, 0x70);
     pic_mask_all();
@@ -221,6 +226,79 @@ static void init_idt()
     };
 
     asm volatile("lidt %0" : : "m"(idtd));
+}
+
+static void init_gdt_and_tss()
+{
+    static gdt_entry gdt[7]; // null segment, two ring 0 segments, two ring 3 segments, TSS segment (which takes 2 entries)
+
+    // Ring 0 (aka our (kernel) segments).
+
+    // Code (ring 0)
+    gdt[1] = (gdt_entry){
+        .limit_low = 0xffff,
+        .base_low = 0,
+        .access = GDT_SEG_PRES | GDT_SEG_DESCTYPE_NOT_SYSTEM | GDT_SEG_PRIV(0) | GDT_SEG_CODE_EXRD | GDT_SEG_ACCESSED,
+        .flags = GDT_SEG_GRAN | GDT_SEG_LONG,
+        .limit_high = 0xf,
+        .base_high = 0,
+    };
+
+    // Data (ring 0)
+    gdt[2] = (gdt_entry){
+        .limit_low = 0xffff,
+        .base_low = 0,
+        .access = GDT_SEG_PRES | GDT_SEG_DESCTYPE_NOT_SYSTEM | GDT_SEG_PRIV(0) | GDT_SEG_DATA_RDWR | GDT_SEG_ACCESSED,
+        .flags = GDT_SEG_GRAN | GDT_SEG_LONG,
+        .limit_high = 0xf,
+        .base_high = 0,
+    };
+
+    // Code (ring 3)
+    gdt[3] = (gdt_entry){
+        .limit_low = 0xffff,
+        .base_low = 0,
+        .access = GDT_SEG_PRES | GDT_SEG_DESCTYPE_NOT_SYSTEM | GDT_SEG_PRIV(3) | GDT_SEG_CODE_EXRD | GDT_SEG_ACCESSED,
+        .flags = GDT_SEG_GRAN | GDT_SEG_LONG,
+        .limit_high = 0xf,
+        .base_high = 0,
+    };
+
+    // Data (ring 3)
+    gdt[4] = (gdt_entry){
+        .limit_low = 0xffff,
+        .base_low = 0,
+        .access = GDT_SEG_PRES | GDT_SEG_DESCTYPE_NOT_SYSTEM | GDT_SEG_PRIV(3) | GDT_SEG_DATA_RDWR | GDT_SEG_ACCESSED,
+        .flags = GDT_SEG_GRAN | GDT_SEG_LONG,
+        .limit_high = 0xf,
+        .base_high = 0,
+    };
+
+#define KERNEL_STACK_VIRTUAL_ADDRESS_END 0x7ffffffff000 // You will have to trust me that this is its value, sorry. It's defined in main.c of the bootloader, which sets it for us, so we could share it via a define or just ask it for it during boot, but it's really not worth it.
+    static TSS tss = {
+        .rsp0 = KERNEL_STACK_VIRTUAL_ADDRESS_END,
+    };
+
+    gdt_system_segment system_segment = {
+        .limit_low = sizeof(TSS) - 1, 
+
+        .type = GDT_SYS_SEG_64BIT_TSS,
+        .present = 1,
+
+        .base_low =  ((uint64_t)&tss >> 0)  & 0xffffff,
+        .base_mid =  ((uint64_t)&tss >> 24) & 0xff,
+        .base_high = ((uint64_t)&tss >> 32) & 0xffffffff,
+    };
+#define TSS_SEGMENT (5*8) // 0x28
+    memmove(&gdt[5], &system_segment, sizeof(system_segment));
+
+    gdt_descriptor gdt_desc = {
+        .size = sizeof(gdt),
+        .offset = (uint64_t)gdt,
+    };
+    asm ("lgdt %0" : : "m"(gdt_desc) : "memory");
+
+    asm ("ltr %0" : : "r"((uint16_t)TSS_SEGMENT) : "memory");
 }
 
 int ide_init() {
