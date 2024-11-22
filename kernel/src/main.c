@@ -298,7 +298,7 @@ static void init_gdt_and_tss()
     memmove(&gdt[5], &system_segment, sizeof(system_segment));
 
     gdt_descriptor gdt_desc = {
-        .size = sizeof(gdt),
+        .size = sizeof(gdt) - 1,
         .offset = (uint64_t)gdt,
     };
     asm ("lgdt %0" : : "m"(gdt_desc) : "memory");
