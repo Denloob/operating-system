@@ -121,7 +121,7 @@ uint64_t mmu_init(range_Range *memory_map, uint64_t memory_map_length, uint64_t 
                      "wrmsr"
                      :
                      : "c"(EFER_MSR)
-                     : "eax", "cc");
+                     : "eax", "edx", "cc");
 
     __asm__ volatile("mov " EAX_RAX ", cr0\n"
                      "or eax, (1 << 31) | (1 << 16) \n" // Set the paging bit, the write-protect bit (kernel too is subject to paging limiting the write ability)
