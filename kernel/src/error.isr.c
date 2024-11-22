@@ -2,16 +2,66 @@
 #include "io.h"
 #include "isr.h"
 #include "vga.h"
+#include "assert.h"
+#include "memory.h"
 #include <stdint.h>
 
+typedef enum {
+    GPF_TABLE_GDT = 0b00,
+    GPF_TABLE_IDT = 0b01,
+    GPF_TABLE_LDT = 0b10,
+    GPF_TABLE_IDT2 = 0b11,
+} GPFTableType;
+
+typedef struct {
+    uint64_t external : 1; // When set, the exception originated externally to the processor.
+    uint64_t table_type: 2; // @see GPFTableType
+    uint64_t selector_index : 13; // The index inside the corresponding table
+    uint64_t pad : 48;
+} GPFErrorCode;
+
+static const char *gpf_table_name_str(GPFErrorCode code)
+{
+    switch (code.table_type)
+    {
+        case GPF_TABLE_GDT:
+            return "GDT";
+        case GPF_TABLE_LDT:
+            return "LDT";
+        case GPF_TABLE_IDT:
+        case GPF_TABLE_IDT2:
+            return "IDT";
+        default:
+            assert(false && "Invalid GPF error code table number");
+    }
+}
+
+static bool gpf_has_error_code(GPFErrorCode code)
+{
+    uint64_t empty_code = 0;
+    return memcmp(&code, &empty_code, sizeof(empty_code)) != 0;
+}
+
 static void __attribute__((used, sysv_abi))
-error_isr_general_protection_fault_impl(isr_InterruptFrame *frame, uint64_t error)
+error_isr_general_protection_fault_impl(isr_InterruptFrame *frame, GPFErrorCode code)
 {
     vga_mode_text();
     io_clear_vga();
 
-    printf("\nGeneral protection fault: RIP=0x%llx ; Error Code = 0x%llx\n",
-           frame->rip, error);
+    printf("\nGeneral protection fault: RIP=0x%llx; ", frame->rip);
+
+    if (!gpf_has_error_code(code))
+    {
+        printf("No error code\n");
+    }
+    else
+    {
+        if (code.external)
+            printf("[EXTERNAL] ");
+
+        printf("%s at 0x%x\n", gpf_table_name_str(code), code.selector_index);
+    }
+
     printf("Press any key to continue\n");
     io_wait_key_raw();
 }
