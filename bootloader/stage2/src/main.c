@@ -31,6 +31,8 @@ typedef void (*kernel_main)(Drive drive);
 // Following number is chosen because the range 0x00007E00..0x0007FFFF should be free of use.
 #define MEMORY_MAP_PHYSICAL_ADDR 0x8000
 
+
+const uint32_t g_memory_map_stack_and_bootloader_end = 0x10000; // HACK: At the time of the writing, the bootloader ends at page 0x5000, the stack starts at page 0x10000. Thus the hack is to just (temporarily) remove both the stack and the bootloader from the map, aka the range 0x0..0x10000.
 void get_memory_map(range_Range **resulting_memory_map, uint64_t *resulting_memory_map_size);
 
 void start(uint16_t drive_id)
@@ -86,6 +88,11 @@ void start(uint16_t drive_id)
     mmu_map_range(new_stack_physical_addr, new_stack_physical_addr + new_stack_size, KERNEL_STACK_VIRTUAL_ADDRESS_END - new_stack_size, MMU_READ_WRITE);
 
     main_gdt_long_mode_init();
+
+    memory_map[memory_map_length++] = (range_Range){
+        .begin = 0,
+        .size = g_memory_map_stack_and_bootloader_end,
+    };
 
     printf("\n[+] Coordinates locked, warp core stable\n");
     printf("Press any key to launch...\n");
@@ -183,18 +190,17 @@ void get_memory_map(range_Range **resulting_memory_map, uint64_t *resulting_memo
     }
 
     // Temporarily, remove all the pages the bootloader occupies + all pages stack occupies
-    const uint32_t stack_and_bootloader_end = 0x10000; // HACK: At the time of the writing, the bootloader ends at page 0x5000, the stack starts at page 0x10000. Thus the hack is to just (temporarily) remove both the stack and the bootloader from the map, aka the range 0x0..0x10000.
     for (int64_t i = 0; i < memory_map_length; i++)
     {
         // HACK: because the bootloader starts at physical page 0, we can assume that the first entry in the range will be of our bootloader
-        if (memory_map[i].begin > stack_and_bootloader_end)
+        if (memory_map[i].begin > g_memory_map_stack_and_bootloader_end)
             break;
 
         uint64_t range_end = memory_map[i].begin + memory_map[i].size;
-        bool is_end_in_range = range_end > stack_and_bootloader_end;
+        bool is_end_in_range = range_end > g_memory_map_stack_and_bootloader_end;
         if (is_end_in_range)
         {
-            memory_map[i].begin = PAGE_ALIGN_UP(stack_and_bootloader_end);
+            memory_map[i].begin = PAGE_ALIGN_UP(g_memory_map_stack_and_bootloader_end);
             bool overflow = __builtin_sub_overflow(range_end, memory_map[i].begin, &memory_map[i].size);
             assert(!(!overflow && memory_map[i].size < PAGE_SIZE) && "Because all sizes and pages are aligned, this case should be impossible. If you see this error, please report it");
             bool is_range_empty = overflow;

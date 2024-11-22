@@ -30,13 +30,17 @@ mmu_PageMapEntry *g_pml4 = 0;
 
 #define MMU_STRUCTURES_START g_mmu_map_base_address
 #define MMU_STRUCTURES_END (MMU_STRUCTURES_START + MMU_TOTAL_CHUNK_SIZE)
-#define BOOTLOADER_STAGE2_BEGIN 0
 
 #define STACK_END 0x10000
 #define STACK_BEGIN (STACK_END - PAGE_SIZE * 3)
 
+#define BOOTLOADER_STAGE2_BEGIN 0
+#define BOOTLOADER_STAGE2_END (STACK_BEGIN - PAGE_SIZE) // HACK: the bootloader "ends" one page before its stack, thus allowing us to easily unmap it. This value is validated in mmu_init
+
 #define VGA_BEGIN 0xb8000
 #define VGA_END 0xb8fa0
+
+void mmu_unmap_range(uint64_t virtual_begin, uint64_t virtual_end);
 
 void *mmu_map_allocate()
 {
@@ -68,6 +72,13 @@ mmu_PageTableEntry *mmu_page_allocate(uint64_t virtual, uint64_t physical)
     return page;
 }
 
+void mmu_unmap_bootloader()
+{
+    mmu_unmap_range(BOOTLOADER_STAGE2_BEGIN, BOOTLOADER_STAGE2_END);
+    mmu_unmap_range(STACK_BEGIN, STACK_END);
+}
+
+
 /**
  * @brief - This function initializes global variables the mmu code depends on.
  *          It shall be called ONLY after mmu_init has ran. It's purpose is to run
@@ -96,8 +107,8 @@ uint64_t mmu_init(range_Range *memory_map, uint64_t memory_map_length, uint64_t 
     assert((g_pml4 == (void *)g_mmu_map_base_address) && "Expected g_pml4 to be located at the first available address");
     mmu_table_init(g_pml4);
 
-    mmu_map_range(BOOTLOADER_STAGE2_BEGIN, bootloader_end_addr, BOOTLOADER_STAGE2_BEGIN, MMU_READ_WRITE);
-    assert(bootloader_end_addr < STACK_BEGIN && "Stack cannot be allowed to overflow into the bootloader");
+    mmu_map_range(BOOTLOADER_STAGE2_BEGIN, BOOTLOADER_STAGE2_END, BOOTLOADER_STAGE2_BEGIN, MMU_READ_WRITE);
+    assert(bootloader_end_addr <= BOOTLOADER_STAGE2_END && "Oops, we ran out of the reserved bootloader space.");
     mmu_map_range(STACK_BEGIN, STACK_END, STACK_BEGIN, MMU_READ_WRITE);
     mmu_map_range(MMU_STRUCTURES_START, MMU_STRUCTURES_END, MMU_STRUCTURES_START, MMU_READ_WRITE);
     mmu_map_range(VGA_BEGIN, VGA_END, VGA_BEGIN, MMU_READ_WRITE);
@@ -232,6 +243,16 @@ uint64_t mmu_page_table_entry_address_get(void *page_map_ptr)
 void mmu_page_table_entry_address_set(void *page_map_ptr, uint64_t address)
 {
     ((mmu_PageTableEntry *)page_map_ptr)->_address = address >> MMU_ENTRY_ADDRESS_BITSHIFT;
+}
+
+void mmu_unmap_range(uint64_t virtual_begin, uint64_t virtual_end)
+{
+    for (uint64_t virt = virtual_begin & (~0xfff);
+         virt < virtual_end; virt += PAGE_SIZE)
+    {
+        mmu_PageTableEntry *page = mmu_page_existing((void *)virt);
+        page->present = 0;
+    }
 }
 
 void mmu_map_range(uint64_t physical_begin, uint64_t physical_end,

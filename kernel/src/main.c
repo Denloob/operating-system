@@ -72,6 +72,11 @@ void __attribute__((section(".entry"), sysv_abi)) kernel_main(uint32_t param_mmu
     io_clear_vga();
 
     mmu_init_post_init(mmu_map_base_address);
+
+    init_gdt_and_tss();
+
+    mmu_unmap_bootloader();
+
     mmu_page_range_set_flags(&__entry_start, &__entry_end, 0);
     mmu_page_range_set_flags(&__text_start, &__text_end, 0);
     mmu_page_range_set_flags(&__rodata_start, &__rodata_end, MMU_EXECUTE_DISABLE);
@@ -90,7 +95,6 @@ void __attribute__((section(".entry"), sysv_abi)) kernel_main(uint32_t param_mmu
     memset(&__bss_start, 0, (uint64_t)&__bss_end - (uint64_t)&__bss_start);
 
     init_idt();
-    init_gdt_and_tss();
     syscall_initialize();
 
     PIC_remap(0x20, 0x70);
@@ -231,7 +235,7 @@ static void init_idt()
 
 static void init_gdt_and_tss()
 {
-    static gdt_entry gdt[7]; // null segment, two ring 0 segments, two ring 3 segments, TSS segment (which takes 2 entries)
+    static gdt_entry gdt[7] = {0}; // null segment, two ring 0 segments, two ring 3 segments, TSS segment (which takes 2 entries)
 
     // NOTE: the order must be: Kernel Code, Kernel Data, User Data, User Code
     //  otherwise syscall/sysret would not work.

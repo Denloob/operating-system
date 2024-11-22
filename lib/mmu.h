@@ -71,3 +71,8 @@ mmu_PageMapEntry *mmu_page_map_get_address_of(mmu_PageMapEntry *entry);
 mmu_PageTableEntry *mmu_page(uint64_t address);
 
 void mmu_map_range(uint64_t physical_begin, uint64_t physical_end, uint64_t virtual_begin, int flags);
+
+/**
+ * @brief Unmap the bootloader and the bootloader stack. Does not return the physical memory (the bootloader should do that). Note that the bootloader contains the GDT which should be set before unmapping it.
+ */
+void mmu_unmap_bootloader();
