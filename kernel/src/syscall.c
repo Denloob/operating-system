@@ -1,3 +1,5 @@
+#include "io.h"
+#include "isr.h"
 #include "syscall.h"
 #include <stdint.h>
 
@@ -7,8 +9,36 @@
 #define MSR_SFMASK 0xC0000084
 #define MSR_EFER   0xC0000080
 
+static void __attribute__((used, sysv_abi)) syscall_handler(isr_CallerRegsFrame *caller_regs)
+{
+    printf("Hello, Syscall!\n");
+}
+
+// Here the RSP of the syscall caller will be stored.
+static uint64_t g_ring3_rsp;
+
 static void __attribute__((naked)) syscall_handler_trampoline()
 {
+    // Store usermode RSP and replace it with kernel stack
+    asm volatile("mov %[ring3_rsp], rsp\n"
+                 "mov rsp, %[stack_begin]\n"
+                 : [ring3_rsp] "+m"(g_ring3_rsp)
+                 : [stack_begin] "i"(0x7ffffffff000)
+                 : "memory");
+
+    PUSH_CALLER_STORED();
+
+    asm volatile("lea rdi, [rsp]\n"
+                 "call syscall_handler\n" ::: "memory");
+
+    POP_CALLER_STORED();
+
+    // Restore RSP
+    asm volatile("mov rsp, %[ring3_rsp]\n"
+                 : [ring3_rsp] "+m"(g_ring3_rsp)
+                 :
+                 : "memory");
+
     asm volatile("sysretq\n");
 }
 
