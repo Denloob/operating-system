@@ -54,6 +54,9 @@ ide_device ide_devices[4];
 
 int ide_init();
 
+//if you want to skip the animation part comment the following define 
+#define DEBUG_MODE_OFF
+
 void __attribute__((section(".entry"), sysv_abi)) kernel_main(uint32_t param_mmu_map_base_address, uint32_t param_memory_map, uint32_t param_memory_map_length)
 {
     uint64_t mmu_map_base_address = param_mmu_map_base_address;
@@ -124,7 +127,7 @@ void __attribute__((section(".entry"), sysv_abi)) kernel_main(uint32_t param_mmu
     fat16_Ref fat16;
     bool success = fat16_ref_init(&fat16, &drive);
     assert(success && "fat16_ref_init");
-
+#ifdef DEBUG_MODE_OFF
     FILE file;
     memset(&file, 0, sizeof(file)); // HACK: GCC tries to optimize `= {0}` with SIMD, but we don't have the FPU initialized, so we get a GPF.
 
@@ -186,7 +189,12 @@ char *amongus[] = {
         sleep_ms(70);
         put(amongus[i]);
     }
-
+#else
+    //DEBUGGING SECTION
+    printf("\n\n");
+    fat16_test(&fat16);
+    
+#endif
     while(true)
     {
         char input_buffer[INPUT_BUFFER_SIZE];
