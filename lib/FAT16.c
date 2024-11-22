@@ -397,12 +397,12 @@ bool fat16_add_root_entry(Drive *drive, fat16_BootSector *bpb, fat16_DirEntry *n
 bool fat16_create_dir_entry(fat16_Ref *fat16, const char *filename, const char *extension, uint8_t attributes, fat16_DirEntry *created_entry)
 {
     fat16_DirEntry entry = {0};
-    for(size_t i=0 ; i<8;i++)
+    for(size_t i = 0; i < FAT16_FILENAME_SIZE; i++)
     {
         if(i<strlen(filename)) { entry.filename[i] = filename[i];}
         else {entry.filename[i] = ' ';}
     }
-    for(size_t i=0; i<4 ; i++) 
+    for(size_t i = 0; i < FAT16_EXTENSION_SIZE; i++)
     {
         if(i<strlen(extension)){entry.extension[i] = extension[i];}
         else{entry.extension[i] = ' ';}
