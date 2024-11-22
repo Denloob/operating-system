@@ -8,6 +8,7 @@
 #include "FAT16.h"
 #include "bmp.h"
 #include "bmp_image.h"
+#include "kernel_memory_info.h"
 #include "drive.h"
 #include "error.isr.h"
 #include "io.h"
@@ -279,9 +280,8 @@ static void init_gdt_and_tss()
         .base_high = 0,
     };
 
-#define KERNEL_STACK_VIRTUAL_ADDRESS_END 0x7ffffffff000 // You will have to trust me that this is its value, sorry. It's defined in main.c of the bootloader, which sets it for us, so we could share it via a define or just ask it for it during boot, but it's really not worth it.
     static TSS tss = {
-        .rsp0 = KERNEL_STACK_VIRTUAL_ADDRESS_END,
+        .rsp0 = KERNEL_STACK_BASE,
     };
 
     gdt_system_segment system_segment = {

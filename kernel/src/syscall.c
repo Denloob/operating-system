@@ -1,3 +1,4 @@
+#include "kernel_memory_info.h"
 #include "io.h"
 #include "isr.h"
 #include "syscall.h"
@@ -23,7 +24,7 @@ static void __attribute__((naked)) syscall_handler_trampoline()
     asm volatile("mov %[ring3_rsp], rsp\n"
                  "mov rsp, %[stack_begin]\n"
                  : [ring3_rsp] "+m"(g_ring3_rsp)
-                 : [stack_begin] "i"(0x7ffffffff000)
+                 : [stack_begin] "i"(KERNEL_STACK_BASE)
                  : "memory");
 
     PUSH_CALLER_STORED();

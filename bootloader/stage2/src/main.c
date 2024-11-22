@@ -1,3 +1,4 @@
+#include "kernel_memory_info.h"
 #include "FAT16.h"
 #include "math.h"
 #include "range.h"
@@ -21,7 +22,7 @@ typedef void (*kernel_main)(Drive drive);
 #define KERNEL_BEGIN 0xffffffff80000000
 #define KERNEL_BASE_ADDRESS KERNEL_BEGIN
 
-#define KERNEL_STACK_VIRTUAL_ADDRESS_END 0x7ffffffff000
+#define KERNEL_STACK_VIRTUAL_ADDRESS_END KERNEL_STACK_BASE
 
 #define MAX_DRIVE_READ_ADDRESS (0x100000 - 1) // Under one mebibyte
 
