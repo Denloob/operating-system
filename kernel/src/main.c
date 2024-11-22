@@ -1,4 +1,5 @@
 #include "IDT.h"
+#include "syscall.h"
 #include "tss.h"
 #include "kmalloc.h"
 #include "gdt.h"
@@ -89,7 +90,7 @@ void __attribute__((section(".entry"), sysv_abi)) kernel_main(uint32_t param_mmu
 
     init_idt();
     init_gdt_and_tss();
-
+    syscall_initialize();
 
     PIC_remap(0x20, 0x70);
     pic_mask_all();
@@ -232,6 +233,10 @@ static void init_gdt_and_tss()
 {
     static gdt_entry gdt[7]; // null segment, two ring 0 segments, two ring 3 segments, TSS segment (which takes 2 entries)
 
+    // NOTE: the order must be: Kernel Code, Kernel Data, User Data, User Code
+    //  otherwise syscall/sysret would not work.
+    //  @see 5.8.8 in the Intel® 64 and IA-32 Architectures Software Developer’s Manual, Volume 3A
+
     // Ring 0 (aka our (kernel) segments).
 
     // Code (ring 0)
@@ -254,21 +259,21 @@ static void init_gdt_and_tss()
         .base_high = 0,
     };
 
-    // Code (ring 3)
+    // Data (ring 3)
     gdt[3] = (gdt_entry){
         .limit_low = 0xffff,
         .base_low = 0,
-        .access = GDT_SEG_PRES | GDT_SEG_DESCTYPE_NOT_SYSTEM | GDT_SEG_PRIV(3) | GDT_SEG_CODE_EXRD | GDT_SEG_ACCESSED,
+        .access = GDT_SEG_PRES | GDT_SEG_DESCTYPE_NOT_SYSTEM | GDT_SEG_PRIV(3) | GDT_SEG_DATA_RDWR | GDT_SEG_ACCESSED,
         .flags = GDT_SEG_GRAN | GDT_SEG_LONG,
         .limit_high = 0xf,
         .base_high = 0,
     };
 
-    // Data (ring 3)
+    // Code (ring 3)
     gdt[4] = (gdt_entry){
         .limit_low = 0xffff,
         .base_low = 0,
-        .access = GDT_SEG_PRES | GDT_SEG_DESCTYPE_NOT_SYSTEM | GDT_SEG_PRIV(3) | GDT_SEG_DATA_RDWR | GDT_SEG_ACCESSED,
+        .access = GDT_SEG_PRES | GDT_SEG_DESCTYPE_NOT_SYSTEM | GDT_SEG_PRIV(3) | GDT_SEG_CODE_EXRD | GDT_SEG_ACCESSED,
         .flags = GDT_SEG_GRAN | GDT_SEG_LONG,
         .limit_high = 0xf,
         .base_high = 0,
