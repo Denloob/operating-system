@@ -149,16 +149,19 @@ uint64_t fat16_read(fat16_File *file, uint8_t *out_buffer, uint64_t buffer_size,
 uint32_t fat16_cluster_to_sector(fat16_Ref *fat16, uint16_t cluster);
 
 bool fat16_write_sectors(Drive *drive, uint32_t sector, const uint8_t *buffer, uint32_t count);
-
-/**
- *@brief finds a free clutser in the FAT and returns its number
- */
-uint16_t fat16_allocate_cluster(fat16_Ref *fat16);
 /**
  * @brief the function returns the next cluster number in a clusters chain
  *
  */
 uint16_t fat16_get_next_cluster(fat16_Ref *fat16, uint16_t cluster);
+/**
+ *@brief the function gets a file and writes content into it
+ *
+ *@file - the file we want to write into
+ *@buffer - the data to write into the file
+ *@size - the size of the data
+ */
+bool fat16_add_root_entry(Drive *drive, fat16_BootSector *bpb, fat16_DirEntry *new_entry);
 /**
  * *@brief the function creates a dir entry 
  *
@@ -171,12 +174,17 @@ uint16_t fat16_get_next_cluster(fat16_Ref *fat16, uint16_t cluster);
 bool fat16_create_dir_entry(fat16_Ref *fat16 , const char *filename , const char *extension , uint8_t attributes , fat16_DirEntry *created_entry);
 
 /**
- *@brief the function gets a file and writes content into it
- *
- *@file - the file we want to write into
- *@buffer - the data to write into the file
- *@size - the size of the data
+ *@brief finds a free clutser in the FAT and returns its number
  */
-bool fat16_wirte_to_file(fat16_File *file , uint8_t buffer , size_t size);
+uint16_t fat16_allocate_cluster(fat16_Ref *fat16);
 
-bool fat16_add_root_entry(Drive *drive, fat16_BootSector *bpb, fat16_DirEntry *new_entry);
+/*
+ *@brief the function gets 2 clusters and links them in the FAT
+ *
+ *@param fat16 - the fat ref (bpb , drive)
+ *@param back_cluster - the cluster that the function will link a cluster to for exmaple in the chain 4->5 the cluster will be 4
+ *@param front_cluster - the cluster that will be linked in the exampe above 5
+ *
+ *@return - succes or failed (true or false)
+ */
+bool fat16_link_clusters(fat16_Ref *fat16, uint16_t back_cluster, uint16_t front_cluster)

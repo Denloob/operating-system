@@ -3,6 +3,8 @@
 #include "memory.h"
 #include "string.h"
 #include "assert.h"
+#include "RTC.h"
+#include <cassert>
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -11,6 +13,14 @@
 #define FAT16_FILENAME_SIZE 8
 #define FAT16_EXTENSION_SIZE 3
 #define FAT16_FULL_FILENAME_SIZE (FAT16_FILENAME_SIZE + FAT16_EXTENSION_SIZE)
+
+
+typedef struct {
+    uint8_t buf[SECTOR_SIZE];
+    uint32_t cached_sector;
+    bool valid; // true iff cache contains anything. Do not read cache unless true.
+} FatCache;
+
 
 bool fat16_read_BPB(Drive *drive, fat16_BootSector *bpb)
 {
@@ -26,6 +36,14 @@ bool fat16_read_BPB(Drive *drive, fat16_BootSector *bpb)
 bool fat16_read_FAT_at(Drive *drive, fat16_BootSector *bpb, uint8_t FAT[static SECTOR_SIZE], uint32_t sector_offset)
 {
     assert(sector_offset < bpb->FATSize);
+
+    uint32_t total_fat_sectors = bpb->FATSize * bpb->numFATs;
+
+    //reading out side of the fat/s (unwanted behavior)
+    if(sector_offset >= total_fat_sectors)
+    {
+        return false;
+    }
     return fat16_read_sectors(drive, bpb->reservedSectors + sector_offset, FAT, 1);
 }
 
@@ -38,6 +56,17 @@ bool fat16_read_sectors(Drive *drive, uint32_t sector, uint8_t *buffer,
 }
 
 
+bool fat16_write_sectors(Drive *drive, uint32_t sector, const uint8_t *buffer, uint32_t count)
+{
+    for (uint32_t i = 0; i < count; i++)
+    {
+        if (!drive_write(drive, sector + i, buffer + (i * SECTOR_SIZE), 1))
+        {
+            return false; 
+        }
+    }
+    return true;
+}
 
 void fat16_init_dir_reader(fat16_DirReader *reader, fat16_BootSector *bpb) 
 {
@@ -137,11 +166,7 @@ bool fat16_find_file(Drive *drive, fat16_BootSector *bpb, const char *filename, 
     return false;
 }
 
-typedef struct {
-    uint8_t buf[SECTOR_SIZE];
-    uint32_t cached_sector;
-    bool valid; // true iff cache contains anything. Do not read cache unless true.
-} FatCache;
+
 
 bool get_next_cluster(Drive *drive, fat16_BootSector *bpb, uint16_t cur_cluster, uint16_t *next_cluster, FatCache *cache)
 {
@@ -255,20 +280,10 @@ uint64_t fat16_read_file(fat16_File *file, Drive *drive, fat16_BootSector *bpb,
         }
     }
     file_offset = file_offset % SECTOR_SIZE;
-    
-    /*
-    uint16_t cur_cluster = fileEntry->firstClusterLow;
-    while (file_offset / SECTOR_SIZE != 0)
-    {
-        bool success = get_next_cluster(drive, bpb, cur_cluster, &cur_cluster, &cache);
-        if (!success || cur_cluster >= FAT16_CLUSTER_EOF) return false;
 
-        file_offset -= SECTOR_SIZE;
-    }
-    */
     uint64_t space_in_buffer_left = buffer_size;
 
-    //read each cluster , get the next cluster (almost the same idea as going threw linked list)
+    //read each cluster , get the next cluster (almost the same idea as going throught linked list)
     while (cur_cluster < FAT16_CLUSTER_EOF && space_in_buffer_left > 0)
     {
         //cluster to sector
@@ -347,17 +362,21 @@ uint32_t fat16_cluster_to_sector(fat16_Ref *fat16, uint16_t cluster)
     return firstDataSector + (cluster - 2) * bpb->sectorsPerCluster;
 }
 
-bool fat16_write_sectors(Drive *drive, uint32_t sector, const uint8_t *buffer, uint32_t count)
+
+bool fat16_write_FAT_at(Drive *drive, fat16_BootSector *bpb, const uint8_t FAT[static SECTOR_SIZE], uint32_t sector_offset)
 {
-    for (uint32_t i = 0; i < count; i++)
+    assert(sector_offset < bpb->FATSize);
+
+    uint32_t total_fat_sectors = bpb->FATSize * bpb->numFATs;
+
+    // Prevent writing outside of the FAT/s (unwanted behavior)
+    if (sector_offset >= total_fat_sectors)
     {
-        if(!drive_write(drive, sector + i, buffer + (i * SECTOR_SIZE), 1))
-        {
-            return false; // Failed to write to the sector
-        }
+        return false;
     }
-    return true;
+    return fat16_write_sectors(drive, bpb->reservedSectors + sector_offset, FAT, 1);
 }
+
 
 
 bool fat16_add_root_entry(Drive *drive, fat16_BootSector *bpb, fat16_DirEntry *new_entry) 
@@ -378,68 +397,86 @@ bool fat16_add_root_entry(Drive *drive, fat16_BootSector *bpb, fat16_DirEntry *n
     return false;
 }
 
-/*
-bool fat16_allocate_cluster()
-
-bool fat16_create_file(fat16_Ref *fat16 , const char *filename)
+bool fat16_create_dir_entry(fat16_Ref *fat16, const char *filename, const char *extension, uint8_t attributes, fat16_DirEntry *created_entry)
 {
-    fat16_DirEntry 
+    fat16_DirEntry entry = {0};
+    for(size_t i=0 ; i<8;i++)
+    {
+        if(i<strlen(filename)) { entry.filename[i] = filename[i];}
+        else {entry.filename[i] = ' ';}
+    }
+    for(size_t i=0; i<4 ; i++) 
+    {
+        if(i<strlen(extension)){entry.extension[i] = extension[i];}
+        else{entry.extension[i] = ' ';}
+    }
+    entry.attributes = attributes;
+    uint8_t hours , minutes , seconds;
+    RTC_get_time(&hours, &minutes, &seconds);
+    entry.creationTime = (hours<<11) | (minutes << 5) | (seconds/2);
+
+    uint16_t year;
+    uint8_t month , day;
+    RTC_get_date(&year, &month, &day);
+    entry.creationDate = ((year-1980) << 9) | (month <<5) | day;
+    entry.reserved = 0;
+    entry.reserved = 0;
+    entry.creationTimeTenths = 0;
+    entry.lastAccessDate = entry.creationDate;
+    entry.lastModTime = entry.creationTime;
+    entry.lastModDate = entry.creationDate;
+    entry.firstClusterHigh = 0; 
+    entry.firstClusterLow = 0;
+    entry.fileSize = 0; 
+    
+    *created_entry = entry;
+
+    return true;
 }
-*/
-/*
+
+
 uint16_t fat16_allocate_cluster(fat16_Ref *fat16)
 {
-    uint8_t *FAT = malloc(fat16->bpb.FATSize * SECTOR_SIZE);
-    if (!fat16_read_FAT(fat16->drive, &fat16->bpb, FAT))
+    uint16_t current_cluster = 2;
+    uint16_t next_cluster;
+    FatCache cache = {0};
+    while (true)
     {
-        free(FAT);
-        return FAT16_CLUSTER_FREE; // Reading FAT failed
-    }
-
-    for (uint16_t i = 2; i < fat16->bpb.FATSize * SECTOR_SIZE / 2; i++)
-    {
-        uint16_t entry = ((uint16_t*)FAT)[i];
-        if (entry == FAT16_CLUSTER_FREE)
+        if (!get_next_cluster(fat16->drive, &fat16->bpb, current_cluster, &next_cluster, &cache))
         {
-            ((uint16_t*)FAT)[i] = FAT16_CLUSTER_EOF;
-            fat16_write_sectors(fat16->drive, fat16->bpb.reservedSectors, FAT, fat16->bpb.FATSize);
-            free(FAT);
-            return i; // Found and allocated a free cluster
+            return 0xFFFF; // Error: Unable to read the FAT or no space left :) 
         }
-    }
 
-    free(FAT);
-    return FAT16_CLUSTER_FREE; // No free cluster found
+        if (next_cluster == 0x0000)
+        {
+            return current_cluster;
+        }
+        current_cluster++;
+    }
 }
 
-uint16_t fat16_get_next_cluster(fat16_Ref *fat16, uint16_t cluster)
+bool fat16_link_clusters(fat16_Ref *fat16, uint16_t back_cluster, uint16_t front_cluster)
 {
-    uint8_t *FAT = malloc(fat16->bpb.FATSize * SECTOR_SIZE);
-    if (!fat16_read_FAT(fat16->drive, &fat16->bpb, FAT))
-    {
-        free(FAT);
-        return FAT16_CLUSTER_EOF; // Reading FAT failed
+    const uint32_t back_fat_offset = fat16->bpb.reservedSectors * SECTOR_SIZE + back_cluster * 2;
+    const uint32_t front_fat_offset = fat16->bpb.reservedSectors* SECTOR_SIZE + front_cluster * 2;
+
+    uint8_t front_cluster_bytes[2] =
+    { 
+        (uint8_t)(front_cluster & 0xFF), 
+        (uint8_t)((front_cluster >> 8) & 0xFF) 
+    };
+
+    uint8_t eof_bytes[2] = { 0xFF, 0xFF };
+
+
+    if (!drive_write(fat16->drive, back_fat_offset, front_cluster_bytes, sizeof(front_cluster_bytes))) {
+        return false; // Failed to write
     }
 
-    uint16_t nextCluster = ((uint16_t*)FAT)[cluster];
-    free(FAT);
-    return nextCluster;
-}
-
-bool fat16_set_next_cluster(fat16_Ref *fat16, uint16_t current_cluster, uint16_t next_cluster)
-{
-    uint8_t *FAT = malloc(fat16->bpb.FATSize * SECTOR_SIZE);
-    if (!fat16_read_FAT(fat16->drive, &fat16->bpb, FAT))
-    {
-        free(FAT);
-        return false; // Reading FAT failed
+   if (!drive_write(fat16->drive, front_fat_offset, eof_bytes, sizeof(eof_bytes))) {
+        return false;
     }
 
-    ((uint16_t*)FAT)[current_cluster] = next_cluster;
-
-    bool result = fat16_write_sectors(fat16->drive, fat16->bpb.reservedSectors, FAT, fat16->bpb.FATSize);
-    free(FAT);
-    return result;
+    return true;
 }
-*/
 
