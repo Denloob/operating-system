@@ -32,7 +32,7 @@ mmu_PageMapEntry *g_pml4 = 0;
 #define MMU_STRUCTURES_END (MMU_STRUCTURES_START + MMU_TOTAL_CHUNK_SIZE)
 #define BOOTLOADER_STAGE2_BEGIN 0
 
-#define STACK_END 0x8000
+#define STACK_END 0x10000
 #define STACK_BEGIN (STACK_END - PAGE_SIZE * 3)
 
 #define VGA_BEGIN 0xb8000
@@ -97,6 +97,7 @@ uint64_t mmu_init(range_Range *memory_map, uint64_t memory_map_length, uint64_t 
     mmu_table_init(g_pml4);
 
     mmu_map_range(BOOTLOADER_STAGE2_BEGIN, bootloader_end_addr, BOOTLOADER_STAGE2_BEGIN, MMU_READ_WRITE);
+    assert(bootloader_end_addr < STACK_BEGIN && "Stack cannot be allowed to overflow into the bootloader");
     mmu_map_range(STACK_BEGIN, STACK_END, STACK_BEGIN, MMU_READ_WRITE);
     mmu_map_range(MMU_STRUCTURES_START, MMU_STRUCTURES_END, MMU_STRUCTURES_START, MMU_READ_WRITE);
     mmu_map_range(VGA_BEGIN, VGA_END, VGA_BEGIN, MMU_READ_WRITE);

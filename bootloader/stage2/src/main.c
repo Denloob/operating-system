@@ -183,7 +183,7 @@ void get_memory_map(range_Range **resulting_memory_map, uint64_t *resulting_memo
     }
 
     // Temporarily, remove all the pages the bootloader occupies + all pages stack occupies
-    const uint32_t stack_and_bootloader_end = 0x8000; // HACK: At the time of the writing, the bootloader ends at page 0x5000, the stack starts at page 0x8000, which means it has approx 3 pages until they clash. Thus the hack is to just (temporarily) remove both the stack and the bootloader from the map, aka the range 0x0..0x8000.
+    const uint32_t stack_and_bootloader_end = 0x10000; // HACK: At the time of the writing, the bootloader ends at page 0x5000, the stack starts at page 0x10000. Thus the hack is to just (temporarily) remove both the stack and the bootloader from the map, aka the range 0x0..0x10000.
     for (int64_t i = 0; i < memory_map_length; i++)
     {
         // HACK: because the bootloader starts at physical page 0, we can assume that the first entry in the range will be of our bootloader

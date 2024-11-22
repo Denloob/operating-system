@@ -11,7 +11,8 @@ global entry
 entry:
     [bits 16]
     cli
-    ; The stack is set up by the stage1 bootloader.
+    ; Move the stack base to 0xffff. It shouldn't reach the bootloader, and will be changed for the kernel anyway
+    mov sp, 0xffff
 
     ; Pass the boot drive as a parameter to cstart
     mov [g_boot_drive], dx
