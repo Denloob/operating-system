@@ -67,7 +67,6 @@ void __attribute__((section(".entry"), sysv_abi)) kernel_main(uint32_t param_mmu
     uint64_t mmu_map_base_address = param_mmu_map_base_address;
     range_Range *memory_map = (void *)(uint64_t)param_memory_map;
     uint64_t memory_map_length = param_memory_map_length;
-    mmap_init(memory_map, memory_map_length);
 
     io_clear_vga();
 
@@ -76,6 +75,8 @@ void __attribute__((section(".entry"), sysv_abi)) kernel_main(uint32_t param_mmu
     init_gdt_and_tss();
 
     mmu_unmap_bootloader();
+
+    mmap_init(memory_map, memory_map_length);
 
     mmu_page_range_set_flags(&__entry_start, &__entry_end, 0);
     mmu_page_range_set_flags(&__text_start, &__text_end, 0);

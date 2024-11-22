@@ -1,3 +1,5 @@
+#include "kernel_memory_info.h"
+#include "memory.h"
 #include "mmap.h"
 #include "range.h"
 #include "assert.h"
@@ -17,8 +19,17 @@ struct {
 
 void mmap_init(range_Range *mmap_base, uint64_t length)
 {
+    assert(length <= MEMORY_MAP_MAX_LENGTH && "length larger than one page is not supported\n");
     g_phys_memory_map.base = mmap_base;
     g_phys_memory_map.length = length;
+
+    res rs = mmap((void *)KERNEL_MEMORY_MAP, PAGE_SIZE, MMAP_PROT_READ | MMAP_PROT_WRITE);
+    assert(IS_OK(rs));
+
+    memmove((void *)KERNEL_MEMORY_MAP, mmap_base, length * sizeof(range_Range));
+    g_phys_memory_map.base = (void *)KERNEL_MEMORY_MAP;
+
+    munmap(mmap_base, PAGE_SIZE);
 }
 
 // WARNING: this invalidates all g_phys_memory_map.base iterators and moves indexes
