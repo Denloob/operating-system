@@ -4,7 +4,6 @@
 #include "string.h"
 #include "assert.h"
 #include "RTC.h"
-#include <cassert>
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -14,8 +13,8 @@
 #define FAT16_EXTENSION_SIZE 3
 #define FAT16_FULL_FILENAME_SIZE (FAT16_FILENAME_SIZE + FAT16_EXTENSION_SIZE)
 
-
-typedef struct {
+typedef struct
+{
     uint8_t buf[SECTOR_SIZE];
     uint32_t cached_sector;
     bool valid; // true iff cache contains anything. Do not read cache unless true.
@@ -165,8 +164,6 @@ bool fat16_find_file(Drive *drive, fat16_BootSector *bpb, const char *filename, 
 
     return false;
 }
-
-
 
 bool get_next_cluster(Drive *drive, fat16_BootSector *bpb, uint16_t cur_cluster, uint16_t *next_cluster, FatCache *cache)
 {
@@ -449,6 +446,10 @@ uint16_t fat16_allocate_cluster(fat16_Ref *fat16)
 
         if (next_cluster == 0x0000)
         {
+            uint32_t fat_offset = fat16->bpb.reservedSectors * SECTOR_SIZE + current_cluster * 2;
+            uint8_t eof_bytes[2] = {0xF8, 0xFF}; //EOF
+
+            if (!drive_write(fat16->drive, fat_offset, eof_bytes, sizeof(eof_bytes))){return 0xFFFF;} //failed to mark cluster in FAT
             return current_cluster;
         }
         current_cluster++;
@@ -460,23 +461,116 @@ bool fat16_link_clusters(fat16_Ref *fat16, uint16_t back_cluster, uint16_t front
     const uint32_t back_fat_offset = fat16->bpb.reservedSectors * SECTOR_SIZE + back_cluster * 2;
     const uint32_t front_fat_offset = fat16->bpb.reservedSectors* SECTOR_SIZE + front_cluster * 2;
 
-    uint8_t front_cluster_bytes[2] =
-    { 
-        (uint8_t)(front_cluster & 0xFF), 
-        (uint8_t)((front_cluster >> 8) & 0xFF) 
-    };
+    uint8_t front_cluster_bytes[2] ={ (uint8_t)(front_cluster & 0xFF),(uint8_t)((front_cluster >> 8) & 0xFF)};
 
-    uint8_t eof_bytes[2] = { 0xFF, 0xFF };
+    uint8_t eof_bytes[2] = { 0xF8, 0xFF };
 
 
-    if (!drive_write(fat16->drive, back_fat_offset, front_cluster_bytes, sizeof(front_cluster_bytes))) {
+    if (!drive_write(fat16->drive, back_fat_offset, front_cluster_bytes, sizeof(front_cluster_bytes))) 
+    {
         return false; // Failed to write
     }
 
-   if (!drive_write(fat16->drive, front_fat_offset, eof_bytes, sizeof(eof_bytes))) {
-        return false;
+   if (!drive_write(fat16->drive, front_fat_offset, eof_bytes, sizeof(eof_bytes))) {return false;}
+
+  return true;
+}
+
+bool fat16_unlink_clusters(fat16_Ref *fat16 , uint16_t back_cluster , uint16_t front_cluster)
+{
+    const uint32_t back_fat_offset = fat16->bpb.reservedSectors * SECTOR_SIZE + back_cluster *2;
+
+    const uint32_t front_fat_offset = fat16->bpb.reservedSectors * SECTOR_SIZE + front_cluster *2;
+
+    uint8_t front_cluster_bytes[2] = {0x00 , 0x00}; //Free cluster
+
+    uint8_t back_cluster_bytes[2] = {0xF8 , 0xFF}; //EOF
+
+    if (!drive_write(fat16->drive, front_fat_offset, front_cluster_bytes, sizeof(front_cluster_bytes))) 
+    {
+        return false; // Failed to write
     }
 
-    return true;
+   if (!drive_write(fat16->drive, back_fat_offset, back_cluster_bytes , sizeof(back_cluster_bytes))) {return false;}
+
+   return true;
+}
+
+
+
+void fat16_test(fat16_Ref *fat16) 
+{
+    FatCache cache = {0};
+    uint16_t cluster1, cluster2;
+    uint8_t fat_buffer[SECTOR_SIZE] = {0};
+
+    // Allocate the first cluster
+    cluster1 = fat16_allocate_cluster(fat16);
+    if (cluster1 == 0xFFFF) {
+        printf("Error: Failed to allocate first cluster\n");
+        return;
+    }
+    printf("Allocated cluster1: %d\n", cluster1);
+
+    // Allocate the second cluster
+    cluster2 = fat16_allocate_cluster(fat16);
+    if (cluster2 == 0xFFFF) {
+        printf("Error: Failed to allocate second cluster\n");
+        return;
+    }
+    printf("Allocated cluster2: %d\n", cluster2);
+
+    // Link the clusters
+    if (!fat16_link_clusters(fat16, cluster1, cluster2)) {
+        printf("Error: Failed to link clusters %d -> %d\n", cluster1, cluster2);
+        return;
+    }
+    printf("Successfully linked clusters %d -> %d\n", cluster1, cluster2);
+
+    // Verify the FAT entries for cluster1 and cluster2
+    uint32_t cluster1_offset = fat16->bpb.reservedSectors * SECTOR_SIZE + cluster1 * 2;
+    if (drive_read(fat16->drive, cluster1_offset, fat_buffer, sizeof(uint16_t))) {
+        uint16_t cluster1_value = (fat_buffer[1] << 8) | fat_buffer[0];
+        printf("FAT entry for cluster1 (%d): %d\n", cluster1, cluster1_value);
+    } else {
+        printf("Error: Failed to read FAT entry for cluster1 (%d)\n", cluster1);
+        return;
+    }
+
+    uint32_t cluster2_offset = fat16->bpb.reservedSectors * SECTOR_SIZE + cluster2 * 2;
+    if (drive_read(fat16->drive, cluster2_offset, fat_buffer, sizeof(uint16_t))) {
+        uint16_t cluster2_value = (fat_buffer[1] << 8) | fat_buffer[0];
+        printf("FAT entry for cluster2 (%d): %d\n", cluster2, cluster2_value);
+    } else {
+        printf("Error: Failed to read FAT entry for cluster2 (%d)\n", cluster2);
+        return;
+    }
+
+    // Unlink the clusters
+    if (!fat16_unlink_clusters(fat16, cluster1, cluster2))
+    {
+        printf("Error: Failed to unlink clusters %d -> %d\n", cluster1, cluster2);
+        return;
+    }
+    printf("Successfully unlinked clusters %d -> %d\n", cluster1, cluster2);
+
+    // Verify the FAT entries for cluster1 and cluster2 after unlinking
+    if (drive_read(fat16->drive, cluster1_offset, fat_buffer, sizeof(uint16_t))) {
+        uint16_t cluster1_value = (fat_buffer[1] << 8) | fat_buffer[0];
+        printf("FAT entry for cluster1 after unlink (%d): %d\n", cluster1, cluster1_value);
+    } else {
+        printf("Error: Failed to read FAT entry for cluster1 after unlink (%d)\n", cluster1);
+        return;
+    }
+
+    if (drive_read(fat16->drive, cluster2_offset, fat_buffer, sizeof(uint16_t))) {
+        uint16_t cluster2_value = (fat_buffer[1] << 8) | fat_buffer[0];
+        printf("FAT entry for cluster2 after unlink (%d): %d\n", cluster2, cluster2_value);
+    } else {
+        printf("Error: Failed to read FAT entry for cluster2 after unlink (%d)\n", cluster2);
+        return;
+    }
+
+    printf("FAT16 test completed successfully.\n");
 }
 

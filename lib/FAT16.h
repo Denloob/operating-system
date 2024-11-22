@@ -185,6 +185,21 @@ uint16_t fat16_allocate_cluster(fat16_Ref *fat16);
  *@param back_cluster - the cluster that the function will link a cluster to for exmaple in the chain 4->5 the cluster will be 4
  *@param front_cluster - the cluster that will be linked in the exampe above 5
  *
- *@return - succes or failed (true or false)
+ * @return - true or false 
  */
-bool fat16_link_clusters(fat16_Ref *fat16, uint16_t back_cluster, uint16_t front_cluster)
+bool link_clusters(fat16_Ref *fat16, uint16_t back_cluster, uint16_t front_cluster);
+
+/*
+ *@brief - the function gets 2 clusters and unlinks then in the FAT
+ *
+ *@param fat16 - the fat ref (bpb , drive)
+ *@param back_cluster - the back cluster in the link
+ *@param front_cluster - the front cluster in the link
+ *
+ * @return - true or false
+ */
+bool fat16_unlink_clusters(fat16_Ref *fat16 , uint16_t back_cluster , uint16_t front_cluster);
+
+
+void fat16_test(fat16_Ref *fat16); 
+
