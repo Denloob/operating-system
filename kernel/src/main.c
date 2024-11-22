@@ -215,7 +215,6 @@ char *amongus[] = {
 static void init_idt()
 {
     static IDTEntry idt_arr[IDT_LENGTH];
-    memset(g_idt, 0, sizeof(idt_arr));
 
     g_idt = idt_arr;
 
