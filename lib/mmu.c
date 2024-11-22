@@ -5,26 +5,16 @@
 #include "memory.h"
 #include "assert.h"
 #include "math.h"
+#include "mmu_config.h"
 #include <stdint.h>
 
-
-#define TABLE_LENGTH 512
 #define PAGE_SIZE 0x1000
 #define PAGE_ALIGN_UP(address)   math_ALIGN_UP(address, PAGE_SIZE)
 #define PAGE_ALIGN_DOWN(address) math_ALIGN_DOWN(address, PAGE_SIZE)
 
-#define TABLE_SIZE_BYTES (TABLE_LENGTH * sizeof(mmu_PageMapEntry))
-
-#define MMU_TABLE_COUNT 512
-#define MMU_BITMAP_SIZE (MMU_TABLE_COUNT / 8)
-#define MMU_BITMAP_LENGTH MMU_TABLE_COUNT
-
 uint64_t g_mmu_map_base_address = 0; // NOTE: this has to be not in the bss, as we cannot map the bss pages without this variable, and cannot set this variable (if it were in the bss) without mapping the bss pages.
 Bitmap *mmu_tables_bitmap = 0;
 mmu_PageMapEntry *g_pml4 = 0;
-
-#define MMU_ALL_TABLES_SIZE (MMU_TABLE_COUNT * TABLE_SIZE_BYTES)
-#define MMU_TOTAL_CHUNK_SIZE (MMU_BITMAP_SIZE + MMU_ALL_TABLES_SIZE)
 
 #define MMU_BITMAP_BASE (g_mmu_map_base_address + MMU_ALL_TABLES_SIZE)
 
@@ -39,6 +29,8 @@ mmu_PageMapEntry *g_pml4 = 0;
 
 #define VGA_BEGIN 0xb8000
 #define VGA_END 0xb8fa0
+
+void mmu_unmap_range(uint64_t virtual_begin, uint64_t virtual_end);
 
 void *mmu_map_allocate()
 {

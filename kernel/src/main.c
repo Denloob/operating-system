@@ -1,4 +1,5 @@
 #include "IDT.h"
+#include "mmu_config.h"
 #include "syscall.h"
 #include "tss.h"
 #include "kmalloc.h"
@@ -24,6 +25,7 @@
 #include "assert.h"
 #include "IDE.h"
 #include "time.h"
+#include "usermode.h"
 #include "vga.h"
 #include <stdbool.h>
 
@@ -97,6 +99,8 @@ void __attribute__((section(".entry"), sysv_abi)) kernel_main(uint32_t param_mmu
     mmu_tlb_flush_all();
 
     memset(&__bss_start, 0, (uint64_t)&__bss_end - (uint64_t)&__bss_start);
+
+    usermode_init_address_check(mmu_map_base_address, MMU_TOTAL_CHUNK_SIZE);
 
     init_idt();
     syscall_initialize();
