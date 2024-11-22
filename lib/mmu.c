@@ -40,8 +40,6 @@ mmu_PageMapEntry *g_pml4 = 0;
 #define VGA_BEGIN 0xb8000
 #define VGA_END 0xb8fa0
 
-void mmu_unmap_range(uint64_t virtual_begin, uint64_t virtual_end);
-
 void *mmu_map_allocate()
 {
     for (int i = 0; i < MMU_BITMAP_LENGTH; i++)

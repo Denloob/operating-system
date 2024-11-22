@@ -90,9 +90,9 @@ void __attribute__((section(".entry"), sysv_abi)) kernel_main(uint32_t param_mmu
     const uint64_t vga_address = (uint64_t)VGA_GRAPHICS_BUF1_PHYS;
     const uint64_t vga_size = 32 * PAGE_SIZE; // 0xA0000..0xBFFFF
     mmu_map_range(vga_address, vga_address + vga_size, VGA_GRAPHICS_BUF1, MMU_READ_WRITE | MMU_EXECUTE_DISABLE);
-
     io_vga_addr_base = VGA_TEXT_ADDRESS;
     io_clear_vga(); // After setting io_vga_addr_base must clear the screen.
+    mmu_unmap_range(VGA_GRAPHICS_BUF3_PHYS, VGA_GRAPHICS_BUF3_PHYS_END);
 
     mmu_tlb_flush_all();
 
