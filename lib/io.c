@@ -4,17 +4,17 @@
 #include "memory.h"
 #include "string.h"
 
-#define VGA_ADDR ((volatile char *)0xb8000)
+volatile char *io_vga_addr_base = (volatile char *)0xb8000;
 #define VGA_WIDTH 160
 #define VGA_HEIGHT 25
 #define VGA_COLOR_WHITE 7
 #define VGA_SIZE (VGA_WIDTH * VGA_HEIGHT)
-volatile char *g_vga_it = VGA_ADDR;
+volatile char *g_vga_it = 0;
 
 void io_clear_vga()
 {
-    g_vga_it = VGA_ADDR + VGA_SIZE;
-    while (g_vga_it > VGA_ADDR)
+    g_vga_it = io_vga_addr_base + VGA_SIZE;
+    while (g_vga_it > io_vga_addr_base)
     {
         *g_vga_it-- = 0;
     }
@@ -22,21 +22,21 @@ void io_clear_vga()
 
 void scroll_up()
 {
-    memmove((void *)VGA_ADDR, (const void *)(VGA_ADDR + VGA_WIDTH), VGA_WIDTH * (VGA_HEIGHT - 1));
-    memset((void *)(VGA_ADDR + VGA_WIDTH * (VGA_HEIGHT - 1)), 0, VGA_WIDTH);
+    memmove((void *)io_vga_addr_base, (const void *)(io_vga_addr_base + VGA_WIDTH), VGA_WIDTH * (VGA_HEIGHT - 1));
+    memset((void *)(io_vga_addr_base + VGA_WIDTH * (VGA_HEIGHT - 1)), 0, VGA_WIDTH);
     g_vga_it -= VGA_WIDTH;
 }
 
 void putc(char ch)
 {
-    if (g_vga_it >= VGA_ADDR + VGA_SIZE)
+    if (g_vga_it >= io_vga_addr_base + VGA_SIZE)
     {
         scroll_up();
     }
 
     if (ch == '\b')
     {
-        if (g_vga_it - 3 < VGA_ADDR)
+        if (g_vga_it - 3 < io_vga_addr_base)
         {
             return;
         }
@@ -48,7 +48,7 @@ void putc(char ch)
     if (ch == '\n')
     {
         // Move g_vga_it to the next line
-        g_vga_it += VGA_WIDTH - (g_vga_it - VGA_ADDR) % VGA_WIDTH;
+        g_vga_it += VGA_WIDTH - (g_vga_it - io_vga_addr_base) % VGA_WIDTH;
         return;
     }
 

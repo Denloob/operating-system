@@ -80,6 +80,8 @@ int io_wait_key_raw();
 
 extern int (*io_input_keyboard_key)();
 
+extern volatile char *io_vga_addr_base;
+
 typedef enum KeycodeType
 {
     KCT_IS_PRESS = 0x1,

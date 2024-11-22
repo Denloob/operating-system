@@ -159,11 +159,11 @@ static uint8_t *vga_get_framebuffer()
         default:
         case 0:
         case 1:
-            return (uint8_t *)0xA0000;
+            return (uint8_t *)VGA_GRAPHICS_BUF1;
         case 2:
-            return (uint8_t *)0xB0000;
+            return (uint8_t *)VGA_GRAPHICS_BUF2;
         case 3:
-            return (uint8_t *)0xB8000;
+            return (uint8_t *)VGA_GRAPHICS_BUF3;
     }
 
     assert(false && "Unexpected GC value from VGA");

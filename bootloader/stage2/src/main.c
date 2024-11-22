@@ -37,6 +37,7 @@ void get_memory_map(range_Range **resulting_memory_map, uint64_t *resulting_memo
 
 void start(uint16_t drive_id)
 {
+    io_clear_vga();
     uint64_t memory_map_length = 0;
     range_Range *memory_map = NULL;
     get_memory_map(&memory_map, &memory_map_length);

@@ -87,9 +87,12 @@ void __attribute__((section(".entry"), sysv_abi)) kernel_main(uint32_t param_mmu
     res rs = mmap(&__bss_start, bss_size, MMAP_PROT_READ | MMAP_PROT_WRITE);
     assert(IS_OK(rs) && "Couldn't find a memory region for kernel bss section");
 
-    const uint64_t vga_address = (uint64_t)VGA_GRAPHICS_ADDRESS;
+    const uint64_t vga_address = (uint64_t)VGA_GRAPHICS_BUF1_PHYS;
     const uint64_t vga_size = 32 * PAGE_SIZE; // 0xA0000..0xBFFFF
-    mmu_map_range(vga_address, vga_address + vga_size, vga_address, MMU_READ_WRITE | MMU_EXECUTE_DISABLE);
+    mmu_map_range(vga_address, vga_address + vga_size, VGA_GRAPHICS_BUF1, MMU_READ_WRITE | MMU_EXECUTE_DISABLE);
+
+    io_vga_addr_base = VGA_TEXT_ADDRESS;
+    io_clear_vga(); // After setting io_vga_addr_base must clear the screen.
 
     mmu_tlb_flush_all();
 
