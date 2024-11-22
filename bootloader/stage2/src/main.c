@@ -77,7 +77,7 @@ void start(uint16_t drive_id)
     printf("[*] Preparing for warp jump...\n");
 
     mmu_map_range((uint64_t)kernel_physical_address, (uint64_t)kernel_physical_address + kernel_size, KERNEL_BEGIN, MMU_READ_WRITE);
-    mmu_map_range((uint64_t)memory_map, (uint64_t)(memory_map + PAGE_SIZE), (uint64_t)memory_map, MMU_READ_WRITE | MMU_EXECUTE_DISABLE);
+    mmu_map_range((uint64_t)memory_map, (uint64_t)memory_map + PAGE_SIZE, (uint64_t)memory_map, MMU_READ_WRITE | MMU_EXECUTE_DISABLE);
 
     const uint64_t new_stack_size = PAGE_SIZE * 5;
     uint64_t new_stack_physical_addr = 0;
