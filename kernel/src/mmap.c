@@ -67,6 +67,7 @@ int prot_to_mmu_flags(mmap_Protection prot)
 
     if ((prot & MMAP_PROT_EXEC) == 0)  flags |= MMU_EXECUTE_DISABLE;
     if ((prot & MMAP_PROT_WRITE) != 0) flags |= MMU_READ_WRITE;
+    if ((prot & MMAP_PROT_RING_3) != 0) flags |= MMU_USER_PAGE;
 
     return flags;
 }

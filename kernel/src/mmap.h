@@ -11,6 +11,7 @@ typedef enum {
     MMAP_PROT_READ  = 0x1,
     MMAP_PROT_WRITE = 0x2,
     MMAP_PROT_EXEC  = 0x4,
+    MMAP_PROT_RING_3= 0x8,
 } mmap_Protection;
 
 #define res_mmap_OUT_OF_MEMORY    "cannot allocate memory"
