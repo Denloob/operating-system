@@ -2,6 +2,7 @@
 #include "string.h"
 #include "shell.h"
 #include "vga.h"
+#include "FAT16.h"
 
 #define ACPI_SHUTDOWN 0x2000
 
@@ -92,30 +93,84 @@ void color_command()
     io_clear_vga();
 }
 
-void parse_command(char* command , int max_size)
+
+void ls_command(fat16_Ref *fat16, const char* flag)
 {
-  if(compare_strings("shutdown" , command))
-  {
-    shutdown();
-  }
-  else if(compare_strings("reboot" , command))
-  {
-    reboot();
-  }
-  else if(compare_strings("echo" , command))
-  {
-    echo_command(command);
-  }
-  else if(compare_strings("clear" , command))
-  {
-    clear_command();
-  }
-  else if(compare_strings("color" , command))
-  {
-    color_command();
-  }
-  else
-  {
-    puts("command does not exist");
-  }
+    //TODO: check that there is -
+    fat16_DirReader reader;
+    fat16_init_dir_reader(&reader, &fat16->bpb);
+    fat16_DirEntry entry;
+
+    while (fat16_read_next_root_entry(fat16->drive, &reader, &entry)) 
+    {
+        if (entry.filename[0] != 0x00 && entry.filename[0] != 0xE5)
+        {
+            if (strchr(flag, 'l'))
+            {
+                printf("%s  %d bytes\n", entry.filename, entry.fileSize);
+            }
+            else
+            {
+                printf("%s\n", entry.filename);
+            }
+        }
+    }
+}
+
+
+void touch_command(fat16_Ref *fat16 ,const char* second_part_command)
+{
+    fat16_create_file(fat16 , second_part_command);
+}
+    
+void parse_command(char* command , int max_size , fat16_Ref *fat16)
+{
+    const char *space_pos = strchr(command , ' ');
+    const char *second_part = NULL;
+    //if there is no space the second part will stay NULL
+    if (space_pos)
+    {
+        second_part = space_pos + 1;
+    }
+
+    if (compare_strings("shutdown", command))
+    {
+        shutdown();
+    }
+    else if (compare_strings("reboot", command))
+    {
+        reboot();
+    }
+    else if (compare_strings("echo", command))
+    {
+        echo_command(command);
+    }
+    else if (compare_strings("clear", command))
+    {
+        clear_command();
+    }
+    else if (compare_strings("color", command))
+    {
+        color_command();
+    }
+    else if (compare_strings("ls", command))
+    {
+        //if the second part is NULL the passed second part will be a string with no flags
+        ls_command(fat16, second_part ? second_part : "-");
+    }
+    else if (compare_strings("touch", command))
+    {
+        if (!second_part)  
+        {
+            puts("touch expects a second argument: filename");
+        }
+        else
+        {
+            touch_command(fat16, second_part);
+        }
+    }
+    else
+    {
+        puts("command does not exist");
+    }
 }
