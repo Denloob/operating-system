@@ -29,10 +29,6 @@
 #include "vga.h"
 #include <stdbool.h>
 
-#define PAGE_SIZE 0x1000
-#define PAGE_ALIGN_UP(address)   (((address) + PAGE_SIZE - 1) & ~(PAGE_SIZE - 1))
-#define PAGE_ALIGN_DOWN(address) ((address) & ~(PAGE_SIZE - 1))
-
 #define INPUT_BUFFER_SIZE 256 
 
 #define BAR0 0x1F0   // Primary IDE Channel base 
