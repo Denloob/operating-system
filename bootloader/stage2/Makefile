@@ -8,7 +8,7 @@ ASM := nasm
 
 CC := i386-elf-gcc
 LD := i386-elf-ld
-CFLAGS := -ffreestanding -nostdlib -masm=intel
+CFLAGS := -ffreestanding -nostdlib -masm=intel -Wno-pointer-to-int-cast -Wno-int-to-pointer-cast
 LDFLAGS := -nostdlib -T linker.ld -Map=$(BIN_DIR)/$(IMAGE_NAME).map
 LDLIBS := -L${TOOLCHAIN_PATH}/lib/gcc/i386-elf/14.2.0 -lgcc
 DEPFLAGS = -MT $@ -MMD -MP -MF $(DEP_DIR)/obj/$*.d
