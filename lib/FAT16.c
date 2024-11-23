@@ -240,7 +240,6 @@ bool fat16_get_file_chain(Drive *drive, fat16_BootSector *bpb, const char *filen
 uint64_t fat16_read_file(fat16_File *file, Drive *drive, fat16_BootSector *bpb,
                      uint8_t *out_buffer, uint64_t buffer_size, uint64_t file_offset )
 {
-    fat16_DirEntry fileEntry = file->file_entry;
     uint64_t bytes_read = 0;
     FatCache cache = {0};
 
@@ -500,7 +499,6 @@ bool fat16_unlink_clusters(fat16_Ref *fat16 , uint16_t back_cluster , uint16_t f
 
 void fat16_test(fat16_Ref *fat16) 
 {
-    FatCache cache = {0};
     uint16_t cluster1, cluster2;
     uint8_t fat_buffer[SECTOR_SIZE] = {0};
 

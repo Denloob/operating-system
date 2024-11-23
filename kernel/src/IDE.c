@@ -1,4 +1,5 @@
 #include "io.h"
+#include "assert.h"
 #include <stdint.h>
 #include "IDE.h"
 
@@ -35,6 +36,8 @@ uint8_t ide_read(uint8_t channel, uint8_t reg)
       result = in_byte(channels[channel].ctrl  + reg - 0x0A);
    else if (reg < 0x16)
       result = in_byte(channels[channel].bmide + reg - 0x0E);
+   else
+      assert(false && "given reg is out of range");
    if (reg > 0x07 && reg < 0x0C)
       ide_write(channel, ATA_REG_CONTROL, channels[channel].nIEN);
    return result;
@@ -52,6 +55,8 @@ void ide_read_buffer(uint8_t channel, uint8_t reg , uint32_t *buffer,uint32_t qu
       repeated_in_dword(channels[channel].ctrl  + reg - 0x0A, buffer, quads);
    else if (reg < 0x16)
       repeated_in_dword(channels[channel].bmide + reg - 0x0E, buffer, quads);
+   else
+      assert(false && "given reg is out of range");
     if (reg > 0x07 && reg < 0x0C)
       ide_write(channel, ATA_REG_CONTROL, channels[channel].nIEN);
 }

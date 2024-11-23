@@ -4,12 +4,12 @@
 #include "memory.h"
 #include "string.h"
 
-volatile char *io_vga_addr_base = (volatile char *)0xb8000;
+volatile uint8_t *io_vga_addr_base = (volatile uint8_t *)0xb8000;
 #define VGA_WIDTH 160
 #define VGA_HEIGHT 25
 #define VGA_COLOR_WHITE 7
 #define VGA_SIZE (VGA_WIDTH * VGA_HEIGHT)
-volatile char *g_vga_it = 0;
+volatile uint8_t *g_vga_it = 0;
 
 void io_clear_vga()
 {

@@ -80,7 +80,7 @@ int io_wait_key_raw();
 
 extern int (*io_input_keyboard_key)();
 
-extern volatile char *io_vga_addr_base;
+extern volatile uint8_t *io_vga_addr_base;
 
 typedef enum KeycodeType
 {
