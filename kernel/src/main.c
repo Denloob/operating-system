@@ -58,7 +58,7 @@ ide_device ide_devices[4];
 int ide_init();
 
 //if you want to skip the animation part comment the following define 
-#define DEBUG_MODE_OFF
+//#define DEBUG_MODE_OFF
 
 void __attribute__((section(".entry"), sysv_abi)) kernel_main(uint32_t param_mmu_map_base_address, uint32_t param_memory_map, uint32_t param_memory_map_length)
 {
@@ -207,15 +207,14 @@ char *amongus[] = {
 #else
     //DEBUGGING SECTION
     printf("\n\n");
-    fat16_test(&fat16);
-    
+    //fat16_test(&fat16);
 #endif
     while(true)
     {
         char input_buffer[INPUT_BUFFER_SIZE];
         put("$ ");
         get_string(input_buffer,INPUT_BUFFER_SIZE);
-        parse_command(input_buffer, INPUT_BUFFER_SIZE);
+        parse_command(input_buffer, INPUT_BUFFER_SIZE , &fat16);
     }
 
 }
