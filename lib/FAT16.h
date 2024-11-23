@@ -10,6 +10,11 @@
 #define FAT16_CLUSTER_EOF  0xFFF8 // anything above or equal to this = EOF
 #define FAT16_CLUSTER_BAD  0xFFF7
 
+
+#define FAT16_FILENAME_SIZE 8
+#define FAT16_EXTENSION_SIZE 3
+#define FAT16_FULL_FILENAME_SIZE (FAT16_FILENAME_SIZE + FAT16_EXTENSION_SIZE)
+
 #define MAX_CHAIN_LEN 50
 // FAT16-specific structures
 
@@ -200,6 +205,9 @@ bool link_clusters(fat16_Ref *fat16, uint16_t back_cluster, uint16_t front_clust
  */
 bool fat16_unlink_clusters(fat16_Ref *fat16 , uint16_t back_cluster , uint16_t front_cluster);
 
+uint32_t fat16_get_file_end_offset(fat16_Ref *fat16, const fat16_DirEntry *entry);
 
-void fat16_test(fat16_Ref *fat16); 
+bool fat16_create_file(fat16_Ref *fat16, const char *full_filename);
+
+void fat16_test(fat16_Ref *fat16);
 

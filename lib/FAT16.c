@@ -496,6 +496,62 @@ bool fat16_unlink_clusters(fat16_Ref *fat16 , uint16_t back_cluster , uint16_t f
 }
 
 
+uint32_t fat16_get_file_end_offset(fat16_Ref *fat16, const fat16_DirEntry *entry) 
+{
+    uint16_t file_chain[MAX_CHAIN_LEN];
+    char filename[9];
+    // Convert `entry->filename` to a null-terminated string manually
+    for (int i = 0; i < 8; i++) {
+        if (entry->filename[i] == ' ') 
+        {
+            filename[i] = '\0';
+            break;
+        }
+        filename[i] = entry->filename[i];
+    }
+    filename[8] = '\0';
+
+    if (!fat16_get_file_chain(fat16->drive, &fat16->bpb, filename, file_chain)) {return 0;}
+
+    int len = 0;
+    while (file_chain[len] != FAT16_CLUSTER_EOF && len < MAX_CHAIN_LEN) {len++;}
+    if (len < 2) {return 0;}
+
+    uint16_t last_cluster = file_chain[len - 2] + file_chain[len - 1] - 1;
+
+    uint32_t cluster_size = fat16->bpb.bytesPerSector * fat16->bpb.sectorsPerCluster;
+    uint32_t offset_within_last_cluster = entry->fileSize % cluster_size;
+    uint32_t end_offset = (last_cluster - 2) * cluster_size + fat16->bpb.reservedSectors + offset_within_last_cluster;
+
+    return end_offset;
+}
+
+bool fat16_create_file(fat16_Ref *fat16, const char *full_filename)
+{
+
+    //filename handling
+    char fat16_filename[FAT16_FULL_FILENAME_SIZE];
+    filename_to_fat16_filename(full_filename, fat16_filename);
+    char filename[FAT16_FILENAME_SIZE] = { ' ' };
+    char extension[FAT16_EXTENSION_SIZE] = { ' ' };
+    memmove(filename, fat16_filename, FAT16_FILENAME_SIZE);
+    memmove(extension, fat16_filename + FAT16_FILENAME_SIZE, FAT16_EXTENSION_SIZE);
+
+    fat16_DirEntry new_entry;
+    if (!fat16_create_dir_entry(fat16, filename, extension, 0x20 /* Archive attribute */, &new_entry)) {
+        printf("Failed to create directory entry structure\n");
+        return false;
+    }
+
+    if (!fat16_add_root_entry(fat16->drive, &fat16->bpb, &new_entry)) 
+    {
+        printf("Failed to add the directory entry to the root directory\n");
+        return false;
+    }
+
+    printf("File '%s' created successfully\n", full_filename);
+    return true;
+}
 
 void fat16_test(fat16_Ref *fat16) 
 {
@@ -571,4 +627,5 @@ void fat16_test(fat16_Ref *fat16)
 
     printf("FAT16 test completed successfully.\n");
 }
+
 
