@@ -40,7 +40,20 @@ enum {
 #define CHUNK_OVERLAP_OFFSET    (sizeof(size_t)) // prev_chunk_size is located inside previous chunk
 
 #define chunk_size(chunk) ((chunk)->chunk_size & (~0x7))
+#define chunk_size_of_content(chunk) (chunk_size(chunk) - CHUNK_OVERLAP_OFFSET)
 #define chunk_flags(chunk) ((chunk)->chunk_size & (0x7))
+
+size_t request_size_to_chunk_size(size_t request_size)
+{
+    size_t victim_size = math_ALIGN_UP(request_size + CHUNK_PARTIAL_HEADER_SIZE, CHUNK_SIZE_ALIGN);
+    if (victim_size < MIN_CHUNK_SIZE)
+    {
+        return MIN_CHUNK_SIZE;
+    }
+
+    return victim_size;
+}
+
 
 __attribute__((const))
 malloc_chunk *next_chunk(malloc_chunk *chunk)
@@ -365,8 +378,7 @@ void *kmalloc(size_t size)
 
     // TODO: if size is large enough, mmap it instead
 
-    size_t victim_size = math_ALIGN_UP(size + CHUNK_PARTIAL_HEADER_SIZE, CHUNK_SIZE_ALIGN);
-    if (victim_size < MIN_CHUNK_SIZE) victim_size = MIN_CHUNK_SIZE;
+    size_t victim_size = request_size_to_chunk_size(size);
 
     void *victim = malloc_from_bin(victim_size);
     if (victim != NULL)
@@ -393,4 +405,58 @@ void kfree(void *addr)
     bin_insert(unsorted_bin, chunk);
 
     try_consolidate(chunk, &main_arena);
+}
+
+
+void *kcalloc(size_t amount, size_t size)
+{
+    size_t total_size;
+    bool overflow = __builtin_mul_overflow(amount, size, &total_size);
+    if (overflow)
+    {
+        return NULL;
+    }
+
+    void *p = kmalloc(total_size);
+    if (p == NULL)
+    {
+        return NULL;
+    }
+
+    memset(p, 0, total_size);
+    return p;
+}
+
+void *krealloc(void *ptr, size_t size)
+{
+    if (ptr == NULL)
+    {
+        return kmalloc(size);
+    }
+
+    if (size == 0)
+    {
+        kfree(ptr);
+        return NULL;
+    }
+
+    malloc_chunk *chunk = addr2chunk(ptr);
+
+    size_t required_chunk_size = request_size_to_chunk_size(size);
+    size_t current_chunk_size = chunk_size(chunk);
+    if (required_chunk_size <= current_chunk_size)
+    {
+        return ptr;
+    }
+
+    void *new_ptr = kmalloc(size);
+    if (new_ptr == NULL)
+    {
+        return NULL;
+    }
+
+    memmove(new_ptr, ptr, chunk_size_of_content(chunk));
+    kfree(ptr);
+
+    return new_ptr;
 }

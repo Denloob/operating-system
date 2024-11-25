@@ -23,3 +23,6 @@ void kfree(void *addr);
  * @return - Address of the allocated chunk on success, NULL on failure.
  */
 void *kmalloc(size_t size) attribute__kmalloc WUR;
+
+void *kcalloc(size_t amount, size_t size) attribute__kmalloc WUR;
+void *krealloc(void *ptr, size_t size) attribute__kmalloc WUR;
