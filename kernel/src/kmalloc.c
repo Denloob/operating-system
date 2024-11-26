@@ -153,10 +153,18 @@ void bin_insert(malloc_bin *bin, malloc_chunk *chunk)
 static malloc_state main_arena;
 static bool is_malloc_initialized = false;
 
-static void malloc_initialize()
+static void initialize_bins()
 {
-    is_malloc_initialized = true;
+    // Initialize circular links for the bins
+    for (int i = 0; i < BIN_COUNT; i++)
+    {
+        malloc_bin *bin = bin_at(&main_arena, i);
+        bin->fd = bin->bk = bin;
+    }
+}
 
+static void initialize_top_chunk()
+{
     void *allocated_addr;
     res rs = sbrk(PAGE_SIZE, &allocated_addr);
     assert(IS_OK(rs));
@@ -164,12 +172,15 @@ static void malloc_initialize()
     main_arena.top = allocated_addr;
     main_arena.top->chunk_size = PAGE_SIZE | MALLOC_CHUNK_PREV_IN_USE;
 
-    // Initialize circular links for the bins
-    for (int i = 0; i < BIN_COUNT; i++)
-    {
-        malloc_bin *bin = bin_at(&main_arena, i);
-        bin->fd = bin->bk = bin;
-    }
+}
+
+static void malloc_initialize()
+{
+    is_malloc_initialized = true;
+
+    initialize_top_chunk();
+
+    initialize_bins();
 }
 
 /**
