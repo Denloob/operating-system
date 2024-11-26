@@ -120,6 +120,8 @@ typedef malloc_chunk malloc_bin;
                     - offsetof(malloc_chunk, fd))
 // TODO: support more bins than just unsorted bin
 
+#define TCACHE_PTR_PROTECT(location, ptr) (((uint64_t)(location) >> 12) ^ (uint64_t)(ptr))
+
 struct malloc_state
 {
     malloc_chunk *top; // The top free chunk
