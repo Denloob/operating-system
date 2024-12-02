@@ -16,6 +16,8 @@ $(IMAGE_NAME).img: $(BOOTLOADER) $(KERNEL) initfat16
 	mcopy $(KERNEL) a:
 	mcopy ./assets/video.bmp a:
 
+	dd if=/dev/zero of=$@ bs=1 seek=$$(stat --format="%s" $@) count=$$(printf "%d" 0x10000)
+
 .PHONY: initfat16
 initfat16:
 	$(MAKE) -C ./util/initfat16
