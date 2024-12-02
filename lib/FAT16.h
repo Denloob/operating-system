@@ -181,7 +181,7 @@ bool fat16_create_dir_entry(fat16_Ref *fat16 , const char *filename , const char
 /**
  *@brief finds a free clutser in the FAT and returns its number
  */
-uint16_t fat16_allocate_cluster(fat16_Ref *fat16);
+bool fat16_allocate_clusters(fat16_Ref *fat16, uint8_t amount_of_clusters, uint16_t *out_array);
 
 /*
  *@brief the function gets 2 clusters and links them in the FAT
@@ -192,7 +192,7 @@ uint16_t fat16_allocate_cluster(fat16_Ref *fat16);
  *
  * @return - true or false 
  */
-bool link_clusters(fat16_Ref *fat16, uint16_t back_cluster, uint16_t front_cluster);
+bool fat16_link_clusters(fat16_Ref *fat16, uint16_t back_cluster, uint16_t front_cluster);
 
 /*
  *@brief - the function gets 2 clusters and unlinks then in the FAT
@@ -207,7 +207,19 @@ bool fat16_unlink_clusters(fat16_Ref *fat16 , uint16_t back_cluster , uint16_t f
 
 uint32_t fat16_get_file_end_offset(fat16_Ref *fat16, const fat16_DirEntry *entry);
 
+
+bool fat16_create_file_with_return(fat16_File *out_file, fat16_Ref *fat16, const char *full_filename);
+
 bool fat16_create_file(fat16_Ref *fat16, const char *full_filename);
 
-void fat16_test(fat16_Ref *fat16);
+uint16_t get_file_offseted_cluster(fat16_File *file, uint32_t file_offset);
+/**
+ * @brief - Gets the next cluster of a file based on its chain.
+ *
+ * @param - chain Array representing the file's cluster chain.
+ * @param - current_cluster The current cluster for which to find the next.
+ * @return - The next cluster number, or FAT16_CLUSTER_EOF if the current cluster is the last one.
+ */
+uint16_t get_next_cluster_from_chain(const uint16_t *chain, uint16_t current_cluster);
 
+uint64_t fat16_write(fat16_File *file, uint8_t *out_buffer, uint64_t buffer_size, uint64_t file_offset);
