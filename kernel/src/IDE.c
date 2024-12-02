@@ -241,6 +241,7 @@ bool ide_read_sector(uint32_t drive, uint32_t sector, uint8_t *buffer) {
     return (drive_state & ATA_SR_ERR) == 0;
 }
 
+
 bool ide_write_sector(uint32_t drive, uint32_t sector, const uint8_t *buffer) 
 {
     //issue the write command
@@ -252,13 +253,16 @@ bool ide_write_sector(uint32_t drive, uint32_t sector, const uint8_t *buffer)
     ide_write(ide_devices[drive].Channel, ATA_REG_COMMAND, ATA_CMD_WRITE_PIO);
 
     uint8_t drive_state = ide_polling(ide_devices[drive].Channel, true);
-    if (drive_state & ATA_SR_ERR) return false;
-
+    if (drive_state & ATA_SR_ERR) 
+        return false;
+    // Write buffer to the IDE device
     ide_write_buffer(ide_devices[drive].Channel, ATA_REG_DATA, (const uint32_t *)buffer, SECTOR_SIZE_QUADS);
 
+    // Polling the drive to ensure the operation completed
     drive_state = ide_polling(ide_devices[drive].Channel, false);
     return (drive_state & ATA_SR_ERR) == 0;
 }
+
 
 
 bool ide_read_bytes(uint32_t drive, uint32_t sector, uint8_t *buffer, uint32_t start, uint32_t length)
