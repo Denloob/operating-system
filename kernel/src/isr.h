@@ -24,7 +24,33 @@ typedef struct {
     uint64_t rax;
 } isr_CallerRegsFrame;
 
-// TODO: store xmm registers
+#define SSE_STATE_SIZE_BYTES "512"
+
+/*
+ * @brief   - Store the SSE state
+ * @warning - Modifies the `rax` register
+ */
+#define STORE_SSE()                                                            \
+        asm volatile(                                                          \
+            /* XSAVE on an aligned address */                                  \
+           "sub rsp, "SSE_STATE_SIZE_BYTES"+8;                                 \
+            mov rax, rsp;                                                      \
+            and rax, ~0xf;                                                     \
+            fxsave [rax];                                                      \
+        " : : : "memory")
+
+/*
+ * @brief   - Restore the SSE state
+ * @warning - Modifies the `rax` register
+ */
+#define RESTORE_SSE()                                                          \
+        asm volatile("                                                         \
+            mov rax, rsp;                                                      \
+            and rax, ~0xf;                                                     \
+            fxrstor [rax];                                                     \
+            add rsp, "SSE_STATE_SIZE_BYTES"+8;                                 \
+        " : : : "memory")
+
 #define PUSH_CALLER_STORED()                                                   \
         asm volatile("                                                         \
             push rax;                                                          \
@@ -38,7 +64,6 @@ typedef struct {
             push r11;                                                          \
         " : : : "memory")
 
-// TODO: restore xmm registers
 #define POP_CALLER_STORED()                                                    \
         asm volatile("                                                         \
             pop r11;                                                           \

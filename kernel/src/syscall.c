@@ -28,10 +28,12 @@ static void __attribute__((naked)) syscall_handler_trampoline()
                  : "memory");
 
     PUSH_CALLER_STORED();
+    STORE_SSE(); // Modifies RAX, must be after the push
 
     asm volatile("lea rdi, [rsp]\n"
                  "call syscall_handler\n" ::: "memory");
 
+    RESTORE_SSE();
     POP_CALLER_STORED();
 
     // Restore RSP
