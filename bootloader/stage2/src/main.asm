@@ -37,6 +37,7 @@ main_long_mode_jump_to:
     ; There's no need to execute `leave`, we do not care what will happen to the old stack,
     ; as we will not return here and we overwrite rsp and rbp
     mov rsp, .stack_base
+    sub rsp, 8 ; "Align" the stack to 16 bytes - we basically simulate what would happen if this was a call and not a jump, so from function's perspective, after the prologue, the stack is aligned
     mov rbp, rsp
 
     jmp rax
