@@ -31,7 +31,8 @@ $(KERNEL):
 	$(MAKE) -C kernel
 
 QEMU_LOG_OPTIONS := -d int,cpu_reset,in_asm,guest_errors -D log.txt
-QEMU_MISC_OPTIONS := -no-reboot -monitor stdio -cpu Skylake-Client
+QEMU_CPU := Skylake-Client,-xsavec,-rtm,-hle,-pcid,-invpcid,-tsc-deadline
+QEMU_MISC_OPTIONS := -no-reboot -monitor stdio -cpu $(QEMU_CPU)
 
 QEMU_DEBUG_OPTIONS := -gdb tcp::1234 -S
 GDB_COMMAND := gdb $(shell realpath $(DEBUG_SYM)) -ex "target remote localhost:1234"
