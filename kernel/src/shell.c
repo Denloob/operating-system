@@ -2,6 +2,7 @@
 #include "string.h"
 #include "shell.h"
 #include "vga.h"
+#include "donut.h"
 #include "FAT16.h"
 
 #define ACPI_SHUTDOWN 0x2000
@@ -136,6 +137,10 @@ void parse_command(char* command , int max_size , fat16_Ref *fat16)
     if (compare_strings("shutdown", command))
     {
         shutdown();
+    }
+    else if (compare_strings("donut", command))
+    {
+        donut();
     }
     else if (compare_strings("reboot", command))
     {
