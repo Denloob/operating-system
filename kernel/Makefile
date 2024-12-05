@@ -9,7 +9,7 @@ ASM := nasm
 CC := x86_64-elf-gcc
 LD := x86_64-elf-ld
 REDEFINED_64BIT_FLAGS := -U'__INT64_TYPE__' -D'__INT64_TYPE__=long long int' -U'__UINT64_TYPE__' -D'__UINT64_TYPE__=unsigned long long int'
-CFLAGS := -ffreestanding -nostdlib -masm=intel -fno-zero-initialized-in-bss -mno-red-zone -Wall -Werror $(REDEFINED_64BIT_FLAGS) -mcmodel=kernel -mgeneral-regs-only -O3 -g
+CFLAGS := -ffreestanding -nostdlib -masm=intel -fno-zero-initialized-in-bss -mno-red-zone -Wall -Werror $(REDEFINED_64BIT_FLAGS) -mcmodel=kernel -O3 -g
 LDFLAGS := -nostdlib -T linker.ld -Map=$(BIN_DIR)/$(IMAGE_NAME).map
 LDLIBS := -L${TOOLCHAIN_PATH}/lib/gcc/x86_64-elf/14.2.0 -lgcc
 DEPFLAGS = -MT $@ -MMD -MP -MF $(DEP_DIR)/obj/$*.d

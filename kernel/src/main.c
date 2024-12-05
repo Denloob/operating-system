@@ -143,8 +143,7 @@ void __attribute__((section(".entry"), sysv_abi)) kernel_main(uint32_t param_mmu
     bool success = fat16_ref_init(&fat16, &drive);
     assert(success && "fat16_ref_init");
 #ifdef DEBUG_MODE_OFF
-    FILE file;
-    memset(&file, 0, sizeof(file)); // HACK: GCC tries to optimize `= {0}` with SIMD, but we don't have the FPU initialized, so we get a GPF.
+    FILE file = {0};
 
     success = fat16_open(&fat16, "video.bmp", &file.file);
     assert(success && "fat16_open");

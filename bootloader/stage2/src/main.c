@@ -1,3 +1,4 @@
+#include "sse.h"
 #include "kernel_memory_info.h"
 #include "FAT16.h"
 #include "math.h"
@@ -42,6 +43,9 @@ void start(uint16_t drive_id)
     range_Range *memory_map = NULL;
     get_memory_map(&memory_map, &memory_map_length);
     assert(memory_map && memory_map_length && "Out of memory");
+
+    printf("[*] Initializing the SSE\n");
+    sse_init();
 
     printf("[*] Initializing drive #%d\n", (int)drive_id);
     Drive drive;
