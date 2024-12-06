@@ -6,11 +6,13 @@ void __attribute__((naked)) isr_trampoline()
     asm volatile ("push rbp\n" 
                   "mov rbp, rsp" : : : "memory"); 
     PUSH_CALLER_STORED(); 
+    STORE_SSE();
  
     asm volatile ( 
         "lea rdi, [rbp + 24]\n" 
         "call [rbp + 16]" : : : "memory"); 
- 
+
+    RESTORE_SSE();
     POP_CALLER_STORED(); 
     asm volatile ("leave\n" 
                   "ret" : : : "memory"); 
