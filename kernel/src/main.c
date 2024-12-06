@@ -3,6 +3,7 @@
 #include "syscall.h"
 #include "tss.h"
 #include "kmalloc.h"
+#include "test.h"
 #include "gdt.h"
 #include "mmap.h"
 #include "file.h"
@@ -138,6 +139,8 @@ void __attribute__((section(".entry"), sysv_abi)) kernel_main(uint32_t param_mmu
 
     Drive drive;
     drive_init(&drive, drive_id);
+
+    test_perform_all();
 
     fat16_Ref fat16;
     bool success = fat16_ref_init(&fat16, &drive);
