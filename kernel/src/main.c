@@ -62,9 +62,10 @@ static void init_kernel_memory(uint64_t mmu_map_base_address, range_Range *memor
 static void init_pic_keyboard_and_timer();
 static void init_drive_devices();
 static void print_time();
-static void display_boot_logo() __attribute__((unused));
-//if you want to skip the animation part comment the following define 
-//#define DEBUG_MODE_OFF
+static void parse_boot_config_and_play_logo();
+static void display_boot_logo(int boot_style);
+
+#define DEBUG_MODE_OFF
 
 void __attribute__((section(".entry"), sysv_abi)) kernel_main(uint32_t param_mmu_map_base_address, uint32_t param_memory_map, uint32_t param_memory_map_length)
 {
@@ -88,11 +89,8 @@ void __attribute__((section(".entry"), sysv_abi)) kernel_main(uint32_t param_mmu
 
     test_perform_all();
 
-#ifdef DEBUG_MODE_OFF
-    display_boot_logo();
-#else
+    parse_boot_config_and_play_logo();
 
-#endif
     while(true)
     {
         char input_buffer[INPUT_BUFFER_SIZE];
@@ -299,7 +297,7 @@ void print_time()
     printf("Current Date: %d-%d-%d\n", day, month, year);
 }
 
-void display_boot_logo()
+void display_boot_logo(int boot_style)
 {
     FILE file = {0};
 
@@ -323,6 +321,91 @@ void display_boot_logo()
             sleep_ms(ms_between_frames - time_delta);
     }
 
+    uint64_t lcg_state = 7507165354683234409; // Just a random number
+
+    volatile uint8_t *vga_memory = VGA_GRAPHICS_ADDRESS;
+    uint8_t column_speeds[VGA_GRAPHICS_WIDTH];
+    uint32_t timer = 0;
+
+    for (int i = 0; i < VGA_GRAPHICS_WIDTH; ++i)
+    {
+        column_speeds[i] = 1;
+    }
+
+    while (1)
+    {
+        for (int col = 0; col < VGA_GRAPHICS_WIDTH; ++col)
+        {
+            for (int step = 0; step < column_speeds[col] / 2; step++)
+            {
+                // Move the row
+                for (int row = VGA_GRAPHICS_HEIGHT - 2; row >= 0; --row)
+                {
+                    volatile uint8_t *current_pixel = vga_memory + row * VGA_GRAPHICS_WIDTH + col;
+                    volatile uint8_t *next_pixel = vga_memory + (row + 1) * VGA_GRAPHICS_WIDTH + col;
+
+                    *next_pixel = *current_pixel;
+
+                    *current_pixel = 0;
+                }
+            }
+        }
+
+        timer++;
+        if (timer % 2 == 0)
+        {
+            for (int i = 0; i < VGA_GRAPHICS_WIDTH; ++i)
+            {
+                if (column_speeds[i] < 10)
+                {
+                    column_speeds[i] += lcg_state % (boot_style == 1 ? 3 : 2);
+                    lcg_state = (lcg_state * 134775813 + 1);
+                }
+            }
+        }
+
+        sleep_ms(10);
+
+        bool is_whole_screen_black = true;
+        for (int i = 0; i < VGA_GRAPHICS_WIDTH * VGA_GRAPHICS_HEIGHT; i++)
+        {
+            if (vga_memory[i] != 0)
+            {
+                is_whole_screen_black = false;
+            }
+        }
+
+        if (is_whole_screen_black)
+        {
+            break;
+        }
+    }
+
+    vga_restore_default_color_palette();
     vga_mode_text();
     io_clear_vga();
+}
+
+static void parse_boot_config_and_play_logo()
+{
+    FILE file = {0};
+    bool success = fat16_open(&g_fs_fat16, "kernel.cfg", &file.file);
+    assert(success && "fat16_open: kernel.cfg not found");
+
+    success = fseek(&file, sizeof("boot_style=") - 1, SEEK_CUR) == 0;
+    assert(success && "kernel.cfg is invalid");
+    char boot_style_char;
+    assert(fread(&boot_style_char, 1, 1, &file) == 1 && "couldn't read kernel.cfg");
+
+    success = fseek(&file, sizeof("\nenable_boot_logo=") - 1, SEEK_CUR) == 0;
+    assert(success && "kernel.cfg is invalid");
+    char enable_boot_logo;
+    assert(fread(&enable_boot_logo, 1, 1, &file) == 1 && "couldn't read kernel.cfg");
+
+    if (enable_boot_logo != '1')
+    {
+        return;
+    }
+
+    display_boot_logo(boot_style_char - '0');
 }
