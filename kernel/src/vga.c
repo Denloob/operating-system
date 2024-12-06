@@ -246,9 +246,33 @@ void vga_color(uint8_t color_index, uint8_t red, uint8_t green, uint8_t blue)
     vga_color_write_color(red, green, blue);
 }
 
+#define COLOR_PALETTE_LENGTH 0x100
+static uint8_t g_default_color_palette[COLOR_PALETTE_LENGTH * 3];
+static bool g_default_color_palette_initialized = false;
+
+static void default_color_palette_initialize()
+{
+    g_default_color_palette_initialized = true;
+
+    vga_color_index(0);
+    for (int i = 0; i < sizeof(g_default_color_palette); i++)
+    {
+        g_default_color_palette[i] = in_byte(VGA_DAC_DATA) << 2;
+        printf("%02x ", g_default_color_palette[i]);
+    }
+}
+
 void vga_mode_graphics()
 {
+    if (!g_default_color_palette_initialized)
+        default_color_palette_initialize();
+
     write_regs(g_320x200x256);
+}
+
+void vga_restore_default_color_palette()
+{
+    vga_color_palette(0, g_default_color_palette, COLOR_PALETTE_LENGTH);
 }
 
 void vga_mode_text()

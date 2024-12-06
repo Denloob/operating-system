@@ -46,6 +46,11 @@ void vga_color(uint8_t color_index, uint8_t red, uint8_t green, uint8_t blue);
 void vga_color_index(uint8_t color_index);
 
 /**
+ * @brief Restores the default VGA color pallete.
+ */
+void vga_restore_default_color_palette();
+
+/**
  * @brief - Writes the 3 given colors to the current color index. Set the color
  *          index with `vga_color_index` and then call this function as many
  *          times as needed, as index is auto incremented.
