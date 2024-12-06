@@ -27,28 +27,24 @@ typedef struct {
 #define SSE_STATE_SIZE_BYTES "512"
 
 /*
- * @brief   - Store the SSE state
- * @warning - Modifies the `rax` register
+ * @brief   - Store the SSE state on the stack
+ * @warning - The stack must be 16 byte aligned
  */
 #define STORE_SSE()                                                            \
         asm volatile(                                                          \
             /* XSAVE on an aligned address */                                  \
-           "sub rsp, "SSE_STATE_SIZE_BYTES"+8;                                 \
-            mov rax, rsp;                                                      \
-            and rax, ~0xf;                                                     \
-            fxsave [rax];                                                      \
+           "sub rsp, "SSE_STATE_SIZE_BYTES";                                   \
+            fxsave [rsp];                                                      \
         " : : : "memory")
 
 /*
  * @brief   - Restore the SSE state
- * @warning - Modifies the `rax` register
+ * @see     - STORE_SSE
  */
 #define RESTORE_SSE()                                                          \
         asm volatile("                                                         \
-            mov rax, rsp;                                                      \
-            and rax, ~0xf;                                                     \
-            fxrstor [rax];                                                     \
-            add rsp, "SSE_STATE_SIZE_BYTES"+8;                                 \
+            fxrstor [rsp];                                                     \
+            add rsp, "SSE_STATE_SIZE_BYTES";                                   \
         " : : : "memory")
 
 #define PUSH_CALLER_STORED()                                                   \
@@ -62,10 +58,12 @@ typedef struct {
             push r9;                                                           \
             push r10;                                                          \
             push r11;                                                          \
+            sub rsp, 8;  # Make sure to keep the stack 16 byte aligned         \
         " : : : "memory")
 
 #define POP_CALLER_STORED()                                                    \
         asm volatile("                                                         \
+            add rsp, 8;                                                        \
             pop r11;                                                           \
             pop r10;                                                           \
             pop r9;                                                            \
