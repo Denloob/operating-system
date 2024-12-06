@@ -49,9 +49,21 @@ double cos(double x)
 
     // We got our x to be approximately in range 0 <= x <= pi
 
+    // cos(x) = -cos(pi - x)
+    bool flip_sign = false;
+    if (compare_double(x, M_PI_2) > 0) // x > pi/2
+    {
+        x = M_PI - x;
+        flip_sign = true;
+    }
+
+    // Now x is approximately in range 0 <= x <= pi/2
+    // We will get max error of approximately 6.5e-11 (i.e. max value of |actual_cos(x) - our_cos(x)|)
+
     const double x_squared = x * x;
     const double taylor_series = 1 - (x_squared / 2) * (1 - (x_squared / 12) * (1 - (x_squared / 30) * (1 - (x_squared / 56) * (1 - (x_squared / 90) * (1 - (x_squared / 132) * (1 - (x_squared / 182)))))));
-    return taylor_series;
+    return flip_sign ? -taylor_series : taylor_series;
+    // NOTE: I intentially chose branching over multiplication by `1`/`-1`, as I believe that would by nicer for the CPU. Although this wasn't benchmarked and most likely doesn't have a large impact in any case. If you have any info regarding this, please get in touch with me, I would love to hear what you have to say. - Denloob
 }
 
 double sin(double x)
