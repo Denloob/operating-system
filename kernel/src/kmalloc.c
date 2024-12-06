@@ -106,19 +106,35 @@ void unlink_chunk(malloc_chunk *chunk)
  * them, and either use them if they match the request, or sort them into the
  * correct bin.
  *
+ * Then follow the small and large bins. In each small bin, all the chunks are
+ * of the same size, the step between each small bin is 16 bytes. So in the
+ * first small bin (bins[1]), all the chunks are of size 0x20 (MIN_CHUNK_SIZE), next is
+ * 0x30, 0x40, .., 0x3f0, 0x400.
+ * After the small bins, come the large bins, which TODO:
+ *
+ * bins[1..63]   - small bins (each spaced by 16 bytes in size)
+ * bins[64..127] - large bins (each spaced by 4096 bytes in size)
+ *
  * To save some space and logic, the bins are stored as 2 pointers in the arena,
  * but accessed as if they represented an actual chunk (using some pointer
  * repositioning tricks).
  */
 
-#define BIN_COUNT 1
+#define BIN_COUNT 128
 typedef malloc_chunk malloc_bin;
 
 // Get the bin at the index `idx` in an arena.
 #define bin_at(arena, idx)                                                     \
-    (malloc_bin *)(((char *)&((arena)->bins[(idx)]))                           \
-                    - offsetof(malloc_chunk, fd))
-// TODO: support more bins than just unsorted bin
+    ((malloc_bin *)(((char *)&((arena)->bins[(idx)]))                           \
+                    - offsetof(malloc_chunk, fd)))
+#define is_bin_empty(bin) ((bin)->fd == bin)
+
+#define SMALL_BIN_WIDTH     CHUNK_SIZE_ALIGN
+#define SMALL_BIN_COUNT     64
+#define MIN_LARGE_BIN_SIZE  (SMALL_BIN_COUNT * SMALL_BIN_WIDTH)
+#define is_small_bin_size(chunk_size) ((size_t)(chunk_size) < (size_t)MIN_LARGE_BIN_SIZE)
+#define small_bin_index(chunk_size)   (((size_t)(chunk_size) >> 4) - 1) // Size step between each bin is 16 (aka 2**4), -index correction (0x20>>4 should map to index 1 and not 2)
+#define large_bin_index(chunk_size)   (assert(false), 0) // TODO: impl
 
 #define TCACHE_PTR_PROTECT(location, ptr) (((uint64_t)(location) >> 12) ^ (uint64_t)(ptr))
 
@@ -270,25 +286,121 @@ void *malloc_from_top(size_t victim_size)
     return chunk2addr(old_top);
 }
 
-void *malloc_from_bin(size_t victim_size)
+/**
+ * @brief Sort the given chunk, which is not already in a bin, into small/large
+ *          bin.
+ *
+ * @param chunk The chunk to sort. Must not be in any other bin.
+ */
+void sort_chunk_into_bins(malloc_chunk *chunk)
+{
+    size_t size = chunk_size(chunk);
+    if (is_small_bin_size(size))
+    {
+        malloc_bin *bin = bin_at(&main_arena, small_bin_index(size));
+        bin_insert(bin, chunk);
+        return;
+    }
+
+    // TODO: find into what bin, and then insert at the correct thing (large bin must be sorted by size)
+    assert(false);
+}
+
+/**
+ * @brief Malloc from the unsorted bin, if possible. While going through the
+ *          unsorted bin, will sort all entries inside which do not match the
+ *          request into small and large bins.
+ *
+ * @param victim_size The size of the **chunk** (not the user request)
+ *                        that needs allocating
+ * @return - Pointer to the allocated memory (not chunk) or NULL.
+ */
+void *malloc_from_unsorted_bin(size_t victim_size)
 {
     malloc_bin *bin = bin_at(&main_arena, 0);
     malloc_chunk *cur = bin->fd;
 
     while (cur != bin)
     {
-        if (chunk_size(cur) <= victim_size)
+        malloc_chunk *next_in_bin = cur->fd;
+        unlink_chunk(cur);
+
+        if (victim_size <= chunk_size(cur))
         {
-            unlink_chunk(cur);
+            next_chunk(cur)->chunk_size |= MALLOC_CHUNK_PREV_IN_USE;
 
-            malloc_chunk *next = next_chunk(cur);
-            next->chunk_size |= MALLOC_CHUNK_PREV_IN_USE;
+            // TODO: if victim_size is smaller than the chunk, split.
 
-            return cur;
+            return chunk2addr(cur);
         }
+
+        sort_chunk_into_bins(cur);
+
+        cur = next_in_bin;
     }
 
     return NULL;
+}
+
+/**
+ * @brief - Malloc from one of the small bins, if possible.
+ *
+ * @param - victim_size The size of the **chunk** (not the user request)
+ *                        that needs allocating
+ * @return - Pointer to the allocated memory (not chunk) or NULL.
+ */
+void *malloc_from_small_bin(size_t victim_size)
+{
+    if (!is_small_bin_size(victim_size))
+    {
+        return NULL;
+    }
+
+    malloc_bin *bin = bin_at(&main_arena, small_bin_index(victim_size));
+    if (is_bin_empty(bin))
+    {
+        return NULL;
+    }
+
+    malloc_chunk *chunk = bin->bk;
+    unlink_chunk(chunk);
+
+    next_chunk(chunk)->chunk_size |= MALLOC_CHUNK_PREV_IN_USE;
+    return chunk2addr(chunk);
+}
+
+/**
+ * @brief - Malloc from one of the small bins, if possible.
+ *
+ * @param - victim_size The size of the **chunk** (not the user request)
+ *                        that needs allocating
+ * @return - Pointer to the allocated memory (not chunk) or NULL.
+ */
+void *malloc_from_large_bin(size_t victim_size)
+{
+    // next_chunk(chunk)->chunk_size |= MALLOC_CHUNK_PREV_IN_USE;
+    return NULL; // TODO: implement large bin allocation
+}
+
+/**
+ * @brief - Malloc from one of the bins, if possible. If no chunk is found in
+ *          small/large bins, will go through unsorted bin, sorting it while
+ *          searching.
+ * @see   - malloc_from_unsorted_bin
+ *
+ * @param - victim_size The size of the **chunk** (not the user request)
+ *                        that needs allocating
+ * @return - Pointer to the allocated memory (not chunk) or NULL.
+ */
+void *malloc_from_bins(size_t victim_size)
+{
+    void *mem = malloc_from_small_bin(victim_size);
+    if (mem) return mem;
+
+    mem = malloc_from_large_bin(victim_size);
+    if (mem) return mem;
+
+    return malloc_from_unsorted_bin(victim_size);
 }
 
 /**
@@ -393,7 +505,7 @@ void *kmalloc(size_t size)
 
     size_t victim_size = request_size_to_chunk_size(size);
 
-    void *victim = malloc_from_bin(victim_size);
+    void *victim = malloc_from_bins(victim_size);
     if (victim != NULL)
     {
         return victim;
@@ -473,3 +585,42 @@ void *krealloc(void *ptr, size_t size)
 
     return new_ptr;
 }
+
+// GCC optimizes kmalloc and causes it to not know that it returns a pointer to
+//  be freed by kfree, causing this warning.
+#pragma GCC diagnostic push
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic ignored "-Wmismatched-dealloc"
+#endif
+void test_kmalloc()
+{
+    // Malloc correctly gets the size
+    void *addr = kmalloc(1);
+    void *pad = kmalloc(1);
+    malloc_chunk *chunk_addr = addr2chunk(addr);
+    assert(chunk_size(chunk_addr) == MIN_CHUNK_SIZE);
+
+
+    // Free puts the chunk into the unsorted bin
+    kfree(addr);
+    assert(bin_at(&main_arena, 0)->fd == chunk_addr);
+
+    // Malloc sorts the unsorted bin
+    void *addr2 = kmalloc(MIN_CHUNK_SIZE * 2);
+    assert(bin_at(&main_arena, small_bin_index(MIN_CHUNK_SIZE))->fd == chunk_addr);
+
+    // Allocate the chunk from the small bin
+    void *addr3 = kmalloc(1);
+    assert(addr3 == addr);
+
+    // Free all
+    kfree(addr3);
+    kfree(addr2);
+    kfree(pad);
+
+    // Malloc consolidates all previous allocations
+    addr2 = kmalloc(MIN_CHUNK_SIZE * 4);
+    assert(addr2 == addr);
+    kfree(addr2);
+}
+#pragma GCC diagnostic pop
