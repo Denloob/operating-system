@@ -58,7 +58,11 @@ IDEChannelRegisters channels[2];
 ide_device ide_devices[4];
 
 int ide_init();
-
+static void init_kernel_memory(uint64_t mmu_map_base_address, range_Range *memory_map, uint64_t memory_map_length);
+static void init_pic_keyboard_and_timer();
+static void init_drive_devices();
+static void print_time();
+static void display_boot_logo() __attribute__((unused));
 //if you want to skip the animation part comment the following define 
 //#define DEBUG_MODE_OFF
 
@@ -70,141 +74,24 @@ void __attribute__((section(".entry"), sysv_abi)) kernel_main(uint32_t param_mmu
 
     io_clear_vga();
 
-    mmu_init_post_init(mmu_map_base_address);
-
-    init_gdt_and_tss();
-
-    mmu_unmap_bootloader();
-
-    mmap_init(memory_map, memory_map_length);
-
-    mmu_page_range_set_flags(&__entry_start, &__entry_end, 0);
-    mmu_page_range_set_flags(&__text_start, &__text_end, 0);
-    mmu_page_range_set_flags(&__rodata_start, &__rodata_end, MMU_EXECUTE_DISABLE);
-    mmu_page_range_set_flags(&__data_start, &__data_end, MMU_READ_WRITE | MMU_EXECUTE_DISABLE);
-
-    uint64_t bss_size = PAGE_ALIGN_UP((uint64_t)&__bss_end - (uint64_t)&__bss_start);
-    res rs = mmap(&__bss_start, bss_size, MMAP_PROT_READ | MMAP_PROT_WRITE);
-    assert(IS_OK(rs) && "Couldn't find a memory region for kernel bss section");
-
-    const uint64_t vga_address = (uint64_t)VGA_GRAPHICS_BUF1_PHYS;
-    const uint64_t vga_size = 32 * PAGE_SIZE; // 0xA0000..0xBFFFF
-    mmu_map_range(vga_address, vga_address + vga_size, VGA_GRAPHICS_BUF1, MMU_READ_WRITE | MMU_EXECUTE_DISABLE);
-    io_vga_addr_base = VGA_TEXT_ADDRESS;
-    io_clear_vga(); // After setting io_vga_addr_base must clear the screen.
-    mmu_unmap_range(VGA_GRAPHICS_BUF3_PHYS, VGA_GRAPHICS_BUF3_PHYS_END);
-
-    mmu_tlb_flush_all();
-
-    memset(&__bss_start, 0, (uint64_t)&__bss_end - (uint64_t)&__bss_start);
+    init_kernel_memory(mmu_map_base_address, memory_map, memory_map_length);
 
     usermode_init_address_check(mmu_map_base_address, MMU_TOTAL_CHUNK_SIZE);
 
     init_idt();
     syscall_initialize();
 
-    PIC_remap(0x20, 0x70);
-    pic_mask_all();
+    init_pic_keyboard_and_timer();
+    init_drive_devices();
 
-    pic_clear_mask(pic_IRQ_KEYBOARD);
-    idt_register(0x20 + pic_IRQ_KEYBOARD, IDT_gate_type_INTERRUPT, io_isr_keyboard_event);
-    io_input_keyboard_key = io_keyboard_wait_key;
-
-    pic_clear_mask(pic_IRQ_TIMER);
-    idt_register(0x20 + pic_IRQ_TIMER, IDT_gate_type_INTERRUPT, pit_isr_clock);
-    pit_init();
-
-    assert(IS_OK(io_keyboard_reset_and_self_test()) && "Keyboard self test failed. Reboot and try again.");
-    asm volatile ("sti");
-
-    //PCI scan test
-    puts("Starting PCI scan");
-    pci_scan_for_ide();
-    
-    //IDE scan
-    puts("Starting IDE scan");
-    const int drive_id = ide_init();
-
-    fs_init(drive_id);
-
-    // Get current time
-    uint8_t hours, minutes, seconds;
-    RTC_get_time(&hours, &minutes, &seconds);
-    
-    // Get current date
-    uint16_t year;
-    uint8_t month, day;
-    RTC_get_date(&year, &month, &day);
-
-    //the printf is using zero padding 
-    printf("Current Time: %d:%02d:%02d\n", hours, minutes, seconds);
-    printf("Current Date: %d-%d-%d\n", day, month, year);
+    print_time();
 
     test_perform_all();
 
 #ifdef DEBUG_MODE_OFF
-    FILE file = {0};
-
-    success = fat16_open(&g_fs_fat16, "video.bmp", &file.file);
-    assert(success && "fat16_open");
-
-    fseek(&file, 0, SEEK_END);
-    uint64_t filesize = ftell(&file);
-    fseek(&file, 0, SEEK_SET);
-
-    vga_mode_graphics();
-    while (ftell(&file) < filesize)
-    {
-        const uint64_t time_before = pit_ms_counter();
-
-        bmp_draw_from_stream_at(0, 0, &file);
-
-        const uint64_t time_delta = pit_ms_counter() - time_before;
-        const uint64_t ms_between_frames = 40;
-        if (time_delta < ms_between_frames)
-            sleep_ms(ms_between_frames - time_delta);
-    }
-
-    sleep_ms(500);
-    vga_mode_text();
-    io_clear_vga();
-    printf("Welcome to ");
-    sleep_ms(500);
-
-    char str[] = "AMONG OS\n";
-    for (int i = 0; i < sizeof(str); i++)
-    {
-        sleep_ms(300);
-        putc(str[i]);
-    }
-char *amongus[] = {
-    "           S#####@G#%S        \n",
-    "        S%#$-SS----S%#S#S     \n",
-    "        S#S       SSS*S##S    \n",
-    "       S#S   S@S###%%%%###%   \n",
-    "       ##^  S##S^       *S%SS \n",
-    "  S#%@@#P   X###S          #S \n",
-    " S#PSSS#X   S####SG###@@@@### \n",
-    " X#X  ##X    S#############$S \n",
-    " S#X  ##X     SS%####$%%-S#X  \n",
-    " ##^  ##X                X#S  \n",
-    " ##   ##X                X##  \n",
-    " ##   ##X                X##  \n",
-    " %#S  ##X                X#X  \n",
-    " S#SS ##X                ##S  \n",
-    "  -%####S     S##S@@@@S S##   \n",
-    "       ##     ##X S#S^  X#X   \n",
-    "       ##     ##X S#S   S#S   \n",
-    "       %#G%SS%##^ *S####$S    \n",
-    "       *-S%%%%S^\n",
-};
-    for (int i = 0; i < sizeof(amongus) / sizeof(*amongus); i++)
-    {
-        sleep_ms(70);
-        put(amongus[i]);
-    }
+    display_boot_logo();
 #else
-    //DEBUGGING SECTION
+
 #endif
     while(true)
     {
@@ -309,6 +196,54 @@ static void init_gdt_and_tss()
     asm ("ltr %0" : : "r"((uint16_t)TSS_SEGMENT) : "memory");
 }
 
+void init_kernel_memory(uint64_t mmu_map_base_address, range_Range *memory_map, uint64_t memory_map_length)
+{
+    mmu_init_post_init(mmu_map_base_address);
+
+    init_gdt_and_tss();
+
+    mmu_unmap_bootloader();
+
+    mmap_init(memory_map, memory_map_length);
+
+    mmu_page_range_set_flags(&__entry_start, &__entry_end, 0);
+    mmu_page_range_set_flags(&__text_start, &__text_end, 0);
+    mmu_page_range_set_flags(&__rodata_start, &__rodata_end, MMU_EXECUTE_DISABLE);
+    mmu_page_range_set_flags(&__data_start, &__data_end, MMU_READ_WRITE | MMU_EXECUTE_DISABLE);
+
+    uint64_t bss_size = PAGE_ALIGN_UP((uint64_t)&__bss_end - (uint64_t)&__bss_start);
+    res rs = mmap(&__bss_start, bss_size, MMAP_PROT_READ | MMAP_PROT_WRITE);
+    assert(IS_OK(rs) && "Couldn't find a memory region for kernel bss section");
+
+    const uint64_t vga_address = (uint64_t)VGA_GRAPHICS_BUF1_PHYS;
+    const uint64_t vga_size = 32 * PAGE_SIZE; // 0xA0000..0xBFFFF
+    mmu_map_range(vga_address, vga_address + vga_size, VGA_GRAPHICS_BUF1, MMU_READ_WRITE | MMU_EXECUTE_DISABLE);
+    io_vga_addr_base = VGA_TEXT_ADDRESS;
+    io_clear_vga(); // After setting io_vga_addr_base must clear the screen.
+    mmu_unmap_range(VGA_GRAPHICS_BUF3_PHYS, VGA_GRAPHICS_BUF3_PHYS_END);
+
+    mmu_tlb_flush_all();
+
+    memset(&__bss_start, 0, (uint64_t)&__bss_end - (uint64_t)&__bss_start);
+}
+
+static void init_pic_keyboard_and_timer()
+{
+    PIC_remap(0x20, 0x70);
+    pic_mask_all();
+
+    pic_clear_mask(pic_IRQ_KEYBOARD);
+    idt_register(0x20 + pic_IRQ_KEYBOARD, IDT_gate_type_INTERRUPT, io_isr_keyboard_event);
+    io_input_keyboard_key = io_keyboard_wait_key;
+
+    pic_clear_mask(pic_IRQ_TIMER);
+    idt_register(0x20 + pic_IRQ_TIMER, IDT_gate_type_INTERRUPT, pit_isr_clock);
+    pit_init();
+
+    assert(IS_OK(io_keyboard_reset_and_self_test()) && "Keyboard self test failed. Reboot and try again.");
+    asm volatile ("sti");
+}
+
 int ide_init() {
     ide_initialize(BAR0, BAR1, BAR2, BAR3, BAR4);
     int primary_drive_number = -1;
@@ -333,4 +268,61 @@ int ide_init() {
     printf("[*] Selected device %d: %s\n", primary_drive_number,
            ide_devices[primary_drive_number].Model);
     return primary_drive_number;
+}
+
+void init_drive_devices()
+{
+    //PCI scan test
+    puts("Starting PCI scan");
+    pci_scan_for_ide();
+    
+    //IDE scan
+    puts("Starting IDE scan");
+    const int drive_id = ide_init();
+
+    fs_init(drive_id);
+}
+
+void print_time()
+{
+    // Get current time
+    uint8_t hours, minutes, seconds;
+    RTC_get_time(&hours, &minutes, &seconds);
+
+    // Get current date
+    uint16_t year;
+    uint8_t month, day;
+    RTC_get_date(&year, &month, &day);
+
+    //the printf is using zero padding 
+    printf("Current Time: %d:%02d:%02d\n", hours, minutes, seconds);
+    printf("Current Date: %d-%d-%d\n", day, month, year);
+}
+
+void display_boot_logo()
+{
+    FILE file = {0};
+
+    bool success = fat16_open(&g_fs_fat16, "video.bmp", &file.file);
+    assert(success && "fat16_open");
+
+    fseek(&file, 0, SEEK_END);
+    uint64_t filesize = ftell(&file);
+    fseek(&file, 0, SEEK_SET);
+
+    vga_mode_graphics();
+    while (ftell(&file) < filesize)
+    {
+        const uint64_t time_before = pit_ms_counter();
+
+        bmp_draw_from_stream_at(0, 0, &file);
+
+        const uint64_t time_delta = pit_ms_counter() - time_before;
+        const uint64_t ms_between_frames = 40;
+        if (time_delta < ms_between_frames)
+            sleep_ms(ms_between_frames - time_delta);
+    }
+
+    vga_mode_text();
+    io_clear_vga();
 }
