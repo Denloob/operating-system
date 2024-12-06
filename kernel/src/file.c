@@ -1,8 +1,6 @@
 #include "file.h"
 #include "assert.h"
 
-#define FWRITE_ERROR_RETURN 0
-
 size_t fread(void *ptr, size_t size, size_t count, FILE *stream)
 {
     size_t bytes_read = fat16_read(&stream->file, ptr, size * count, stream->offset);
@@ -14,13 +12,9 @@ size_t fread(void *ptr, size_t size, size_t count, FILE *stream)
 size_t fwrite(void *ptr, size_t size, size_t count, FILE *stream)
 {
     size_t bytes_written = fat16_write(&stream->file, ptr , size * count, stream->offset);
+    stream->offset += bytes_written;
 
-    if(bytes_written < size * count)
-    {
-        return FWRITE_ERROR_RETURN;
-    }
-
-    return bytes_written;
+    return bytes_written / size;
 }
 
 int fseek(FILE *stream, int64_t offset, file_Whence whence)
