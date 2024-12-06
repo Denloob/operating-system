@@ -29,7 +29,7 @@ static void test_file_creation_and_writing()
     // Seek to the beginning and read the data back
     fseek(&file, 0, SEEK_SET);
     uint8_t read_buffer[512];
-    const char *filename = (const char *)file.file.file_entry.filename;
+    filename = (const char *)file.file.file_entry.filename;
     fat16_get_file_chain(file.file.ref->drive , &file.file.ref->bpb, filename, file.file.chain);
     size_t bytes_read = fread(read_buffer, 1, 5, &file);
     assert(bytes_read == buffer_size && "fread didn't read the expected number of bytes");
