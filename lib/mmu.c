@@ -274,6 +274,6 @@ void mmu_page_range_set_flags(void *virtual_address_begin, void *virtual_address
 
     for (uint64_t virt = virtual_begin; virt < virtual_end; virt += PAGE_SIZE)
     {
-        mmu_page_set_flags(virtual_address_end, new_flags);
+        mmu_page_set_flags((void *)virt, new_flags);
     }
 }
