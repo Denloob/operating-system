@@ -2,10 +2,12 @@
 
 // Includes for the test functions
 #include "kmalloc.h"
+#include "test_filesystem.h"
 
 typedef void (*TestFunction)();
 static TestFunction test_funcs[] = {
     test_kmalloc,
+    test_filesystem,
 };
 
 void test_perform_all()

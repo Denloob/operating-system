@@ -1,5 +1,6 @@
 #include "IDT.h"
 #include "mmu_config.h"
+#include "fs.h"
 #include "syscall.h"
 #include "tss.h"
 #include "kmalloc.h"
@@ -124,6 +125,8 @@ void __attribute__((section(".entry"), sysv_abi)) kernel_main(uint32_t param_mmu
     puts("Starting IDE scan");
     const int drive_id = ide_init();
 
+    fs_init(drive_id);
+
     // Get current time
     uint8_t hours, minutes, seconds;
     RTC_get_time(&hours, &minutes, &seconds);
@@ -137,18 +140,12 @@ void __attribute__((section(".entry"), sysv_abi)) kernel_main(uint32_t param_mmu
     printf("Current Time: %d:%02d:%02d\n", hours, minutes, seconds);
     printf("Current Date: %d-%d-%d\n", day, month, year);
 
-    Drive drive;
-    drive_init(&drive, drive_id);
-
     test_perform_all();
 
-    fat16_Ref fat16;
-    bool success = fat16_ref_init(&fat16, &drive);
-    assert(success && "fat16_ref_init");
 #ifdef DEBUG_MODE_OFF
     FILE file = {0};
 
-    success = fat16_open(&fat16, "video.bmp", &file.file);
+    success = fat16_open(&g_fs_fat16, "video.bmp", &file.file);
     assert(success && "fat16_open");
 
     fseek(&file, 0, SEEK_END);
@@ -208,56 +205,13 @@ char *amongus[] = {
     }
 #else
     //DEBUGGING SECTION
-    clear_command();
-    //TEST FOR fwrite (was success feel free to delete it)
-    
-    // Create a new file using fat16_create_file
-    fat16_File file1;
-    success = fat16_create_file_with_return(&file1 , &fat16, "testfile.txt");
-    assert(success && "fat16_create_file");
-
-    // Prepare the buffer with data to write
-    uint64_t buffer_size = 5;  // Example size
-    uint8_t buffer_to_write[512] = "Hello, FAT16! This is a simple test.";  // Declare text directly
-    FILE file;
-    file.file = file1;
-    file.offset = 0;
-    // Write data to the file using fwrite
-   
-    uint64_t bytes_written = fwrite(buffer_to_write, 1, 5, &file);
-    printf("Bytes written: %lld\n", bytes_written);
-    assert(bytes_written == buffer_size && "fwrite didn't write the expected number of bytes");//STOPS HERE
-
-
-    // Seek to the beginning and read the data back
-    fseek(&file, 0, SEEK_SET);
-    uint8_t read_buffer[512];
-    const char *filename = (const char *)file.file.file_entry.filename;
-    fat16_get_file_chain(file.file.ref->drive , &file.file.ref->bpb, filename, file.file.chain);
-    size_t bytes_read = fread(read_buffer, 1, 5, &file);
-    printf("Bytes read: %zu\n", bytes_read);
-    printf("\nfirst: %c second:%c third:%c fourth: %c fifth: %c\n" , read_buffer[0] , read_buffer[1] , read_buffer[2] , read_buffer[3] , read_buffer[4]);
-    assert(bytes_read == buffer_size && "fread didn't read the expected number of bytes");
-
-    // Verify that the data read is the same as what was written
-    assert(memcmp(buffer_to_write, read_buffer, buffer_size) == 0 && "Data mismatch between write and read");
-
-    // Seek to a specific position and check file position with ftell
-    fseek(&file, 5, SEEK_SET);
-    uint64_t file_pos = ftell(&file);
-    printf("File position after seek: %lld\n", file_pos);
-    assert(file_pos == 5 && "ftell position mismatch");
-
-    printf("fwrite test completed successfully.\n");
-    
-
 #endif
     while(true)
     {
         char input_buffer[INPUT_BUFFER_SIZE];
         put("$ ");
         get_string(input_buffer,INPUT_BUFFER_SIZE);
-        parse_command(input_buffer, INPUT_BUFFER_SIZE , &fat16);
+        parse_command(input_buffer, INPUT_BUFFER_SIZE , &g_fs_fat16);
     }
 
 }

@@ -136,7 +136,6 @@ bool fat16_read_root_directory(Drive *drive, fat16_BootSector *bpb, fat16_DirEnt
 void filename_to_fat16_filename(const char *filename, char out_buf[static FAT16_FULL_FILENAME_SIZE])
 {
     memset(out_buf, ' ', FAT16_FULL_FILENAME_SIZE);
-    printf("file name: %s \n" , filename);
     char *dot = memrchr(filename, '.', FAT16_FILENAME_SIZE + 1);
     assert(dot != NULL && "Invalid path");
 
@@ -590,7 +589,6 @@ bool fat16_create_file(fat16_Ref *fat16, const char *full_filename)
         return false;
     }
 
-    printf("File '%s' created successfully\n", full_filename);
     return true;
 
 }
@@ -616,8 +614,6 @@ bool fat16_create_file_with_return(fat16_File *out_file, fat16_Ref *fat16, const
         printf("Failed to add the directory entry to the root directory\n");
         return false;
     }
-
-    printf("File '%s' created successfully\n", full_filename);
 
     out_file->file_entry = new_entry;
     out_file->ref = fat16;
@@ -801,12 +797,8 @@ uint64_t fat16_write_to_file(fat16_File *file,Drive *drive,fat16_BootSector *bpb
     }
 
     //update the dir entry
-    
-    print_root_filenames(file->ref);
     entry.fileSize = (entry.fileSize - file_offset ) + bytes_written;
     fat16_update_root_entry(drive, bpb, &entry);
-
-    print_root_filenames(file->ref);
 
     //update the chain of the file
     char filename[9];
