@@ -6,7 +6,7 @@ IMAGE_NAME := hdd
 
 all: $(IMAGE_NAME).img
 
-$(IMAGE_NAME).img: $(BOOTLOADER) $(KERNEL) initfat16
+$(IMAGE_NAME).img: $(BOOTLOADER) $(KERNEL) initfat16 kernel.cfg
 	cp $(BOOTLOADER) $@
 
 	dd if=/dev/zero of=$@ bs=1 seek=$$(stat --format="%s" $@) count=$$(printf "%d" 0x10000)
@@ -15,6 +15,7 @@ $(IMAGE_NAME).img: $(BOOTLOADER) $(KERNEL) initfat16
 
 	mcopy $(KERNEL) a:
 	mcopy ./assets/video.bmp a:
+	mcopy kernel.cfg a:
 
 	dd if=/dev/zero of=$@ bs=1 seek=$$(stat --format="%s" $@) count=$$(printf "%d" 0x10000)
 
@@ -36,6 +37,9 @@ QEMU_MISC_OPTIONS := -no-reboot -monitor stdio -cpu $(QEMU_CPU)
 
 QEMU_DEBUG_OPTIONS := -gdb tcp::1234 -S
 GDB_COMMAND := gdb $(shell realpath $(DEBUG_SYM)) -ex "target remote localhost:1234"
+
+kernel.cfg: kernel.cfg.def
+	cp $< $@
 
 run: $(IMAGE_NAME).img
 	$(EMU) -hda $< $(QEMU_LOG_OPTIONS) $(QEMU_MISC_OPTIONS)

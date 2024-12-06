@@ -3,3 +3,4 @@ bx_enh_dbg.ini
 compile_commands.json
 .cache
 /log.txt
+/kernel.cfg
