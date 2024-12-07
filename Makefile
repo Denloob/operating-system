@@ -15,7 +15,8 @@ $(IMAGE_NAME).img: $(BOOTLOADER) $(KERNEL) initfat16 kernel.cfg
 
 	dd if=/dev/zero of=$@ bs=$$((1024 * 1024)) seek=$$(stat --format="%s" $@) count=32 # 32MB
 	mcopy $(KERNEL) a:
-	mcopy ./assets/video.bmp a:
+	mcopy ./assets/cogs.bmp a:
+	mcopy ./assets/amongos.bmp a:
 	mcopy kernel.cfg a:
 
 	dd if=/dev/zero of=$@ bs=1 seek=$$(stat --format="%s" $@) count=$$(printf "%d" 0x10000)

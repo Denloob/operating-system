@@ -63,7 +63,7 @@ static void init_pic_keyboard_and_timer();
 static void init_drive_devices();
 static void print_time();
 static void parse_boot_config_and_play_logo();
-static void display_boot_logo(int boot_style);
+static void display_boot_logo(int boot_style, const char *video_path);
 
 #define DEBUG_MODE_OFF
 
@@ -297,11 +297,11 @@ void print_time()
     printf("Current Date: %d-%d-%d\n", day, month, year);
 }
 
-void display_boot_logo(int boot_style)
+void display_boot_logo(int boot_style, const char *video_path)
 {
     FILE file = {0};
 
-    bool success = fat16_open(&g_fs_fat16, "video.bmp", &file.file);
+    bool success = fat16_open(&g_fs_fat16, video_path, &file.file);
     assert(success && "fat16_open");
 
     fseek(&file, 0, SEEK_END);
@@ -407,5 +407,10 @@ static void parse_boot_config_and_play_logo()
         return;
     }
 
-    display_boot_logo(boot_style_char - '0');
+    success = fseek(&file, sizeof("\nboot_video=") - 1, SEEK_CUR) == 0;
+    assert(success && "kernel.cfg is invalid");
+    char boot_video;
+    assert(fread(&boot_video, 1, 1, &file) == 1 && "couldn't read kernel.cfg");
+
+    display_boot_logo(boot_style_char - '0', boot_video == 'a' ? "amongos.bmp" : "cogs.bmp");
 }

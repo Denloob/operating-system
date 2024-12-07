@@ -1,2 +1,3 @@
 boot_style=1
 enable_boot_logo=1
+boot_video=cogs
