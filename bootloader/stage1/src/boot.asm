@@ -12,13 +12,13 @@ nop
     .reserved_sectors: dw (1 + STAGE2_BOOTLOADER_SIZE_IN_SECTORS)
     .fat_copies: db 1 ; TODO: maybe change to 2 when support is added
     .possible_root_entries: dw 512
-    .small_number_of_sectors: dw 0x2000 ; 0x2000 because that's what MTools uses
+    .small_number_of_sectors: dw 0 ; Unused, because the large one is used
     .media_descriptor: db 0xf8
-    .sectors_per_FAT: dw 0x20
+    .sectors_per_FAT: dw 0x100
     .sectors_per_track: dw 0x24
     .number_of_heads: dw 0x2
     .hidden_sectors: dd 0
-    .large_number_of_sectors: dd 0 ; Unused, because the small one is used
+    .large_number_of_sectors: dd 0x10000 ; 32MB
     .drive_number: db 0x80
     .reserved1: db 0
     .extended_boot_signature: db 0x29

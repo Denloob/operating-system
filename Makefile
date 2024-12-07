@@ -13,6 +13,7 @@ $(IMAGE_NAME).img: $(BOOTLOADER) $(KERNEL) initfat16 kernel.cfg
 
 	./util/initfat16/bin/initfat16 $@
 
+	dd if=/dev/zero of=$@ bs=$$((1024 * 1024)) seek=$$(stat --format="%s" $@) count=32 # 32MB
 	mcopy $(KERNEL) a:
 	mcopy ./assets/video.bmp a:
 	mcopy kernel.cfg a:
