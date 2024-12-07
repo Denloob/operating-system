@@ -258,7 +258,6 @@ static void default_color_palette_initialize()
     for (int i = 0; i < sizeof(g_default_color_palette); i++)
     {
         g_default_color_palette[i] = in_byte(VGA_DAC_DATA) << 2;
-        printf("%02x ", g_default_color_palette[i]);
     }
 }
 
