@@ -17,6 +17,7 @@ typedef struct PCB
     uint64_t    id;
     struct PCB *parent;
     Regs        regs;
+    uint64_t    rip;
     pcb_State   state;
 
     mmu_PageMapEntry *paging;

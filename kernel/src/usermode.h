@@ -1,6 +1,7 @@
 #pragma once
 
 #include "compiler_macros.h"
+#include "regs.h"
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -9,13 +10,13 @@
 #define USERMODE_STACK_BASE   (void *)0xc0000000
 
 /**
- * @brief Switches ring 3 (usermode) and jumps to the given address, with
- *          rsp and rbp being the given `stack` address.
+ * @brief Switches ring 3 (usermode) and jumps to the given address, the registers
+ *          specified in `regs`. (Stack address is regs->rsp).
  *
  * @param address - The usermode code address to jump to.
- * @param stack   - The base of the usermode stack.
+ * @param regs    - The registers to load
  */
-void usermode_jump_to(void *address, void *stack) __attribute__((noreturn));
+void usermode_jump_to(void *address, const Regs *regs) __attribute__((noreturn));
 
 /**
  * @brief Check if the given address is a usermode address.

@@ -21,4 +21,4 @@ typedef struct {
     uint64_t r15;
     uint64_t rflags;
     __attribute__((aligned(16))) uint8_t sse[512];
-} Regs;
+} Regs; // NOTE: change this struct very carefully, as its offsets are hardcoded in inline assembly for usermode jumps and possibly more.

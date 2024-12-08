@@ -1,36 +1,60 @@
 #include "usermode.h"
+#include "macro_utils.h"
 #include "range.h"
+#include "regs.h"
 #include <stdint.h>
 #include <stdbool.h>
 #include <stddef.h>
 
-void usermode_jump_to(void *address, void *stack)
+void usermode_jump_to(void *address, const Regs *regs)
 {
+#define USERMODE_CS 0x20 | 3
+#define USERMODE_DS 0x18 | 3
     asm volatile (
-        "mov r11, %[rflags]\n"
-        "mov rsp, %[stack]\n" // This must be before zeroing, so we don't zero the register with the value
-        "mov rbp, rsp\n"
+        // Prepare the iretq stack frame
+        "push " STR(USERMODE_DS) "\n"
+        "push %[stack]\n"
+        "push %[rflags]\n"
+        "push " STR(USERMODE_CS) "\n"
+        "push %[address]\n"
 
-        // Zero out all kernel registers (except the ones set later)
-        "xor rax, rax\n"
-        "xor rbx, rbx\n"
-        // skip rcx (which is the `address`)
-        "xor rdx, rdx\n"
-        "xor rsi, rsi\n"
-        "xor rdi, rdi\n"
-        // skip rbp and rsp
-        "xor r8, r8\n"
-        "xor r9, r9\n"
-        "xor r10, r10\n"
-        // skip r11
-        "xor r12, r12\n"
-        "xor r13, r13\n"
-        "xor r14, r14\n"
-        "xor r15, r15\n"
+        // Set the regs
+        "mov rax, [ %[regs] + 0   ]\n"
+        "mov rcx, [ %[regs] + 8   ]\n"
+        "mov rdx, [ %[regs] + 16  ]\n"
+        "mov rbx, [ %[regs] + 24  ]\n"
+        // Skip $rsp, we set it before (%[stack])
+        "mov rbp, [ %[regs] + 40  ]\n"
+        "mov rsi, [ %[regs] + 48  ]\n"
+        // Skip $rdi because %[regs] is stored in $rdi, so we will load it last
+        "mov r8,  [ %[regs] + 64  ]\n"
+        "mov r9,  [ %[regs] + 72  ]\n"
+        "mov r10, [ %[regs] + 80  ]\n"
+        "mov r11, [ %[regs] + 88  ]\n"
+        "mov r12, [ %[regs] + 96  ]\n"
+        "mov r13, [ %[regs] + 104 ]\n"
+        "mov r14, [ %[regs] + 112 ]\n"
+        "mov r15, [ %[regs] + 120 ]\n"
 
-        "sysretq\n"
+        "fxrstor  [ %[regs] + 144 ]\n" // SSE
+
+        "mov rdi, [ %[regs] + 56  ]\n"
+
+        // Can not use %[regs] any longer, we overwrote its value.
+
+        // Setup the segments - must be after we read `regs`, as we change the `ds`.
+        "push rax\n" // Store the user rax
+        "mov ax, " STR(USERMODE_DS) "\n"
+        "mov ds, ax\n"
+        "mov es, ax\n"
+        "mov fs, ax\n"
+        "mov gs, ax\n"
+        "pop rax\n" // Restore the user rax
+
+        "iretq\n"
         :
-        : "c"(address), [rflags] "i"(0x202), [stack] "r"(stack)
+        : [address] "r"(address), [rflags] "r"(regs->rflags), [stack] "r"(regs->rsp),
+          [regs] "D"(regs)
         : "memory"); // We don't actually need to specify clobbers because it doesn't return. "memory" to force execution order.
 
     __builtin_unreachable();
