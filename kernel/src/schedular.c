@@ -4,24 +4,22 @@
 #include "schedular.h"
 #include "usermode.h"
 
-static uint64_t current_process_id;
+static PCB *g_current_process;
 
 void schedular_context_switch_to(PCB *pcb)
 {
-    current_process_id = pcb->id;
+    g_current_process = pcb;
     pcb->state = PCB_STATE_RUNNING;
     asm volatile("mov cr3, %0" : : "a"(pcb->paging) : "memory");
     usermode_jump_to((void *)pcb->rip, &pcb->regs);
 }
 
-void __attribute__((used, sysv_abi)) schedular_context_switch_from(Regs *regs,
-                                                         isr_InterruptFrame *frame)
+void schedular_context_switch_from(Regs *regs, isr_InterruptFrame *frame)
 {
     regs->rflags = frame->flags;
     regs->rsp = frame->rsp;
 
-    // TODO: Get the pcb for current_process_id
-    PCB *pcb = NULL;
+    PCB *pcb = g_current_process;
 
     pcb->rip = frame->rip;
     pcb->regs = *regs;
