@@ -16,6 +16,7 @@
 #define PIT_DIVIDER (PIT_FREQUENCY_HZ / TARGET_FREQUENCY_HZ) // The reload value for the PIT aka the divider
 
 static volatile uint64_t g_pit_ms_counter;
+static volatile bool     g_special_event_enabled;
 
 static void __attribute__((used, sysv_abi)) handle_special_time_event_impl()
 {
@@ -73,9 +74,12 @@ void __attribute__((naked)) pit_isr_clock()
     asm volatile(
                 "add %[ms_counter], 4\n"
 
+                "test %[special_event_enabled], 1\n"
+                "jz .regular\n"
                 "test %[ms_counter], (2 << 2) - 1\n" // if (ms_counter % 8 == 0)
                 "jz handle_special_time_event\n" // Does not return
 
+                 ".regular:\n"
                  "push rax\n"
 
                  "mov al, 0x20\n" // Send EOI to PIC
@@ -83,7 +87,8 @@ void __attribute__((naked)) pit_isr_clock()
 
                  "pop rax\n"
                  "iretq\n"
-                 : [ms_counter] "+m"(g_pit_ms_counter)
+                 : [ms_counter] "+m"(g_pit_ms_counter),
+                   [special_event_enabled] "+m"(g_special_event_enabled)
                  :
                  : "memory", "cc");
 }
@@ -107,4 +112,14 @@ void pit_init()
 uint64_t pit_ms_counter()
 {
     return g_pit_ms_counter;
+}
+
+void pit_enable_special_event()
+{
+    g_special_event_enabled = true;
+}
+
+void pit_disable_special_event()
+{
+    g_special_event_enabled = false;
 }

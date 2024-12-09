@@ -1,4 +1,5 @@
 #include "isr.h"
+#include "pit.h"
 #include "pcb.h"
 #include "regs.h"
 #include "scheduler.h"
@@ -26,4 +27,14 @@ void scheduler_context_switch_from(Regs *regs, isr_InterruptFrame *frame)
     pcb->state = PCB_STATE_READY;
 
     // TODO: choose next pcb and call scheduler_context_switch_to with it
+}
+
+void scheduler_enable()
+{
+    pit_enable_special_event();
+}
+
+void scheduler_disable()
+{
+    pit_disable_special_event();
 }
