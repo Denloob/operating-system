@@ -1,12 +1,12 @@
 #include "isr.h"
 #include "pcb.h"
 #include "regs.h"
-#include "schedular.h"
+#include "scheduler.h"
 #include "usermode.h"
 
 static PCB *g_current_process;
 
-void schedular_context_switch_to(PCB *pcb)
+void scheduler_context_switch_to(PCB *pcb)
 {
     g_current_process = pcb;
     pcb->state = PCB_STATE_RUNNING;
@@ -14,7 +14,7 @@ void schedular_context_switch_to(PCB *pcb)
     usermode_jump_to((void *)pcb->rip, &pcb->regs);
 }
 
-void schedular_context_switch_from(Regs *regs, isr_InterruptFrame *frame)
+void scheduler_context_switch_from(Regs *regs, isr_InterruptFrame *frame)
 {
     regs->rflags = frame->flags;
     regs->rsp = frame->rsp;
@@ -25,5 +25,5 @@ void schedular_context_switch_from(Regs *regs, isr_InterruptFrame *frame)
     pcb->regs = *regs;
     pcb->state = PCB_STATE_READY;
 
-    // TODO: choose next pcb and call schedular_context_switch_to with it
+    // TODO: choose next pcb and call scheduler_context_switch_to with it
 }

@@ -1,7 +1,7 @@
 #include "pit.h"
 #include "io.h"
 #include "isr.h"
-#include "schedular.h"
+#include "scheduler.h"
 #include "smartptr.h"
 #include <stdint.h>
 
@@ -28,7 +28,7 @@ static void __attribute__((naked, used)) handle_special_time_event()
     // NOTE: we will not return to pit_isr_clock. We are now on our own. Although the timer was already
     // incremented for us.
     // Our special "time event" is a round robin interrupt, so we won't actually iretq back to the same process.
-    // Instead we will store all the current process data, and iretq to another process. So the schedular
+    // Instead we will store all the current process data, and iretq to another process. So the scheduler
     // will be responsible for sending IRQ EOI.
 
     asm volatile(
@@ -64,7 +64,7 @@ static void __attribute__((naked, used)) handle_special_time_event()
                 "mov rdi, rsp\n"
                 "mov rsi, %[g_interrupt_frame_ptr_tmp]\n"
 
-                "call schedular_context_switch_from" // Does not return. We use call and not jmp to keep the stack 16 byte aligned.
+                "call scheduler_context_switch_from" // Does not return. We use call and not jmp to keep the stack 16 byte aligned.
         : [g_interrupt_frame_ptr_tmp] "+m"(g_interrupt_frame_ptr_tmp) : : "memory");
 }
 
@@ -74,7 +74,7 @@ void __attribute__((naked)) pit_isr_clock()
                 "add %[ms_counter], 4\n"
 
                 "test %[ms_counter], (2 << 2) - 1\n" // if (ms_counter % 8 == 0)
-                "jz handle_special_time_event" // Does not return
+                "jz handle_special_time_event\n" // Does not return
 
                  "push rax\n"
 
