@@ -2,17 +2,37 @@
 #include "pit.h"
 #include "pcb.h"
 #include "regs.h"
+#include "assert.h"
 #include "scheduler.h"
 #include "usermode.h"
 
-static PCB *g_current_process;
+static PCB *g_current_process; // Process queue head
+static PCB *g_process_queue_tail;
 
 void scheduler_context_switch_to(PCB *pcb)
 {
     g_current_process = pcb;
+    if (g_process_queue_tail == NULL) // TODO: temp, instead we probably want an init function
+    {
+        g_process_queue_tail = g_current_process;
+    }
+
     pcb->state = PCB_STATE_RUNNING;
     asm volatile("mov cr3, %0" : : "a"(pcb->paging) : "memory");
     usermode_jump_to((void *)pcb->rip, &pcb->regs);
+}
+
+PCB *scheduler_get_next_process_and_requeue_current()
+{
+    // When there's only one process is the queue, will always return it.
+    g_process_queue_tail->queue_next = g_current_process;
+    g_process_queue_tail = g_current_process;
+    PCB *next_pcb = g_current_process->queue_next;
+    g_current_process->queue_next = NULL;
+
+    assert(next_pcb != NULL);
+
+    return next_pcb;
 }
 
 void scheduler_context_switch_from(Regs *regs, isr_InterruptFrame *frame)
@@ -26,7 +46,8 @@ void scheduler_context_switch_from(Regs *regs, isr_InterruptFrame *frame)
     pcb->regs = *regs;
     pcb->state = PCB_STATE_READY;
 
-    // TODO: choose next pcb and call scheduler_context_switch_to with it
+    PCB *next_pcb = scheduler_get_next_process_and_requeue_current();
+    scheduler_context_switch_to(next_pcb);
 }
 
 void scheduler_enable()

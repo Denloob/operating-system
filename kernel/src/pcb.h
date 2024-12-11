@@ -14,6 +14,9 @@ typedef enum
 
 typedef struct PCB
 {
+    // Singly-linked list of PCBs. Next element will run after the current one.
+    struct PCB *queue_next;
+
     uint64_t    id;
     struct PCB *parent;
     Regs        regs;
