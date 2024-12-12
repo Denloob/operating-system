@@ -13,10 +13,6 @@ static PCB *g_process_queue_tail;
 void scheduler_context_switch_to(PCB *pcb, int pic_number)
 {
     g_current_process = pcb;
-    if (g_process_queue_tail == NULL) // TODO: temp, instead we probably want an init function
-    {
-        g_process_queue_tail = g_current_process;
-    }
 
     pcb->state = PCB_STATE_RUNNING;
     asm volatile("mov cr3, %0" : : "a"(pcb->paging) : "memory");
@@ -24,6 +20,18 @@ void scheduler_context_switch_to(PCB *pcb, int pic_number)
     if (pic_number != SCHEDULER_NOT_A_PIC_INTERRUPT) pic_send_EOI(pic_number);
 
     usermode_jump_to((void *)pcb->rip, &pcb->regs);
+}
+
+void scheduler_process_enqueue(PCB *pcb)
+{
+    pcb->queue_next = NULL;
+    if (g_process_queue_tail == NULL)
+    {
+        g_process_queue_tail = pcb;
+    }
+
+    g_process_queue_tail->queue_next = pcb;
+    g_process_queue_tail = pcb;
 }
 
 PCB *scheduler_get_next_process_and_requeue_current()
@@ -43,6 +51,9 @@ void scheduler_context_switch_from(Regs *regs, isr_InterruptFrame *frame, int pi
 {
     regs->rflags = frame->flags;
     regs->rsp = frame->rsp;
+
+    assert(g_process_queue_tail != NULL);
+    assert(g_current_process    != NULL);
 
     PCB *pcb = g_current_process;
 

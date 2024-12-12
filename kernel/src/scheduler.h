@@ -26,5 +26,12 @@ void scheduler_context_switch_to(PCB *pcb, int pic_number);
  */
 void scheduler_context_switch_from(Regs *regs, isr_InterruptFrame *frame, int pic_number) __attribute__((used, sysv_abi));
 
+/**
+ * @brief - Adds the process described by the PCB to the process queue.
+ *
+ * @param pcb - The PCB of the process to enqueue.
+ */
+void scheduler_process_enqueue(PCB *pcb);
+
 void scheduler_enable();
 void scheduler_disable();
