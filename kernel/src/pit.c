@@ -64,6 +64,7 @@ static void __attribute__((naked, used)) handle_special_time_event()
 
                 "mov rdi, rsp\n"
                 "mov rsi, %[g_interrupt_frame_ptr_tmp]\n"
+                "mov rdx, 0\n" // args.pic_number = pic_IRQ_TIMER
 
                 "call scheduler_context_switch_from" // Does not return. We use call and not jmp to keep the stack 16 byte aligned.
         : [g_interrupt_frame_ptr_tmp] "+m"(g_interrupt_frame_ptr_tmp) : : "memory");
