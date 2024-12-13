@@ -411,5 +411,22 @@ static void parse_boot_config_and_play_logo()
     char boot_video;
     assert(fread(&boot_video, 1, 1, &file) == 1 && "couldn't read kernel.cfg");
 
-    display_boot_logo(boot_style_char - '0', boot_video == 'a' ? "amongos.bmp" : "cogs.bmp");
+    const char *boot_video_path = NULL;
+    switch (boot_video)
+    {
+        case 'a':
+            boot_video_path = "amongos.bmp";
+            break;
+
+        case 'c':
+            boot_video_path = "cogs.bmp";
+            break;
+
+        case 'p':
+        default:
+            boot_video_path = "cogs-par.bmp";
+            break;
+    }
+    printf("%s\n", boot_video_path);
+    display_boot_logo(boot_style_char - '0', boot_video_path);
 }
