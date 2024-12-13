@@ -10,7 +10,6 @@
 #include "file.h"
 #include "FAT16.h"
 #include "bmp.h"
-#include "bmp_image.h"
 #include "kernel_memory_info.h"
 #include "drive.h"
 #include "error.isr.h"
