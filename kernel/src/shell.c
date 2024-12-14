@@ -3,6 +3,7 @@
 #include "shell.h"
 #include "vga.h"
 #include "donut.h"
+#include "file.h"
 #include "FAT16.h"
 #include "string.h"
 
@@ -123,6 +124,32 @@ void ls_command(fat16_Ref *fat16, const char* flag)
     }
 }
 
+void cat_command(fat16_Ref *fat16, const char* filename)
+{
+    if (filename == NULL)
+    {
+        puts("cat: no file provided");
+        return;
+    }
+    FILE file;
+    fat16_open(fat16, filename, &file.file);
+
+    while (true)
+    {
+        char buf[SECTOR_SIZE];
+        size_t bytes_read = fread(buf, 1, sizeof(buf), &file);
+        if (bytes_read == 0)
+        {
+            break;
+        }
+
+        for (int i = 0; i < bytes_read; i++)
+        {
+            putc(buf[i]);
+        }
+    }
+}
+
 
 void touch_command(fat16_Ref *fat16 ,const char* second_part_command)
 {
@@ -167,6 +194,10 @@ void parse_command(char* command , int max_size , fat16_Ref *fat16)
     {
         //if the second part is NULL the passed second part will be a string with no flags
         ls_command(fat16, second_part ? second_part : "-");
+    }
+    else if (compare_strings("cat", command))
+    {
+        cat_command(fat16, second_part);
     }
     else if (compare_strings("touch", command))
     {
