@@ -458,7 +458,7 @@ bool fat16_update_root_entry(Drive *drive, fat16_BootSector *bpb, fat16_DirEntry
         {
             continue;
         }
-        if (memcmp(entry.filename, dir_entry->filename, sizeof(entry.filename)) == 0) 
+        if (memcmp(entry.filename, dir_entry->filename, FAT16_FULL_FILENAME_SIZE) == 0) 
         {
             reader.entry_offset -= size_of_dir_entry;
             uint64_t entry_address = reader.current_sector * SECTOR_SIZE + reader.entry_offset;
@@ -549,19 +549,8 @@ bool fat16_unlink_clusters(fat16_Ref *fat16 , uint16_t back_cluster , uint16_t f
 uint32_t fat16_get_file_end_offset(fat16_Ref *fat16, const fat16_DirEntry *entry) 
 {
     uint16_t file_chain[MAX_CHAIN_LEN];
-    char filename[9];
-    // Convert `entry->filename` to a null-terminated string manually
-    for (int i = 0; i < 8; i++) {
-        if (entry->filename[i] == ' ') 
-        {
-            filename[i] = '\0';
-            break;
-        }
-        filename[i] = entry->filename[i];
-    }
-    filename[8] = '\0';
 
-    if (!fat16_get_file_chain(fat16->drive, &fat16->bpb, filename, file_chain)) {return 0;}
+    if (!fat16_get_file_chain(fat16->drive, &fat16->bpb, (char *)&entry->filename[0], file_chain)) {return 0;}
 
     int len = 0;
     while (file_chain[len] != FAT16_CLUSTER_EOF && len < MAX_CHAIN_LEN) {len++;}
@@ -811,9 +800,9 @@ uint64_t fat16_write_to_file(fat16_File *file,Drive *drive,fat16_BootSector *bpb
     fat16_update_root_entry(drive, bpb, entry);
 
     //update the chain of the file
-    char filename[9];
-    memmove(filename , entry->filename , 8);
-    filename[8] = '\0';
+    char filename[FAT16_FULL_FILENAME_SIZE + 1];
+    memmove(filename, entry->filename, FAT16_FULL_FILENAME_SIZE);
+    filename[sizeof(filename) - 1] = '\0';
     fat16_get_file_chain(file->ref->drive, &file->ref->bpb, filename, file->chain);
 
     return bytes_written;
