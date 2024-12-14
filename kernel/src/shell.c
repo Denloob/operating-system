@@ -131,7 +131,7 @@ void cat_command(fat16_Ref *fat16, const char* filename)
         puts("cat: no file provided");
         return;
     }
-    FILE file;
+    FILE file = {0};
     fat16_open(fat16, filename, &file.file);
 
     while (true)
