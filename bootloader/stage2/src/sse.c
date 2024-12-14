@@ -2,6 +2,7 @@
 #include "assert.h"
 #include <stdbool.h>
 #include <stdint.h>
+#include <cpuid.h>
 
 #define CR0_MP         (1 << 1)
 #define CR0_EM         (1 << 2)
@@ -18,7 +19,8 @@
 static bool cpuid_check_xsave()
 {
     uint32_t ecx;
-    asm("cpuid" : "=c"(ecx) : "a"(CPUID_GETFEATURES));
+    uint32_t unused;
+    __cpuid(CPUID_GETFEATURES, unused, unused, ecx, unused);
 
     return ecx & CPUID_FEAT_ECX_XSAVE;
 }
