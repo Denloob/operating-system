@@ -4,6 +4,7 @@
 #include "vga.h"
 #include "donut.h"
 #include "FAT16.h"
+#include "string.h"
 
 #define ACPI_SHUTDOWN 0x2000
 
@@ -106,13 +107,17 @@ void ls_command(fat16_Ref *fat16, const char* flag)
     {
         if (entry.filename[0] != 0x00 && entry.filename[0] != 0xE5)
         {
+            char filename[13] = {0};
+            strncpy(filename, (char *)entry.filename, sizeof(entry.filename));
+            filename[strlen(filename)] = ' ';
+            strncpy(filename + strlen(filename), (char *)entry.extension, sizeof(entry.extension));
             if (strchr(flag, 'l'))
             {
-                printf("%s  %d bytes\n", entry.filename, entry.fileSize);
+                printf("%s  %d bytes\n", filename, entry.fileSize);
             }
             else
             {
-                printf("%s\n", entry.filename);
+                printf("%s\n", filename);
             }
         }
     }
