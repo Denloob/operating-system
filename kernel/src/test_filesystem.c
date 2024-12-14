@@ -41,6 +41,22 @@ static void test_file_creation_and_writing()
     fseek(&file, 5, SEEK_SET);
     uint64_t file_pos = ftell(&file);
     assert(file_pos == 5 && "ftell position mismatch");
+
+    // Multi-sector writing + allocation
+    uint8_t long_buffer[0x1000] = {0};
+    const int check_index = 513;
+    const int check_value = 42;
+    long_buffer[check_index] = check_value; 
+
+    fseek(&file, 0, SEEK_SET);
+    bytes_written = fwrite(long_buffer, 1, sizeof(long_buffer), &file);
+    assert(bytes_written == sizeof(long_buffer) && "fwrite didn't write the expected number of bytes");//STOPS HERE
+
+    fseek(&file, check_index, SEEK_SET);
+    uint8_t result;
+    bytes_read = fread(&result, 1, 1, &file);
+    assert(bytes_read == sizeof(result) && "fread couldn't read the expected byte");
+    assert(result == check_value && "fread didn't get the expected value");
 }
 
 void test_filesystem()
