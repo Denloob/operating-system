@@ -1,5 +1,6 @@
 #include "FAT16.h"
 #include "drive.h"
+#include "math.h"
 #include "memory.h"
 #include "string.h"
 #include "assert.h"
@@ -682,59 +683,60 @@ void print_root_filenames(fat16_Ref *fat16)
 
 uint64_t fat16_write_to_file(fat16_File *file,Drive *drive,fat16_BootSector *bpb,uint8_t *buffer_to_write,uint64_t buffer_size,uint64_t file_offset)
 {
-    uint64_t bytes_written = 0;
+    uint32_t new_wanted_filesize;
+
+    // Make sure the request fits inside a file (doesn't actually check against FAT, only the fat16 struct field).
+    bool overflow = __builtin_add_overflow(file_offset, buffer_size, &new_wanted_filesize);
+    if (overflow)
+    {
+        return 0;
+    }
+
     uint16_t cur_cluster;
     uint64_t offset_within_cluster; 
     fat16_DirEntry *entry = &file->file_entry;
-    if (entry->firstClusterHigh == 0 && entry->firstClusterLow == 0)
+    if (entry->firstClusterHigh == 0 && entry->firstClusterLow == 0) // If the file is empty (there's no cluster at all allocated for it)
     {
         file_offset = 0;
         uint16_t clusters_needed = (buffer_size + SECTOR_SIZE - 1) / SECTOR_SIZE;
-        uint16_t allocated_clusters[clusters_needed];
+        uint16_t allocated_clusters[clusters_needed]; // VLA - might not be the best decision, but it's fine
 
         if (!fat16_allocate_clusters(file->ref, clusters_needed, allocated_clusters))
         {
-            return bytes_written; 
+            return 0; 
         }
 
-        for (int i = 0; i < clusters_needed; i++)
+        entry->firstClusterLow = allocated_clusters[0] & 0xFFFF;
+        entry->firstClusterHigh = (allocated_clusters[0] >> 16) & 0xFFFF;
+        for (int i = 1; i < clusters_needed; i++)
         {
-            if (i == 0)
+            if (!fat16_link_clusters(file->ref, allocated_clusters[i-1], allocated_clusters[i]))
             {
-                entry->firstClusterLow = allocated_clusters[i] & 0xFFFF;
-                entry->firstClusterHigh = (allocated_clusters[i] >> 16) & 0xFFFF;
-            }
-
-            if (i > 0 && !fat16_link_clusters(file->ref, allocated_clusters[i-1], allocated_clusters[i]))
-            {
-                return bytes_written;
+                // TODO: deallocate allocated clusters
+                return 0;
             }
         }
-        cur_cluster = allocated_clusters[0];
-        offset_within_cluster = file_offset % SECTOR_SIZE;
 
+        cur_cluster = allocated_clusters[0];
+        fat16_get_file_chain(file->ref->drive, &file->ref->bpb, (char *)entry->filename, file->chain);
     }
     else
     {
-
         cur_cluster = get_file_offseted_cluster(file, file_offset);
         if (cur_cluster == FAT16_CLUSTER_EOF) 
         {
-            return bytes_written; 
+            return 0; 
         }
-
-        offset_within_cluster = file_offset % SECTOR_SIZE;
     }
 
-    if (cur_cluster == FAT16_CLUSTER_EOF) {return -1;}
+    offset_within_cluster = file_offset % SECTOR_SIZE;
 
     const uint32_t rootDirectoryEnd = 
         (bpb->reservedSectors + bpb->FATSize * bpb->numFATs) +
         (bpb->rootEntryCount * sizeof(fat16_DirEntry) + SECTOR_SIZE - 1) / SECTOR_SIZE;
 
     uint64_t space_left = buffer_size;
-
-
+    uint64_t bytes_written = 0;
     while (space_left > 0) //while the amount the function was asked to write haven't reached 0
     {
         uint32_t lba = rootDirectoryEnd + (cur_cluster - 2) * bpb->sectorsPerCluster;
@@ -742,68 +744,84 @@ uint64_t fat16_write_to_file(fat16_File *file,Drive *drive,fat16_BootSector *bpb
 
         // Determine how much to write to the current cluster
         uint64_t cluster_space = SECTOR_SIZE - offset_within_cluster;
-        uint64_t write_size = (space_left < cluster_space) ? space_left : cluster_space;
+        uint64_t write_size = MIN(space_left, cluster_space);
     
 
-        if (!drive_write(drive, address, buffer_to_write, write_size))
+#ifdef DRIVE_SUPPORTS_VERBOSE
+        uint64_t bytes_written_cur = drive_write_verbose(drive, address, buffer_to_write, write_size);
+        bool success = bytes_written_cur == write_size;
+#else  
+        bool success = drive_write(drive, address, buffer_to_write, write_size);
+        uint64_t bytes_written_cur = write_size;
+#endif
+        bytes_written += bytes_written_cur;
+
+        if (!success)
         {
-            return bytes_written; //function stopped at bytes_written
+            break;
         }
 
-
-        bytes_written += write_size;
-        buffer_to_write += write_size; //move the array pointer
-        space_left -= write_size;
+        buffer_to_write += bytes_written_cur; //move the array pointer
+        space_left -= bytes_written_cur;
         offset_within_cluster = 0; //the offset for cluster is used only for the first cluster 
 
-
         // Check if we need to allocate a new cluster
-        if (space_left > 0)
+        if (space_left <= 0)
         {
-            uint16_t next_cluster = get_next_cluster_from_chain(file->chain, cur_cluster);
-            if ( next_cluster != FAT16_CLUSTER_EOF)
+            break;
+        }
+
+        uint16_t next_cluster = get_next_cluster_from_chain(file->chain, cur_cluster);
+        if (next_cluster != FAT16_CLUSTER_EOF) //no need for new clusters continue writing in the next cluster
+        {
+            cur_cluster = next_cluster;
+            continue;
+        }
+
+        // Allocate needed clusters
+
+        uint16_t clusters_needed = (space_left + SECTOR_SIZE - 1) / SECTOR_SIZE; //SECTOR_SIZE - 1 in the calculation is there because of the round down of the operator "/"
+        uint16_t allocated_clusters[clusters_needed]; // VLA - again - not good, but not bad
+
+        if (!fat16_allocate_clusters(file->ref, clusters_needed, allocated_clusters))
+        {
+            break;
+        }
+
+        //link the clusters
+        bool linking_failed = false;
+        if (!fat16_link_clusters(file->ref, cur_cluster, allocated_clusters[0]))
+        {
+            break;
+        }
+
+        cur_cluster = allocated_clusters[0];
+
+        for (int i = 1; i < clusters_needed; i++) 
+        {
+            if (!fat16_link_clusters(file->ref, allocated_clusters[i - 1], allocated_clusters[i])) 
             {
-                return bytes_written;
-            }
-
-            if (next_cluster == FAT16_CLUSTER_EOF)//if file ended allocate needed clusters 
-            {
-
-                uint16_t clusters_needed = (space_left + SECTOR_SIZE - 1) / SECTOR_SIZE; //SECTOR_SIZE - 1 in the calculation is there because of the round down of the operator "/"
-                uint16_t allocated_clusters[clusters_needed];
-
-                if (!fat16_allocate_clusters(file->ref, clusters_needed, allocated_clusters))
-                {
-                    return bytes_written;
-                }
-
-                //link the clusters
-                for (int i = 0; i < clusters_needed; i++) 
-                {
-
-                    if (!fat16_link_clusters(file->ref, cur_cluster, allocated_clusters[i])) 
-                    {
-                        return bytes_written; // Linking failed
-                    }
-                    cur_cluster = allocated_clusters[i];
-                }
-            } 
-            else //no need for new clusters continue writing in the next cluster
-            {
-                cur_cluster = next_cluster;
+                // TODO: deallocate the allocated clusters
+                linking_failed = true;
+                break;
             }
         }
+
+        if (linking_failed)
+        {
+            break;
+        }
+
+        fat16_get_file_chain(file->ref->drive, &file->ref->bpb, (char *)entry->filename, file->chain);
     }
 
-    //update the dir entry
-    entry->fileSize = (entry->fileSize - file_offset ) + bytes_written;
-    fat16_update_root_entry(drive, bpb, entry);
+    uint32_t new_filesize = file_offset + bytes_written;
+    if (new_filesize > entry->fileSize)
+    {
+        entry->fileSize = new_filesize;
+    }
 
-    //update the chain of the file
-    char filename[FAT16_FULL_FILENAME_SIZE + 1];
-    memmove(filename, entry->filename, FAT16_FULL_FILENAME_SIZE);
-    filename[sizeof(filename) - 1] = '\0';
-    fat16_get_file_chain(file->ref->drive, &file->ref->bpb, filename, file->chain);
+    fat16_update_root_entry(drive, bpb, entry);
 
     return bytes_written;
 }
