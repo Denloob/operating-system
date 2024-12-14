@@ -1,6 +1,7 @@
 #include "pit.h"
 #include "io.h"
 #include "isr.h"
+#include "macro_utils.h"
 #include "scheduler.h"
 #include "smartptr.h"
 #include <stdint.h>
@@ -72,11 +73,18 @@ static void __attribute__((naked, used)) handle_special_time_event()
 
 void __attribute__((naked)) pit_isr_clock()
 {
+#define USERMODE_CS 0x20 | 3
     asm volatile(
                 "add %[ms_counter], 4\n"
 
                 "test %[special_event_enabled], 1\n"
                 "jz .regular\n"
+
+                // Do not context-switch from the kernel
+                "cmp qword ptr [rsp + 8], " STR(USERMODE_CS) "\n"   // if (interrupt_frame.cs != USERMODE_CS) {
+                "jnz .regular\n"                                    //      goto .regular
+                                                                    // }
+
                 "test %[ms_counter], (2 << 2) - 1\n" // if (ms_counter % 8 == 0)
                 "jz handle_special_time_event\n" // Does not return
 
