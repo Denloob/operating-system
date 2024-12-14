@@ -686,8 +686,8 @@ uint64_t fat16_write_to_file(fat16_File *file,Drive *drive,fat16_BootSector *bpb
     uint64_t bytes_written = 0;
     uint16_t cur_cluster;
     uint64_t offset_within_cluster; 
-    fat16_DirEntry entry = file->file_entry;
-    if (entry.firstClusterHigh == 0 && entry.firstClusterLow == 0)
+    fat16_DirEntry *entry = &file->file_entry;
+    if (entry->firstClusterHigh == 0 && entry->firstClusterLow == 0)
     {
         file_offset = 0;
         uint16_t clusters_needed = (buffer_size + SECTOR_SIZE - 1) / SECTOR_SIZE;
@@ -702,8 +702,8 @@ uint64_t fat16_write_to_file(fat16_File *file,Drive *drive,fat16_BootSector *bpb
         {
             if (i == 0)
             {
-                entry.firstClusterLow = allocated_clusters[i] & 0xFFFF;
-                entry.firstClusterHigh = (allocated_clusters[i] >> 16) & 0xFFFF;
+                entry->firstClusterLow = allocated_clusters[i] & 0xFFFF;
+                entry->firstClusterHigh = (allocated_clusters[i] >> 16) & 0xFFFF;
             }
 
             if (i > 0 && !fat16_link_clusters(file->ref, allocated_clusters[i-1], allocated_clusters[i]))
@@ -797,12 +797,12 @@ uint64_t fat16_write_to_file(fat16_File *file,Drive *drive,fat16_BootSector *bpb
     }
 
     //update the dir entry
-    entry.fileSize = (entry.fileSize - file_offset ) + bytes_written;
-    fat16_update_root_entry(drive, bpb, &entry);
+    entry->fileSize = (entry->fileSize - file_offset ) + bytes_written;
+    fat16_update_root_entry(drive, bpb, entry);
 
     //update the chain of the file
     char filename[9];
-    memmove(filename , entry.filename , 8);
+    memmove(filename , entry->filename , 8);
     filename[8] = '\0';
     fat16_get_file_chain(file->ref->drive, &file->ref->bpb, filename, file->chain);
 
