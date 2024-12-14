@@ -271,6 +271,11 @@ uint16_t get_file_offseted_cluster(fat16_File *file, uint32_t file_offset)
 uint64_t fat16_read_file(fat16_File *file, Drive *drive, fat16_BootSector *bpb,
                      uint8_t *out_buffer, uint64_t buffer_size, uint64_t file_offset )
 {
+    if (file_offset >= file->file_entry.fileSize)
+    {
+        return 0;
+    }
+
     uint64_t bytes_read = 0;
     FatCache cache = {0};
 
@@ -297,6 +302,11 @@ uint64_t fat16_read_file(fat16_File *file, Drive *drive, fat16_BootSector *bpb,
 
         //read cluster
 #ifdef DRIVE_SUPPORTS_VERBOSE
+        if (read_size > file->file_entry.fileSize - file_offset)
+        {
+            read_size = file->file_entry.fileSize - file_offset;
+        }
+
         uint64_t bytes_read_cur = drive_read_verbose(drive, address, out_buffer, read_size);
         bool success = bytes_read_cur == read_size;
         bytes_read += bytes_read_cur;
