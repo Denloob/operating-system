@@ -20,6 +20,10 @@ struct malloc_chunk
 
     struct malloc_chunk *fd;       // When current chunk is free, these two act as a linked list of free chunks.
     struct malloc_chunk *bk;
+
+    // Only used for large chunks - pointer to the next chunk of larger size
+    struct malloc_chunk *fd_next_size; // When chunk is free, these two act as a linked list. The size of `fd_next_size` chunk is smaller than size of current (or it's the bin if none).
+    struct malloc_chunk *bk_next_size; // The size of `bk_next_size` chunk is larger than size of current (or it's the bin if none).
 };
 
 // Offset from malloc_chunk to the memory region accessible by user when chunk is
@@ -35,7 +39,7 @@ enum {
 #define addr2chunk(chunk) (malloc_chunk *)((void *)(chunk) - CHUNK_HEADER_SIZE)
 #define chunk2addr(chunk) (void *)(&((chunk)->fd))
 
-#define MIN_CHUNK_SIZE          (sizeof(malloc_chunk))
+#define MIN_CHUNK_SIZE          (offsetof(malloc_chunk, fd_next_size))
 #define CHUNK_SIZE_ALIGN        (CHUNK_HEADER_SIZE)
 #define CHUNK_OVERLAP_OFFSET    (sizeof(size_t)) // prev_chunk_size is located inside previous chunk
 
@@ -79,7 +83,7 @@ malloc_chunk *prev_chunk(malloc_chunk *chunk)
 }
 
 // Remove `chunk` from a linked list via its `fd` and `bk`.
-void unlink_chunk(malloc_chunk *chunk)
+static void unlink_chunk_fd_bk(malloc_chunk *chunk)
 {
     assert(chunk->fd->bk == chunk && chunk->bk->fd == chunk && "chunk not in a valid linked list");
     malloc_chunk *fd = chunk->fd;
@@ -87,6 +91,20 @@ void unlink_chunk(malloc_chunk *chunk)
 
     chunk->bk->fd = fd;
     chunk->fd->bk = bk;
+}
+
+// Remove `chunk` from a linked list via its `fd_next_size` and `bk_next_size`.
+// WARNING: Should be the only chunk in the bin of its size.
+static void unlink_chunk_next_size_when_chunk_is_the_only_chunk_of_that_size(malloc_chunk *chunk)
+{
+    assert(chunk->fd_next_size != NULL && chunk->bk_next_size != NULL && "corrupted large chunk (called unlink_chunk_next_size of a non-linked chunk)");
+    assert(chunk->fd_next_size->bk_next_size == chunk && chunk->bk_next_size->fd_next_size == chunk && "corrupted large chunk");
+
+    malloc_chunk *fd = chunk->fd_next_size;
+    malloc_chunk *bk = chunk->bk_next_size;
+
+    chunk->bk_next_size->fd_next_size = fd;
+    chunk->fd_next_size->bk_next_size = bk;
 }
 
 /*
@@ -110,7 +128,11 @@ void unlink_chunk(malloc_chunk *chunk)
  * of the same size, the step between each small bin is 16 bytes. So in the
  * first small bin (bins[1]), all the chunks are of size 0x20 (MIN_CHUNK_SIZE), next is
  * 0x30, 0x40, .., 0x3f0, 0x400.
- * After the small bins, come the large bins, which TODO:
+ * After the small bins, come the large bins, which contain chunks different
+ * in size, but close enough to each other. That is, not all chunks in the bin
+ * are of the exact same size, but the difference between them is not too big.
+ * The large bins are stored, and contain an additional doubly linked list
+ * which allows quickly getting to the chunk of the next size.
  *
  * bins[1..63]   - small bins (each spaced by 16 bytes in size)
  * bins[64..127] - large bins (each spaced by 4096 bytes in size)
@@ -134,7 +156,15 @@ typedef malloc_chunk malloc_bin;
 #define MIN_LARGE_BIN_SIZE  (SMALL_BIN_COUNT * SMALL_BIN_WIDTH)
 #define is_small_bin_size(chunk_size) ((size_t)(chunk_size) < (size_t)MIN_LARGE_BIN_SIZE)
 #define small_bin_index(chunk_size)   (((size_t)(chunk_size) >> 4) - 1) // Size step between each bin is 16 (aka 2**4), -index correction (0x20>>4 should map to index 1 and not 2)
-#define large_bin_index(chunk_size)   (assert(false), 0) // TODO: impl
+#define large_bin_index(chunk_size)                                            \
+  (((((chunk_size) >> 6) <= 48)  ?  48 + ((chunk_size) >> 6)  :                \
+   (((chunk_size) >> 9) <= 20)  ?  91 + ((chunk_size) >> 9)  :                 \
+   (((chunk_size) >> 12) <= 10) ? 110 + ((chunk_size) >> 12) :                 \
+   (((chunk_size) >> 15) <= 4)  ? 119 + ((chunk_size) >> 15) :                 \
+   (((chunk_size) >> 18) <= 2)  ? 124 + ((chunk_size) >> 18) :                 \
+   (((chunk_size) >> 23) <= 1)  ? 127 + ((chunk_size) >> 23) :                 \
+   128) - 1)
+
 
 #define TCACHE_PTR_PROTECT(location, ptr) (((uint64_t)(location) >> 12) ^ (uint64_t)(ptr))
 
@@ -158,16 +188,80 @@ bool is_chunk_free(malloc_chunk *chunk)
     return (next->chunk_size & MALLOC_CHUNK_PREV_IN_USE) == 0;
 }
 
-void bin_insert(malloc_bin *bin, malloc_chunk *chunk)
+/**
+ * @brief Inserts `to_insert` before `existing` in a doubly linked list.
+ */
+void chunk_insert_before(malloc_chunk *existing, malloc_chunk *to_insert)
 {
-    chunk->fd = bin->fd;
-    chunk->bk = bin;
-    bin->fd->bk = chunk; // On first insert, when bin->fd == bin, will set bin->bk to be `chunk`
-    bin->fd = chunk;
+    to_insert->fd = existing;
+    to_insert->bk = existing->bk;
+    existing->bk->fd = to_insert;
+    existing->bk = to_insert;
 }
+
+/**
+ * @brief Inserts `to_insert` after `existing` in a doubly linked list.
+ */
+void chunk_insert_after(malloc_chunk *existing, malloc_chunk *to_insert)
+{
+    to_insert->fd = existing->fd;
+    to_insert->bk = existing;
+    existing->fd->bk = to_insert;
+    existing->fd = to_insert;
+}
+
+void bin_insert_small(malloc_bin *bin, malloc_chunk *chunk)
+{
+    chunk_insert_after(bin, chunk); // Insert chunk at the beginning of the bin (... <-> bin <-> chunk <-> ...)
+}
+
+void bin_insert_unsorted(malloc_bin *unsorted_bin, malloc_chunk *chunk)
+{
+    if (!is_small_bin_size(chunk_size(chunk)))
+    {
+        chunk->bk_next_size = chunk->fd_next_size = NULL;
+    }
+
+    bin_insert_small(unsorted_bin, chunk);
+}
+
 
 static malloc_state main_arena;
 static bool is_malloc_initialized = false;
+
+static void unlink_large_chunk(malloc_chunk *chunk)
+{
+    assert(!is_small_bin_size(chunk_size(chunk)));
+
+    if (chunk->fd_next_size == NULL)
+    {
+        unlink_chunk_fd_bk(chunk);
+        return;
+    }
+
+    // Make sure that `chunk` is indeed the only one of its size
+    size_t size = chunk_size(chunk);
+    size_t index = large_bin_index(size);
+    assert(index < BIN_COUNT);
+    malloc_bin *bin = bin_at(&main_arena, index);
+
+    assert((chunk->bk == bin && bin->bk == chunk->bk_next_size) || chunk->bk == chunk->bk_next_size);
+    assert((chunk->fd == bin && bin->fd == chunk->fd_next_size) || chunk->fd == chunk->fd_next_size);
+
+    unlink_chunk_fd_bk(chunk);
+    unlink_chunk_next_size_when_chunk_is_the_only_chunk_of_that_size(chunk);
+}
+
+static void unlink_chunk(malloc_chunk *chunk)
+{
+    if (is_small_bin_size(chunk_size(chunk)))
+    {
+        unlink_chunk_fd_bk(chunk);
+        return;
+    }
+
+    unlink_large_chunk(chunk);
+}
 
 static void initialize_bins()
 {
@@ -287,6 +381,73 @@ void *malloc_from_top(size_t victim_size)
 }
 
 /**
+ * @brief - Insert a large chunk into a large bin. Keep the bin sorted, from
+ *              largest to smallest, and keep the {fd,bk}_next_size linked list
+ *              intact.
+ *
+ * @param bin - The large bin to insert into.
+ * @param chunk - The large chunk to insert.
+ */
+static void bin_insert_large(malloc_bin *bin, malloc_chunk *chunk)
+{
+    size_t size = chunk_size(chunk);
+
+    if (is_bin_empty(bin))
+    {
+        chunk_insert_after(bin, chunk);
+        chunk->fd_next_size = chunk;
+        chunk->bk_next_size = chunk;
+        return;
+    }
+    assert(bin->fd != bin && bin->bk != bin);
+
+    malloc_bin *cur = bin->fd;
+
+    while (chunk_size(cur) > size)
+    {
+        cur = cur->fd_next_size;
+
+        if (cur == bin->fd) // Reached beginning of the list
+        {
+            malloc_chunk *current_smallest_chunk = cur->bk_next_size;
+            malloc_chunk *current_largest_chunk = bin->fd;
+            chunk_insert_before(bin, chunk);
+
+            // `chunk` is now smallest
+            chunk->bk_next_size = current_smallest_chunk;
+            current_smallest_chunk->fd_next_size = chunk;
+
+            // In ptmalloc, smallest chunk's fd_next_size points to the largest chunk, and vise versa
+            chunk->fd_next_size = current_largest_chunk;
+            current_largest_chunk->bk_next_size = chunk;
+            return;
+        }
+    }
+    assert(cur != bin && "Shouldn't ever happen");
+
+    // `cur` is either smaller than us, or equal to us
+
+    if (chunk_size(cur) == size)
+    {
+        // Insert `chunk` after `cur`, to avoid having to change {fd,bk}_next_size.
+        chunk_insert_after(cur, chunk);
+
+        // We don't need to change {fd,bk}_next_size :)
+        return;
+    }
+
+    // If we reach here, next chunk is smaller than us.
+
+    chunk_insert_before(cur, chunk);
+
+    chunk->fd_next_size = cur;
+    chunk->bk_next_size = cur->bk_next_size;
+
+    cur->bk_next_size->fd_next_size = chunk;
+    cur->bk_next_size = chunk;
+}
+
+/**
  * @brief Sort the given chunk, which is not already in a bin, into small/large
  *          bin.
  *
@@ -298,12 +459,15 @@ void sort_chunk_into_bins(malloc_chunk *chunk)
     if (is_small_bin_size(size))
     {
         malloc_bin *bin = bin_at(&main_arena, small_bin_index(size));
-        bin_insert(bin, chunk);
+        bin_insert_small(bin, chunk);
         return;
     }
 
-    // TODO: find into what bin, and then insert at the correct thing (large bin must be sorted by size)
-    assert(false);
+    size_t index = large_bin_index(size);
+    assert(index < BIN_COUNT);
+
+    malloc_bin *bin = bin_at(&main_arena, index);
+    bin_insert_large(bin, chunk);
 }
 
 /**
@@ -378,8 +542,37 @@ void *malloc_from_small_bin(size_t victim_size)
  */
 void *malloc_from_large_bin(size_t victim_size)
 {
-    // next_chunk(chunk)->chunk_size |= MALLOC_CHUNK_PREV_IN_USE;
-    return NULL; // TODO: implement large bin allocation
+    if (is_small_bin_size(victim_size))
+    {
+        return NULL;
+    }
+
+    malloc_bin *bin = bin_at(&main_arena, large_bin_index(victim_size));
+
+    if (is_bin_empty(bin))
+    {
+        return NULL;
+    }
+
+    // Iter backward, from smallest to largest
+    malloc_chunk *cur = bin->bk;
+    while (chunk_size(cur) < victim_size)
+    {
+        cur = cur->bk_next_size;
+
+        if (cur == bin->bk) // Reached the beginning of the iteration
+        {
+            // That is, there was no chunk >= victim_size.
+            return NULL;
+        }
+    }
+
+    unlink_chunk(cur);
+
+    // TODO: if victim_size is smaller than the chunk, split.
+
+    next_chunk(cur)->chunk_size |= MALLOC_CHUNK_PREV_IN_USE;
+    return chunk2addr(cur);
 }
 
 /**
@@ -527,7 +720,7 @@ void kfree(void *addr)
 
     malloc_bin *unsorted_bin = bin_at(&main_arena, 0);
 
-    bin_insert(unsorted_bin, chunk);
+    bin_insert_unsorted(unsorted_bin, chunk);
 
     try_consolidate(chunk, &main_arena);
 }
@@ -592,8 +785,19 @@ void *krealloc(void *ptr, size_t size)
 #if defined(__GNUC__) && !defined(__clang__)
 #pragma GCC diagnostic ignored "-Wmismatched-dealloc"
 #endif
+static void *circumvent_use_after_free_compiler_check(uint64_t address)
+{
+    uint64_t new_address;
+    memmove(&new_address, &address, sizeof(address));
+
+    return (void *)new_address;
+}
+
 void test_kmalloc()
 {
+    uint64_t target = 0xdeadbeef;
+    assert((uint64_t)circumvent_use_after_free_compiler_check(target) == target);
+
     // Malloc correctly gets the size
     void *addr = kmalloc(1);
     void *pad = kmalloc(1);
@@ -622,5 +826,41 @@ void test_kmalloc()
     addr2 = kmalloc(MIN_CHUNK_SIZE * 4);
     assert(addr2 == addr);
     kfree(addr2);
+
+    // Malloc a large chunk
+    addr = kmalloc(1024);
+    kfree(addr);
+    addr2 = kmalloc(1024);
+    assert(addr2 == addr);
+
+    pad = kmalloc(1);
+
+    chunk_addr = circumvent_use_after_free_compiler_check((uint64_t)addr2chunk(addr2));
+
+    // Put addr2 in unsorted bin
+    kfree(addr2);
+    assert(bin_at(&main_arena, 0)->fd == chunk_addr);
+
+    // Force kmalloc to sort the unsorted bin
+    addr3 = kmalloc(2048);
+
+    // Make sure it happened
+    assert(bin_at(&main_arena, 0)->fd == bin_at(&main_arena, 0)); // Unsorted is empty
+    malloc_bin *relevant_large_bin = bin_at(&main_arena, large_bin_index(chunk_size(chunk_addr)));
+    assert(relevant_large_bin->fd == chunk_addr);
+
+    // Allocate from the large bin
+    void *addr4 = kmalloc(1024);
+    assert(relevant_large_bin->fd == relevant_large_bin);
+
+    // Free all
+    kfree(addr3);
+    kfree(addr4);
+    kfree(pad);
+
+    // Malloc consolidates all previous allocations
+    addr3 = kmalloc(3000);
+    assert(addr3 == addr2);
+    kfree(addr3);
 }
 #pragma GCC diagnostic pop
