@@ -1,7 +1,9 @@
 #include "kernel_memory_info.h"
 #include "io.h"
 #include "isr.h"
+#include "regs.h"
 #include "syscall.h"
+#include "assert.h"
 #include <stdint.h>
 
 #define MSR_STAR   0xC0000081
@@ -10,13 +12,53 @@
 #define MSR_SFMASK 0xC0000084
 #define MSR_EFER   0xC0000080
 
-static void __attribute__((used, sysv_abi)) syscall_handler(isr_CallerRegsFrame *caller_regs)
-{
-    printf("Hello, Syscall!\n");
-}
-
 // Here the RSP of the syscall caller will be stored.
 static uint64_t g_ring3_rsp;
+
+static void syscall_read(Regs *regs)
+{
+    printf("syscall_read\n");
+    regs->rdi++;
+}
+
+static void syscall_write(Regs *regs)
+{
+    printf("syscall_write: rdi = 0x%llx\n", regs->rdi);
+}
+
+static void __attribute__((used, sysv_abi)) syscall_handler(Regs *user_regs)
+{
+    user_regs->rsp = g_ring3_rsp; // Doesn't affect the process, just a nice thing for us.
+
+    // NOTE: caller_regs->r11 and caller_regs->rcx contain $RFLAGS and $rip respectively
+    //          hence, the kernel probably should not modify them.
+    uint64_t original_rip = user_regs->rcx;
+    uint64_t original_rflags = user_regs->r11;
+
+    /* Calling convention:
+     *     Syscall Number:  $rax
+     *     Return Value:    $rax
+     *     Argument 0:      $rdi
+     *     Argument 1:      $rsi
+     *     Argument 2:      $rdx
+     *     Argument 3:      $r10
+     *     Argument 4:      $r8
+     *     Argument 5:      $r9
+     */
+
+    syscall_Number syscall_number = user_regs->rax;
+    switch (syscall_number)
+    {
+        case SYSCALL_READ:
+            syscall_read(user_regs);
+            break;
+        case SYSCALL_WRITE:
+            syscall_write(user_regs);
+            break;
+    }
+
+    assert(original_rip == user_regs->rcx && original_rflags == user_regs->r11 && "The syscall is not expected to modify process $rip or $RFLAGS");
+}
 
 static void __attribute__((naked)) syscall_handler_trampoline()
 {
@@ -27,14 +69,14 @@ static void __attribute__((naked)) syscall_handler_trampoline()
                  : [stack_begin] "i"(KERNEL_STACK_BASE)
                  : "memory");
 
-    PUSH_CALLER_STORED();
-    STORE_SSE(); // Modifies RAX, must be after the push
+    // KERNEL_STACK_BASE is aligned, so we don't need to worry about manually re-aligning the stack :)
+
+    regs_PUSH();
 
     asm volatile("lea rdi, [rsp]\n"
                  "call syscall_handler\n" ::: "memory");
 
-    RESTORE_SSE();
-    POP_CALLER_STORED();
+    regs_POP();
 
     // Restore RSP
     asm volatile("mov rsp, %[ring3_rsp]\n"
