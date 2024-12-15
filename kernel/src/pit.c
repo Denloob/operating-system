@@ -41,6 +41,10 @@ static void __attribute__((naked, used)) handle_special_time_event()
 
                 // Put the `Regs` struct on to the stack. We will pass a pointer to it.
 
+                "sub rsp, 512\n"
+                "fxsave [rsp]\n"
+                "push 0\n" // Padding before the SSE (stack aligned)
+
                 "push 0\n" // Skip RFALGS, will set them via the isr_InterruptFrame.
                 "push r15\n"
                 "push r14\n"
@@ -58,10 +62,6 @@ static void __attribute__((naked, used)) handle_special_time_event()
                 "push rdx\n"
                 "push rcx\n"
                 "push rax\n"
-                "push 0\n" // Padding before the SSE (stack aligned)
-
-                "sub rsp, 512\n"
-                "fxsave [rsp]\n"
 
                 "mov rdi, rsp\n"
                 "mov rsi, %[g_interrupt_frame_ptr_tmp]\n"
