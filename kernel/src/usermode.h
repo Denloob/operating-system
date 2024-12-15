@@ -30,3 +30,8 @@ void usermode_jump_to(void *address, const Regs *regs) __attribute__((noreturn))
 bool is_usermode_address(void *address, size_t size) WUR __attribute__((pure));
 
 void usermode_init_address_check(uint64_t mmu_map_base_address, uint64_t mmu_map_size);
+
+/**
+ * @brief - Initialize supported Supervisor Memory Protections (SMEP and/or SMAP), if available.
+ */
+void usermode_init_smp();

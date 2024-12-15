@@ -90,6 +90,8 @@ void __attribute__((section(".entry"), sysv_abi)) kernel_main(uint32_t param_mmu
 
     parse_boot_config_and_play_logo();
 
+    usermode_init_smp();
+
     while(true)
     {
         char input_buffer[INPUT_BUFFER_SIZE];

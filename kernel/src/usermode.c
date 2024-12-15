@@ -3,6 +3,7 @@
 #include "range.h"
 #include "regs.h"
 #include <stdint.h>
+#include <cpuid.h>
 #include <stdbool.h>
 #include <stddef.h>
 
@@ -88,4 +89,40 @@ void usermode_init_address_check(uint64_t mmu_map_base_address, uint64_t mmu_map
 {
     mmu_address.begin = mmu_map_base_address;
     mmu_address.size = mmu_map_size;
+}
+
+void usermode_init_smp()
+{
+#define CPUID_SMP_LEAF 7
+#define CPUID_SMEP (1 << 7)
+#define CPUID_SMAP (1 << 20)
+
+#define CPU_CR4_SMEP (1 << 20)
+#define CPU_CR4_SMAP (1 << 21)
+
+    uint32_t eax;
+    uint32_t ebx;
+    uint32_t ecx = 0;
+    uint32_t edx;
+
+    __cpuid(CPUID_SMP_LEAF, eax, ebx, ecx, edx);
+
+    uint64_t new_flags = 0;
+
+    if (ebx & CPUID_SMEP)
+    {
+        new_flags |= CPU_CR4_SMEP;
+    }
+
+    if (ebx & CPUID_SMAP)
+    {
+        new_flags |= CPU_CR4_SMAP;
+    }
+
+    asm("mov rax, cr4\n"
+        "or rax, %0\n"
+        "mov cr4, rax"
+        :
+        : "m"(new_flags)
+        : "rax", "cc");
 }
