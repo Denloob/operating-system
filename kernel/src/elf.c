@@ -1,6 +1,7 @@
 #include "elf.h"
 #include "mmap.h"
 #include "memory.h"
+#include "res.h"
 #include <stdint.h>
 
 enum {
@@ -140,14 +141,14 @@ res elf_load(FILE *file, void **entry_point_ptr)
 
             case ELF_SEGMENT_TYPE_LOAD:
             {
+                // TODO: on any of the fails, gotta unmap all mapped memory.
                 if (entry.segment_size_in_memory < entry.segment_size_in_file)
                 {
                     return res_elf_INVALID_ELF;
                 }
 
                 // TODO: check that virtual address doesn't overlap with any of the kernel pages.
-                res rs = mmap((void *)entry.segment_virtual_address, entry.segment_size_in_memory, elf_flags_to_mmap_flags(entry.flags) | MMAP_PROT_WRITE);
-                // TODO: mprotect the virtual address after that, removing the allowance to write.
+                res rs = mmap((void *)entry.segment_virtual_address, entry.segment_size_in_memory, MMAP_PROT_READ | MMAP_PROT_WRITE);
                 if (!IS_OK(rs))
                 {
                     return rs;
@@ -165,7 +166,15 @@ res elf_load(FILE *file, void **entry_point_ptr)
                     return res_elf_INVALID_ELF;
                 }
 
+
+
                 memset((char *)entry.segment_virtual_address, 0, entry.segment_size_in_memory - entry.segment_size_in_file);
+
+                rs = mprotect((void *)entry.segment_virtual_address, entry.segment_size_in_memory, elf_flags_to_mmap_flags(entry.flags));
+                if (!IS_OK(rs))
+                {
+                    return rs;
+                }
                 break;
             }
 

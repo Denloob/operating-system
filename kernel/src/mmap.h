@@ -51,3 +51,13 @@ res mmap(void *addr, size_t size, mmap_Protection prot) WUR;
  * @param size The size of the region to unmap.
  */
 void munmap(void *addr, size_t size);
+
+/**
+ * @brief Change the protection flags on pages.
+ *
+ * @param addr The (page aligned) beginning of the (virtual) memory region.
+ * @param size The size of the region.
+ * @param prot The new protections for the region.
+ * @return res_OK or one of the errors defined above.
+ */
+res mprotect(void *addr, size_t size, mmap_Protection prot);

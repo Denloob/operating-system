@@ -150,3 +150,15 @@ void munmap(void *in_addr, size_t size)
         phys_memory_add(&cur);
     }
 }
+
+res mprotect(void *addr, size_t size, mmap_Protection prot)
+{
+    assert(((uint64_t)addr & 0xfff) == 0 && "addr must be page aligned");
+
+    if ((prot & MMAP_PROT_READ) == 0) return res_mmap_MUST_BE_READABLE;
+    const int mmu_flags = prot_to_mmu_flags(prot);
+
+    mmu_page_range_set_flags(addr, addr + size, mmu_flags);
+
+    return res_OK;
+}
