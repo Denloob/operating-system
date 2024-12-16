@@ -1,11 +1,13 @@
 #include "usermode.h"
 #include "macro_utils.h"
 #include "range.h"
+#include "memory.h"
 #include "regs.h"
 #include <stdint.h>
 #include <cpuid.h>
 #include <stdbool.h>
 #include <stddef.h>
+#include "res.h"
 
 void usermode_jump_to(void *address, const Regs *regs)
 {
@@ -125,4 +127,36 @@ void usermode_init_smp()
         :
         : "m"(new_flags)
         : "rax", "cc");
+}
+
+static inline void stac()
+{
+    asm volatile("stac" ::: "memory");
+}
+
+static inline void clac()
+{
+    asm volatile("clac" ::: "memory");
+}
+
+// This struct is intentionally defined in the end of the file, to prevent any unintended use of usermode_mem directly
+struct usermode_mem {
+    char ch;
+};
+
+res usermode_copy_from_user(void *to, const usermode_mem *from, size_t len)
+{
+    // TODO: check that the pages actually exist
+    if (!is_usermode_address((void *)from, len))
+    {
+        return res_usermode_NOT_USERMODE_ADDRESS; 
+    }
+
+    stac();
+
+    memmove(to, from, len);
+
+    clac();
+
+    return res_OK;
 }
