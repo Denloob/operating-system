@@ -272,6 +272,7 @@ uint16_t get_file_offseted_cluster(fat16_File *file, uint32_t file_offset)
 uint64_t fat16_read_file(fat16_File *file, Drive *drive, fat16_BootSector *bpb,
                      uint8_t *out_buffer, uint64_t buffer_size, uint64_t file_offset )
 {
+    assert(file->file_entry.reserved == fat16_MDSCoreFlags_FILE && "Cannot read with fat16 a non-regular mdscore file");
     if (file_offset >= file->file_entry.fileSize)
     {
         return 0;
@@ -431,8 +432,7 @@ bool fat16_create_dir_entry(fat16_Ref *fat16, const char *filename, const char *
     uint8_t month , day;
     RTC_get_date(&year, &month, &day);
     entry.creationDate = ((year-1980) << 9) | (month <<5) | day;
-    entry.reserved = 0;
-    entry.reserved = 0;
+    entry.reserved = fat16_MDSCoreFlags_FILE;
     entry.creationTimeTenths = 0;
     entry.lastAccessDate = entry.creationDate;
     entry.lastModTime = entry.creationTime;
@@ -683,6 +683,8 @@ void print_root_filenames(fat16_Ref *fat16)
 
 uint64_t fat16_write_to_file(fat16_File *file,Drive *drive,fat16_BootSector *bpb,uint8_t *buffer_to_write,uint64_t buffer_size,uint64_t file_offset)
 {
+    assert(file->file_entry.reserved == fat16_MDSCoreFlags_FILE && "Cannot write with fat16 to a non-regular mdscore file");
+
     uint32_t new_wanted_filesize;
 
     // Make sure the request fits inside a file (doesn't actually check against FAT, only the fat16 struct field).
