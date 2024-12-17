@@ -96,6 +96,7 @@ void usermode_init_address_check(uint64_t mmu_map_base_address, uint64_t mmu_map
 void usermode_init_smp()
 {
 #define CPUID_SMP_LEAF 7
+#define CPUID_SMP_SUB_LEAF 0
 #define CPUID_SMEP (1 << 7)
 #define CPUID_SMAP (1 << 20)
 
@@ -104,10 +105,10 @@ void usermode_init_smp()
 
     uint32_t eax;
     uint32_t ebx;
-    uint32_t ecx = 0;
+    uint32_t ecx;
     uint32_t edx;
 
-    __cpuid(CPUID_SMP_LEAF, eax, ebx, ecx, edx);
+    __cpuid_count(CPUID_SMP_LEAF, CPUID_SMP_SUB_LEAF, eax, ebx, ecx, edx);
 
     uint64_t new_flags = 0;
 
