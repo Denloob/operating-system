@@ -232,3 +232,7 @@ uint16_t get_file_offseted_cluster(fat16_File *file, uint32_t file_offset);
 uint16_t get_next_cluster_from_chain(const uint16_t *chain, uint16_t current_cluster);
 
 uint64_t fat16_write(fat16_File *file, uint8_t *out_buffer, uint64_t buffer_size, uint64_t file_offset);
+
+__attribute__((always_inline)) inline fat16_MDSCoreFlags fat16_get_mdscore_flags(fat16_File *file) {
+  return file->file_entry.reserved;
+}
