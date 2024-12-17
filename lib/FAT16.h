@@ -236,3 +236,8 @@ uint64_t fat16_write(fat16_File *file, uint8_t *out_buffer, uint64_t buffer_size
 __attribute__((always_inline)) inline fat16_MDSCoreFlags fat16_get_mdscore_flags(fat16_File *file) {
   return file->file_entry.reserved;
 }
+
+/**
+ * @brief - Update the given dir entry in the root dir.
+ */
+bool fat16_update_root_entry(Drive *drive, fat16_BootSector *bpb, fat16_DirEntry *dir_entry);
