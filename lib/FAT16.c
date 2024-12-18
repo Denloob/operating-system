@@ -137,7 +137,7 @@ bool fat16_read_root_directory(Drive *drive, fat16_BootSector *bpb, fat16_DirEnt
 void filename_to_fat16_filename(const char *filename, char out_buf[static FAT16_FULL_FILENAME_SIZE])
 {
     memset(out_buf, ' ', FAT16_FULL_FILENAME_SIZE);
-    char *dot = memrchr(filename, '.', FAT16_FILENAME_SIZE + 1);
+    char *dot = memrchr(filename, '.', MIN(strlen(filename), FAT16_FILENAME_SIZE + 1));
     assert(dot != NULL && "Invalid path");
 
     size_t extension_len = strlen(dot) - 1;
