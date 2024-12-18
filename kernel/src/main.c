@@ -1,4 +1,5 @@
 #include "IDT.h"
+#include "char_special_device.h"
 #include "mmu_config.h"
 #include "fs.h"
 #include "syscall.h"
@@ -89,6 +90,8 @@ void __attribute__((section(".entry"), sysv_abi)) kernel_main(uint32_t param_mmu
     test_perform_all();
 
     parse_boot_config_and_play_logo();
+
+    char_special_device_init();
 
     usermode_init_smp();
 
