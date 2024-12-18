@@ -29,11 +29,7 @@ void scroll_up()
 
 void putc(char ch)
 {
-    if (g_vga_it >= io_vga_addr_base + VGA_SIZE)
-    {
-        scroll_up();
-    }
-
+    assert(g_vga_it + 1 < io_vga_addr_base + VGA_SIZE && "shouldn't happen");
     if (ch == '\b')
     {
         if (g_vga_it - 3 < io_vga_addr_base)
@@ -49,11 +45,17 @@ void putc(char ch)
     {
         // Move g_vga_it to the next line
         g_vga_it += VGA_WIDTH - (g_vga_it - io_vga_addr_base) % VGA_WIDTH;
-        return;
+    }
+    else
+    {
+        *g_vga_it++ = ch;
+        *g_vga_it++ = VGA_COLOR_WHITE;
     }
 
-    *g_vga_it++ = ch;
-    *g_vga_it++ = VGA_COLOR_WHITE;
+    if (g_vga_it >= io_vga_addr_base + VGA_SIZE)
+    {
+        scroll_up();
+    }
 }
 
 void put(const char *str)
