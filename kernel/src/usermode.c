@@ -1,5 +1,6 @@
 #include "usermode.h"
 #include "macro_utils.h"
+#include "mmu.h"
 #include "range.h"
 #include "memory.h"
 #include "regs.h"
@@ -66,6 +67,30 @@ void usermode_jump_to(void *address, const Regs *regs)
 // The mmu structures are located in the lower address space, so we need to manually
 // check if the given address touches the mmu.
 static range_Range mmu_address;
+
+bool usermode_is_mapped(uint64_t begin, uint64_t end)
+{
+    if (end < begin)
+    {
+         return false;
+    }
+
+    if (!is_usermode_address((void *)begin, end - begin))
+    {
+        return false;
+    }
+
+    for (uint64_t it = PAGE_ALIGN_DOWN(begin); it < end; it += PAGE_SIZE)
+    {
+        mmu_PageTableEntry *page = mmu_page(it);
+        if (!page->present || !page->user_supervisor)
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
 
 bool is_usermode_address(void *address, size_t size)
 {
