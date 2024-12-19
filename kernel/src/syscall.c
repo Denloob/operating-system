@@ -1,10 +1,13 @@
+#include "FAT16.h"
 #include "kernel_memory_info.h"
-#include "io.h"
-#include "isr.h"
+#include "math.h"
 #include "regs.h"
 #include "syscall.h"
 #include "assert.h"
 #include <stdint.h>
+#include "file.h"
+#include "fs.h"
+#include "usermode.h"
 
 #define MSR_STAR   0xC0000081
 #define MSR_LSTAR  0xC0000082
@@ -15,15 +18,55 @@
 // Here the RSP of the syscall caller will be stored.
 static uint64_t g_ring3_rsp;
 
+static void syscall_read_write(Regs *regs, typeof(fread) fread_fwrite_func)
+{
+#define MAX_FILEPATH_LEN 512
+    // Args:
+    usermode_mem *filepath_user = (usermode_mem *)regs->rdi;
+    uint64_t filepath_len = regs->rsi;
+    usermode_mem *out_buffer = (usermode_mem *)regs->rdx;
+    uint64_t buffer_size = regs->r10;
+
+    regs->rax = 0; // Read/Wrote 0 bytes.
+
+    if (filepath_len >= MAX_FILEPATH_LEN)
+    {
+        return;
+    }
+
+    if (!usermode_is_mapped((uint64_t)filepath_user, (uint64_t)filepath_user + filepath_len))
+    {
+        return;
+    }
+
+    if (!usermode_is_mapped((uint64_t)out_buffer, (uint64_t)out_buffer + buffer_size))
+    {
+        return;
+    }
+
+    char filepath[MAX_FILEPATH_LEN] = {0};
+    usermode_copy_from_user(filepath, (void *)regs->rdi, MIN(regs->rsi, sizeof(filepath) - 1));
+
+    FILE file = {0};
+    bool success = fat16_open(&g_fs_fat16, filepath, &file.file); // TODO: when we support `fd`s, that's how we will get the file handle. For now, this also works
+    if (!success)
+    {
+        return;
+    }
+
+    asm volatile("stac" ::: "memory"); // 
+    regs->rax = fread_fwrite_func(out_buffer, 1, buffer_size, &file);
+    asm volatile("clac" ::: "memory");
+}
+
 static void syscall_read(Regs *regs)
 {
-    printf("syscall_read\n");
-    regs->rdi++;
+    syscall_read_write(regs, fread);
 }
 
 static void syscall_write(Regs *regs)
 {
-    printf("syscall_write: rdi = 0x%llx\n", regs->rdi);
+    syscall_read_write(regs, fwrite);
 }
 
 static void __attribute__((used, sysv_abi)) syscall_handler(Regs *user_regs)
