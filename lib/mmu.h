@@ -55,7 +55,7 @@ typedef struct
     uint64_t execute_disable : 1;
 } mmu_PageMapEntry;
 
-extern mmu_PageMapEntry *pml4;
+extern mmu_PageMapEntry *g_pml4;
 
 void mmu_init_post_init(uint64_t mmu_map_base_address);
 uint64_t mmu_init(range_Range *memory_map, uint64_t memory_map_length, uint64_t bootloader_end_addr);

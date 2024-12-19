@@ -1,0 +1,31 @@
+#include "pcb.h"
+#include "kmalloc.h"
+#include "memory.h"
+
+
+
+PCB* PCB_init(uint64_t id, PCB *parent, uint64_t entry_point, mmu_PageMapEntry *kernel_pml)
+{
+    const int kernel_start_index = 256;
+    const int kernel_end_index = 512;
+
+    PCB* created_pcb = kmalloc(sizeof(struct PCB));
+    
+    created_pcb->state = PCB_STATE_READY;
+    created_pcb->id = id;
+    created_pcb->rip = entry_point;
+    created_pcb->parent = parent;
+    memset(&created_pcb->regs , 0 , sizeof(Regs));
+
+    created_pcb->regs.rflags = 0x202; 
+
+    for(int i =kernel_start_index;i<kernel_end_index;i++)
+    {
+        created_pcb->paging[i] = kernel_pml[i];
+    }
+
+    created_pcb->queue_next = NULL;
+
+    return created_pcb;
+}
+
