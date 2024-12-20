@@ -10,7 +10,7 @@
 //  useful for allocations where the virtual address doesn't matter,
 //      such as malloc.
 //  There's only one page break for the kernel.
-#define DEFAULT_PAGE_BREAK 0xa110c000000
+#define DEFAULT_PAGE_BREAK 0xffffa110c0000000
 uint64_t g_page_break = DEFAULT_PAGE_BREAK;
 
 res brk(void *addr_in)
