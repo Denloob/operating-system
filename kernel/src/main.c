@@ -96,6 +96,12 @@ void __attribute__((section(".entry"), sysv_abi)) kernel_main(uint32_t param_mmu
 
     usermode_init_smp();
 
+    res rs = program_setup(1, NULL, 0, g_pml4, &g_fs_fat16, "prog.exe");
+    if (!IS_OK(rs)) {
+        put("Failed to run prog.exe\n");
+    } else {
+        put("Successfully loaded prog.exe\n");
+    }
     while(true)
     {
         char input_buffer[INPUT_BUFFER_SIZE];
