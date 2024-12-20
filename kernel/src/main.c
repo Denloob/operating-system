@@ -234,6 +234,10 @@ void init_kernel_memory(uint64_t mmu_map_base_address, range_Range *memory_map, 
     mmu_tlb_flush_all();
 
     memset(&__bss_start, 0, (uint64_t)&__bss_end - (uint64_t)&__bss_start);
+
+#define MMU_VIRT_ADDR (void *)0xfffff00000000000
+
+    mmu_migrate_to_virt_mem(MMU_VIRT_ADDR);
 }
 
 static void init_pic_keyboard_and_timer()

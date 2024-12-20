@@ -59,8 +59,10 @@ extern mmu_PageMapEntry *g_pml4;
 
 void mmu_init_post_init(uint64_t mmu_map_base_address);
 uint64_t mmu_init(range_Range *memory_map, uint64_t memory_map_length, uint64_t bootloader_end_addr);
-uint64_t mmu_page_table_entry_address_get(void *page_map_ptr);
-void mmu_page_table_entry_address_set(void *page_map_ptr, uint64_t address);
+uint64_t mmu_page_table_entry_address_get(mmu_PageTableEntry *page_map_ptr);
+void mmu_page_table_entry_address_set(mmu_PageTableEntry *page_map_ptr, uint64_t address);
+uint64_t mmu_page_table_entry_address_get_virt(mmu_PageMapEntry *page_map_ptr);
+void mmu_page_table_entry_address_set_virt(mmu_PageMapEntry *page_map_ptr, uint64_t address);
 mmu_PageTableEntry *mmu_page_existing(void *address);
 void mmu_page_set_flags(void *virtual_address, int new_flags);
 void mmu_page_range_set_flags(void *virtual_address_begin, void *virtual_address_end, int new_flags);
@@ -69,6 +71,8 @@ void mmu_tlb_flush(void *virtual_address);
 void mmu_tlb_flush_all();
 mmu_PageMapEntry *mmu_page_map_get_address_of(mmu_PageMapEntry *entry);
 mmu_PageTableEntry *mmu_page(uint64_t address);
+
+void mmu_migrate_to_virt_mem(void *addr);
 
 void mmu_map_range(uint64_t physical_begin, uint64_t physical_end, uint64_t virtual_begin, int flags);
 void mmu_unmap_range(uint64_t virtual_begin, uint64_t virtual_end);

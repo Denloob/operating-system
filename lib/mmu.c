@@ -13,6 +13,7 @@
 #define PAGE_ALIGN_DOWN(address) math_ALIGN_DOWN(address, PAGE_SIZE)
 
 uint64_t g_mmu_map_base_address = 0; // NOTE: this has to be not in the bss, as we cannot map the bss pages without this variable, and cannot set this variable (if it were in the bss) without mapping the bss pages.
+uint64_t g_mmu_phys_delta = 0;
 Bitmap *mmu_tables_bitmap = 0;
 mmu_PageMapEntry *g_pml4 = 0;
 
@@ -85,6 +86,19 @@ void mmu_init_post_init(uint64_t mmu_map_base_address)
     g_pml4 = (mmu_PageMapEntry *)g_mmu_map_base_address; // As asserted bellow, this always will be the case.
 }
 
+void mmu_migrate_to_virt_mem(void *addr) // addr is of size MMU_TOTAL_CHUNK_SIZE
+{
+    mmu_map_range(g_mmu_map_base_address, g_mmu_map_base_address + MMU_TOTAL_CHUNK_SIZE, (uint64_t)addr, MMU_READ_WRITE);
+
+    uint64_t old_phys = g_mmu_map_base_address;
+    g_mmu_phys_delta = (uint64_t)addr - g_mmu_map_base_address;
+    g_mmu_map_base_address = (uint64_t)addr;
+    mmu_tables_bitmap = (Bitmap *)MMU_BITMAP_BASE; // This macro depends on g_mmu_map_base_address
+    g_pml4 = (mmu_PageMapEntry *)g_mmu_map_base_address; // As asserted bellow, this always will be the case.
+
+    mmu_unmap_range(old_phys, old_phys + MMU_TOTAL_CHUNK_SIZE);
+}
+
 uint64_t mmu_init(range_Range *memory_map, uint64_t memory_map_length, uint64_t bootloader_end_addr)
 {
     bool success = range_pop_of_size(memory_map, memory_map_length, PAGE_ALIGN_UP(MMU_TOTAL_CHUNK_SIZE), &g_mmu_map_base_address);
@@ -155,7 +169,7 @@ void mmu_tlb_flush_all()
 mmu_PageMapEntry *mmu_page_map_get_address_of(mmu_PageMapEntry *entry)
 {
     assert(entry->present && "The page map must be valid");
-    return (mmu_PageMapEntry *)mmu_page_table_entry_address_get(entry);
+    return (mmu_PageMapEntry *)mmu_page_table_entry_address_get_virt(entry);
 }
 
 mmu_PageMapEntry *mmu_page_map_get_or_allocate_of(mmu_PageMapEntry *entry)
@@ -164,12 +178,12 @@ mmu_PageMapEntry *mmu_page_map_get_or_allocate_of(mmu_PageMapEntry *entry)
     {
         uint64_t address = (uint64_t)mmu_map_allocate();
         assert(address && "mmu_map_allocate(): NULL");
-        mmu_page_table_entry_address_set(entry, address);
-        mmu_table_init((void *)mmu_page_table_entry_address_get(entry));
+        mmu_page_table_entry_address_set_virt(entry, address);
+        mmu_table_init((void *)mmu_page_table_entry_address_get_virt(entry));
         entry->present = true;
     }
 
-    return (mmu_PageMapEntry *)mmu_page_table_entry_address_get(entry);
+    return (mmu_PageMapEntry *)mmu_page_table_entry_address_get_virt(entry);
 }
 
 mmu_PageTableEntry *mmu_page_existing(void *address)
@@ -225,14 +239,29 @@ mmu_PageTableEntry *mmu_page(uint64_t address)
 
 #define MMU_ENTRY_ADDRESS_BITSHIFT 12 // So we aren't actually storing the address at entry->_address. Instead, we are storing `entry | address`. Confusing I know. Anyway, this means that the _address is actually bit shifted by 12.
 
-uint64_t mmu_page_table_entry_address_get(void *page_map_ptr)
+uint64_t mmu_page_table_entry_address_get(mmu_PageTableEntry *page_map_ptr)
 {
-    return (uint64_t)(((mmu_PageTableEntry *)page_map_ptr)->_address) << MMU_ENTRY_ADDRESS_BITSHIFT;
+    uint64_t phys_address = (uint64_t)(page_map_ptr->_address) << MMU_ENTRY_ADDRESS_BITSHIFT;
+
+    return phys_address;
 }
 
-void mmu_page_table_entry_address_set(void *page_map_ptr, uint64_t address)
+void mmu_page_table_entry_address_set(mmu_PageTableEntry *page_map_ptr, uint64_t address)
 {
-    ((mmu_PageTableEntry *)page_map_ptr)->_address = address >> MMU_ENTRY_ADDRESS_BITSHIFT;
+    page_map_ptr->_address = address >> MMU_ENTRY_ADDRESS_BITSHIFT;
+}
+
+uint64_t mmu_page_table_entry_address_get_virt(mmu_PageMapEntry *page_map_ptr)
+{
+    uint64_t phys_address = (uint64_t)(((mmu_PageTableEntry *)page_map_ptr)->_address) << MMU_ENTRY_ADDRESS_BITSHIFT;
+
+    return phys_address + g_mmu_phys_delta;
+}
+
+void mmu_page_table_entry_address_set_virt(mmu_PageMapEntry *page_map_ptr, uint64_t address)
+{
+    uint64_t phys_address = address - g_mmu_phys_delta;
+    ((mmu_PageTableEntry *)page_map_ptr)->_address = phys_address >> MMU_ENTRY_ADDRESS_BITSHIFT;
 }
 
 void mmu_unmap_range(uint64_t virtual_begin, uint64_t virtual_end)
