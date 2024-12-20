@@ -65,7 +65,7 @@ debug: $(IMAGE_NAME).img $(DEBUG_SYM)
 		echo "Run the following command:";                                     \
 		echo '```';                                                            \
 		echo '$(GDB_COMMAND)';                                                 \
-		echo '```\n';                                                          \
+		echo '```'; echo;                                                      \
 		echo -n "Then, press enter to start the OS...";                        \
 		read;                                                                  \
 	fi
