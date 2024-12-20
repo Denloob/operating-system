@@ -61,12 +61,13 @@ debug: $(IMAGE_NAME).img $(DEBUG_SYM)
 	@if [ -n "$$TMUX" ]; then                                                  \
 		tmux new-window -n 'kernel-debug' '$(GDB_COMMAND)';                    \
 	else                                                                       \
-		echo -e '\n';                                                          \
+		echo; echo;                                                            \
 		echo "Run the following command:";                                     \
-		echo -e '```';                                                         \
+		echo '```';                                                            \
 		echo '$(GDB_COMMAND)';                                                 \
-		echo -e '```\n';                                                       \
-		read -p "Then, press enter to start the OS...";                        \
+		echo '```\n';                                                          \
+		echo -n "Then, press enter to start the OS...";                        \
+		read;                                                                  \
 	fi
 
 	$(EMU) -hda $< $(QEMU_LOG_OPTIONS) $(QEMU_MISC_OPTIONS) $(QEMU_DEBUG_OPTIONS)
