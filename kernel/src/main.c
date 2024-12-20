@@ -29,6 +29,7 @@
 #include "time.h"
 #include "usermode.h"
 #include "vga.h"
+#include "program.h"
 #include <stdbool.h>
 
 #define INPUT_BUFFER_SIZE 256 
