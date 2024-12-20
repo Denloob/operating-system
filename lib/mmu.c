@@ -227,7 +227,7 @@ mmu_PageTableEntry *mmu_page(uint64_t address)
 
 uint64_t mmu_page_table_entry_address_get(void *page_map_ptr)
 {
-    return ((mmu_PageTableEntry *)page_map_ptr)->_address << MMU_ENTRY_ADDRESS_BITSHIFT;
+    return (uint64_t)(((mmu_PageTableEntry *)page_map_ptr)->_address) << MMU_ENTRY_ADDRESS_BITSHIFT;
 }
 
 void mmu_page_table_entry_address_set(void *page_map_ptr, uint64_t address)
