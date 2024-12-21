@@ -7,10 +7,10 @@
 #include "res.h"
 #include "scheduler.h"
 
-res program_setup(uint64_t id ,  PCB *parent ,uint64_t program_entry_point , mmu_PageMapEntry *kernel_pml , fat16_Ref *fat16 , const char *path_to_file) 
+res program_setup(uint64_t id,  PCB *parent, mmu_PageMapEntry *kernel_pml, fat16_Ref *fat16, const char *path_to_file) 
 {
     //pcb handle
-    PCB* program_pcb = PCB_init(id, parent , program_entry_point , kernel_pml);
+    PCB* program_pcb = PCB_init(id, parent, 0, kernel_pml);
 
     //switch PML
     mmu_load_virt_pml4(program_pcb->paging);
