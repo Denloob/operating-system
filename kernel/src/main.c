@@ -2,6 +2,7 @@
 #include "char_special_device.h"
 #include "mmu_config.h"
 #include "fs.h"
+#include "scheduler.h"
 #include "syscall.h"
 #include "tss.h"
 #include "kmalloc.h"
@@ -97,11 +98,10 @@ void __attribute__((section(".entry"), sysv_abi)) kernel_main(uint32_t param_mmu
     usermode_init_smp();
 
     res rs = program_setup(1, NULL, 0, g_pml4, &g_fs_fat16, "prog.exe");
-    if (!IS_OK(rs)) {
-        put("Failed to run prog.exe\n");
-    } else {
-        put("Successfully loaded prog.exe\n");
-    }
+    assert(IS_OK(rs) && "Starting the main process failed");
+
+    scheduler_start();
+
     while(true)
     {
         char input_buffer[INPUT_BUFFER_SIZE];

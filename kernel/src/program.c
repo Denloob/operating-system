@@ -4,6 +4,7 @@
 #include "FAT16.h"
 #include "assert.h"
 #include "mmap.h"
+#include "res.h"
 #include "scheduler.h"
 
 res program_setup(uint64_t id ,  PCB *parent ,uint64_t program_entry_point , mmu_PageMapEntry *kernel_pml , fat16_Ref *fat16 , const char *path_to_file) 
@@ -22,7 +23,11 @@ res program_setup(uint64_t id ,  PCB *parent ,uint64_t program_entry_point , mmu
     //elf handling
     void *entry_point;
     res rs = elf_load(&file, &entry_point); 
-    assert(IS_OK(rs));
+    if (!IS_OK(rs))
+    {
+        return rs;
+    }
+
     program_pcb->rip = (uint64_t)entry_point; //rip = Register Instruction Pointer and not Rest in peace
 
     // Virtual memory consts for program stack
@@ -36,12 +41,8 @@ res program_setup(uint64_t id ,  PCB *parent ,uint64_t program_entry_point , mmu
 
     // Set initial flags
     program_pcb->regs.rflags = 0x202;
-    
 
     scheduler_process_enqueue(program_pcb);
-    scheduler_context_switch_to(program_pcb, SCHEDULER_NOT_A_PIC_INTERRUPT);
-
-    scheduler_enable();
 
     return res_OK;
 }
