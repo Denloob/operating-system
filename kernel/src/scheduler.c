@@ -15,7 +15,7 @@ void scheduler_context_switch_to(PCB *pcb, int pic_number)
     g_current_process = pcb;
 
     pcb->state = PCB_STATE_RUNNING;
-    asm volatile("mov cr3, %0" : : "a"(pcb->paging) : "memory");
+    mmu_load_virt_pml4(pcb->paging);
 
     if (pic_number != SCHEDULER_NOT_A_PIC_INTERRUPT) pic_send_EOI(pic_number);
 

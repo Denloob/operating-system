@@ -73,6 +73,25 @@ mmu_PageMapEntry *mmu_page_map_get_address_of(mmu_PageMapEntry *entry);
 mmu_PageTableEntry *mmu_page(uint64_t address);
 
 void mmu_migrate_to_virt_mem(void *addr);
+void mmu_load_virt_pml4(void *pml4);
+
+uint64_t mmu_get_phys_addr_of(void *virt);
+
+/**
+ * @brief Allocate a page for an MMU structure (like pml4).
+ *
+ * @return 4096 byte aligned address of size 4096.
+ */
+void *mmu_map_allocate();
+
+/**
+ * @brief Dealloc the result of mmu_map_allocate.
+ *
+ * @see mmu_map_allocate
+ *
+ * @param address The address returned by mmu_map_allocate.
+ */
+void mmu_map_deallocate(void *address);
 
 void mmu_map_range(uint64_t physical_begin, uint64_t physical_end, uint64_t virtual_begin, int flags);
 void mmu_unmap_range(uint64_t virtual_begin, uint64_t virtual_end);

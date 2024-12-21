@@ -23,7 +23,7 @@ typedef struct PCB
     uint64_t    rip;
     pcb_State   state;
 
-    mmu_PageMapEntry paging[512];
+    mmu_PageMapEntry *paging;
     // TODO: open file descriptors, signal info
 } PCB;
 

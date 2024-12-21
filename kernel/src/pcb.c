@@ -1,4 +1,7 @@
 #include "pcb.h"
+#include "mmu.h"
+#include "mmu_config.h"
+#include "assert.h"
 #include "kmalloc.h"
 #include "memory.h"
 
@@ -18,6 +21,10 @@ PCB* PCB_init(uint64_t id, PCB *parent, uint64_t entry_point, mmu_PageMapEntry *
     memset(&created_pcb->regs , 0 , sizeof(Regs));
 
     created_pcb->regs.rflags = 0x202; 
+
+    created_pcb->paging = mmu_map_allocate();
+    assert(created_pcb->paging != NULL);
+    memset(created_pcb->paging, 0, TABLE_SIZE_BYTES);
 
     for(int i =kernel_start_index;i<kernel_end_index;i++)
     {

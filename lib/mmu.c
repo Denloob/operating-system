@@ -306,3 +306,14 @@ void mmu_page_range_set_flags(void *virtual_address_begin, void *virtual_address
         mmu_page_set_flags((void *)virt, new_flags);
     }
 }
+
+uint64_t mmu_get_phys_addr_of(void *virt)
+{
+    mmu_PageTableEntry *page = mmu_page_existing(virt);
+    return mmu_page_table_entry_address_get(page);
+}
+
+void mmu_load_virt_pml4(void *pml4)
+{
+    asm volatile("mov cr3, %0" :: "r"((size_t)mmu_get_phys_addr_of(pml4)) : "memory");
+}

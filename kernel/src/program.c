@@ -27,7 +27,7 @@ res program_setup(uint64_t id ,  PCB *parent ,uint64_t program_entry_point , mmu
     const uint64_t STACK_VIRTUAL_BASE = 0x7FFFFFFFF000; 
     
     //switch PML
-    asm volatile("mov %0, %%cr3" :: "r"(program_pcb->paging) : "memory");
+    mmu_load_virt_pml4(program_pcb->paging);
 
     //Program Stack handling
     program_pcb->regs.rsp = STACK_VIRTUAL_BASE;
