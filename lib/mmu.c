@@ -315,5 +315,6 @@ uint64_t mmu_get_phys_addr_of(void *virt)
 
 void mmu_load_virt_pml4(void *pml4)
 {
+    g_pml4 = pml4;
     asm volatile("mov cr3, %0" :: "r"((size_t)mmu_get_phys_addr_of(pml4)) : "memory");
 }
