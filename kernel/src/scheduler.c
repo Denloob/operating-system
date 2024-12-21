@@ -75,3 +75,11 @@ void scheduler_disable()
 {
     pit_disable_special_event();
 }
+
+void scheduler_start()
+{
+    assert(g_process_queue_tail != NULL);
+
+    scheduler_enable();
+    scheduler_context_switch_to(g_process_queue_tail, SCHEDULER_NOT_A_PIC_INTERRUPT);
+}
