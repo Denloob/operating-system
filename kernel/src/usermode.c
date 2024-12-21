@@ -103,7 +103,7 @@ bool is_usermode_address(void *address, size_t size)
 
     // Non canonical or invalid address
     #define CANONICAL_ADDRESS_LIMIT 0x0000800000000000
-    if ((uint64_t)address > CANONICAL_ADDRESS_LIMIT || end_u64 > CANONICAL_ADDRESS_LIMIT) return false;
+    if ((uint64_t)address >= CANONICAL_ADDRESS_LIMIT || end_u64 >= CANONICAL_ADDRESS_LIMIT) return false;
 
     void *mmu_begin = (void *)mmu_address.begin;
     void *mmu_end = mmu_begin + mmu_address.size;
