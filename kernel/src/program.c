@@ -11,6 +11,9 @@ res program_setup(uint64_t id ,  PCB *parent ,uint64_t program_entry_point , mmu
     //pcb handle
     PCB* program_pcb = PCB_init(id, parent , program_entry_point , kernel_pml);
 
+    //switch PML
+    mmu_load_virt_pml4(program_pcb->paging);
+
     //fs handling
     FILE file = {0};
     bool success = fat16_open(fat16, path_to_file, &file.file);
@@ -25,9 +28,6 @@ res program_setup(uint64_t id ,  PCB *parent ,uint64_t program_entry_point , mmu
     // Virtual memory consts for program stack
     const size_t STACK_SIZE = PAGE_SIZE * 5;
     const uint64_t STACK_VIRTUAL_BASE = 0x7FFFFFFFF000; 
-    
-    //switch PML
-    mmu_load_virt_pml4(program_pcb->paging);
 
     //Program Stack handling
     program_pcb->regs.rsp = STACK_VIRTUAL_BASE;
