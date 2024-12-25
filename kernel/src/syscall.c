@@ -1,12 +1,16 @@
 #include "FAT16.h"
 #include "kernel_memory_info.h"
 #include "math.h"
+#include "mmu.h"
 #include "regs.h"
 #include "syscall.h"
 #include "assert.h"
+#include <filesystem>
 #include <stdint.h>
+#include "program.h"
 #include "file.h"
 #include "fs.h"
+#include "res.h"
 #include "usermode.h"
 
 #define MSR_STAR   0xC0000081
@@ -15,12 +19,34 @@
 #define MSR_SFMASK 0xC0000084
 #define MSR_EFER   0xC0000080
 
+#define MAX_FILEPATH_LEN 512
 // Here the RSP of the syscall caller will be stored.
 static uint64_t g_ring3_rsp;
 
+static void syscall_execute_program(Regs *regs)
+{
+    //Args:
+    uint64_t id = regs->rdi;
+    uint64_t parent_id = regs->rsi;
+    usermode_mem *path_to_file = (usermode_mem *)regs->rdx;
+    uint64_t path_lenght = regs->r10;
+
+    if (!usermode_is_mapped((uint64_t)path_to_file, (uint64_t)path_to_file + path_lenght))
+    {
+        return;
+    }
+    
+    char filepath[MAX_FILEPATH_LEN] = {0};
+    
+    usermode_copy_from_user(filepath, path_to_file, MAX_FILEPATH_LEN-1);
+
+    res result = program_setup(id , NULL , g_pml4 , &g_fs_fat16 , filepath);
+
+    regs->rax = IS_OK(result);
+}
 static void syscall_read_write(Regs *regs, typeof(fread) fread_fwrite_func)
 {
-#define MAX_FILEPATH_LEN 512
+
     // Args:
     usermode_mem *filepath_user = (usermode_mem *)regs->rdi;
     uint64_t filepath_len = regs->rsi;
@@ -97,6 +123,9 @@ static void __attribute__((used, sysv_abi)) syscall_handler(Regs *user_regs)
             break;
         case SYSCALL_WRITE:
             syscall_write(user_regs);
+            break;
+        case SYSCALL_EXECUTE:
+            syscall_execute_program(user_regs);
             break;
     }
 

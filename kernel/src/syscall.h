@@ -3,6 +3,7 @@
 typedef enum {
     SYSCALL_READ,
     SYSCALL_WRITE,
+    SYSCALL_EXECUTE,
 } syscall_Number;
 
 /**
