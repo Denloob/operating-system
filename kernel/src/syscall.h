@@ -1,9 +1,10 @@
 #pragma once
 
 typedef enum {
-    SYSCALL_READ,
-    SYSCALL_WRITE,
-    SYSCALL_EXECUTE,
+    SYSCALL_READ    = 0,
+    SYSCALL_WRITE   = 1,
+
+    SYSCALL_EXECUTE = 59,
 } syscall_Number;
 
 /**
