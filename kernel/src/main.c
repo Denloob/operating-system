@@ -33,6 +33,7 @@
 #include "program.h"
 #include <stdbool.h>
 
+
 #define INPUT_BUFFER_SIZE 256 
 
 #define BAR0 0x1F0   // Primary IDE Channel base 
@@ -69,6 +70,17 @@ static void display_boot_logo(int boot_style, const char *video_path);
 
 #define DEBUG_MODE_OFF
 
+void shell(void)
+{
+    while (true)
+    {
+        char input_buffer[INPUT_BUFFER_SIZE];
+        put("$ ");
+        get_string(input_buffer, INPUT_BUFFER_SIZE);
+        parse_command(input_buffer, INPUT_BUFFER_SIZE, &g_fs_fat16);
+    }
+}
+
 void __attribute__((section(".entry"), sysv_abi)) kernel_main(uint32_t param_mmu_map_base_address, uint32_t param_memory_map, uint32_t param_memory_map_length)
 {
     uint64_t mmu_map_base_address = param_mmu_map_base_address;
@@ -98,12 +110,11 @@ void __attribute__((section(".entry"), sysv_abi)) kernel_main(uint32_t param_mmu
     usermode_init_smp();
 
     io_clear_vga();
-
-    res rs = program_setup(1, NULL, g_pml4, &g_fs_fat16, "prog.exe");
+    res rs = program_setup_from_code(1, NULL, g_pml4,shell );
     assert(IS_OK(rs) && "Starting the main process failed");
 
     scheduler_start();
-
+    /*
     while(true)
     {
         char input_buffer[INPUT_BUFFER_SIZE];
@@ -111,8 +122,11 @@ void __attribute__((section(".entry"), sysv_abi)) kernel_main(uint32_t param_mmu
         get_string(input_buffer,INPUT_BUFFER_SIZE);
         parse_command(input_buffer, INPUT_BUFFER_SIZE , &g_fs_fat16);
     }
+    */
 
 }
+
+
 
 static void init_idt()
 {
