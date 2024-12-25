@@ -36,8 +36,23 @@ res program_setup_from_drive(uint64_t id,  PCB *parent, mmu_PageMapEntry *kernel
 
     //Program Stack handling
     program_pcb->regs.rsp = STACK_VIRTUAL_BASE;
-    rs = mmap((void *)(program_pcb->regs.rsp - STACK_SIZE), STACK_SIZE, MMAP_PROT_READ | MMAP_PROT_WRITE | MMAP_PROT_RING_3);
-    assert(IS_OK(rs));
+
+    void *const stack_end = (void *)(program_pcb->regs.rsp - STACK_SIZE);
+    rs = mmap(stack_end, STACK_SIZE, MMAP_PROT_READ | MMAP_PROT_WRITE);
+    if (!IS_OK(rs))
+    {
+        return rs;
+    }
+
+    // TODO: actually put argv on the stack. Right now a push argc=0.
+    ((uint64_t *)STACK_VIRTUAL_BASE)[-1] = 0;
+    program_pcb->regs.rsp -= sizeof(uint64_t);
+
+    rs = mprotect(stack_end, STACK_SIZE, MMAP_PROT_READ | MMAP_PROT_WRITE | MMAP_PROT_RING_3);
+    if (!IS_OK(rs))
+    {
+        return rs;
+    }
 
     // Set initial flags
     program_pcb->regs.rflags = 0x202;
