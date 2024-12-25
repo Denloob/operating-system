@@ -6,7 +6,7 @@ IMAGE_NAME := hdd
 
 all: $(IMAGE_NAME).img
 
-$(IMAGE_NAME).img: $(BOOTLOADER) $(KERNEL) initfat16 kernel.cfg
+$(IMAGE_NAME).img: $(BOOTLOADER) $(KERNEL) sysapps initfat16 kernel.cfg
 	cp $(BOOTLOADER) $@
 
 	dd if=/dev/zero of=$@ bs=1 seek=$$(stat --format="%s" $@) count=$$(printf "%d" 0x10000)
@@ -16,7 +16,7 @@ $(IMAGE_NAME).img: $(BOOTLOADER) $(KERNEL) initfat16 kernel.cfg
 	dd if=/dev/zero of=$@ bs=$$((1024 * 1024)) seek=$$(stat --format="%s" $@) count=32 # 32MB
 	mcopy $(KERNEL) a:
 	mcopy ./assets/cogs.bmp a:
-	mcopy ./prog a:/prog.exe
+	mcopy ./system_apps/hello_world/hello_world a:/prog.exe
 	mcopy ./assets/cogs-parallel.bmp a:/cogs-par.bmp
 	mcopy ./assets/amongos.bmp a:
 	mcopy kernel.cfg a:
@@ -72,9 +72,14 @@ debug: $(IMAGE_NAME).img $(DEBUG_SYM)
 
 	$(EMU) -hda $< $(QEMU_LOG_OPTIONS) $(QEMU_MISC_OPTIONS) $(QEMU_DEBUG_OPTIONS)
 
+.PHONY: sysapps
+sysapps:
+	$(MAKE) -C system_apps
+
 clean:
 	$(MAKE) clean -C bootloader
 	$(MAKE) clean -C kernel
+	$(MAKE) clean -C system_apps
 
 toolchain:
 	$(MAKE) -C toolchain
