@@ -6,6 +6,7 @@
 #include "assert.h"
 #include "scheduler.h"
 #include "usermode.h"
+#include "shell.h"
 
 static PCB *g_current_process; // Process queue head
 static PCB *g_process_queue_tail;
@@ -13,7 +14,7 @@ static PCB *g_process_queue_tail;
 void scheduler_context_switch_to(PCB *pcb, int pic_number)
 {
     g_current_process = pcb;
-
+    
     pcb->state = PCB_STATE_RUNNING;
     mmu_load_virt_pml4(pcb->paging);
 
@@ -65,6 +66,8 @@ void scheduler_context_switch_from(Regs *regs, isr_InterruptFrame *frame, int pi
     PCB *next_pcb = scheduler_get_next_process_and_requeue_current();
     scheduler_context_switch_to(next_pcb, pic_number);
 }
+
+
 
 void scheduler_enable()
 {

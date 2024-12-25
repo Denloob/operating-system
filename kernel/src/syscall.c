@@ -5,13 +5,14 @@
 #include "regs.h"
 #include "syscall.h"
 #include "assert.h"
-#include <filesystem>
 #include <stdint.h>
 #include "program.h"
 #include "file.h"
 #include "fs.h"
 #include "res.h"
 #include "usermode.h"
+#include "program.h"
+#include "shell.h"
 
 #define MSR_STAR   0xC0000081
 #define MSR_LSTAR  0xC0000082
@@ -27,7 +28,6 @@ static void syscall_execute_program(Regs *regs)
 {
     //Args:
     uint64_t id = regs->rdi;
-    uint64_t parent_id = regs->rsi;
     usermode_mem *path_to_file = (usermode_mem *)regs->rdx;
     uint64_t path_lenght = regs->r10;
 
@@ -40,10 +40,11 @@ static void syscall_execute_program(Regs *regs)
     
     usermode_copy_from_user(filepath, path_to_file, MAX_FILEPATH_LEN-1);
 
-    res result = program_setup(id , NULL , g_pml4 , &g_fs_fat16 , filepath);
+    res result = program_setup_from_drive(id , NULL , g_pml4 , &g_fs_fat16 , filepath);
 
     regs->rax = IS_OK(result);
 }
+
 static void syscall_read_write(Regs *regs, typeof(fread) fread_fwrite_func)
 {
 
