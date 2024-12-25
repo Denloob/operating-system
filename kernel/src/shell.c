@@ -101,7 +101,7 @@ void ls_command(fat16_Ref *fat16, const char* flag)
 {
     //TODO: check that there is -
     fat16_DirReader reader;
-    fat16_init_dir_reader(&reader, &fat16->bpb);
+    fat16_init_dir_reader(&reader, fat16 , 0);
     fat16_DirEntry entry;
 
     while (fat16_read_next_root_entry(fat16->drive, &reader, &entry)) 

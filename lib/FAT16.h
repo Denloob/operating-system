@@ -80,17 +80,21 @@ bool fat16_read_FAT(Drive *drive , fat16_BootSector *bpb , uint8_t *FAT);
 
 bool fat16_read_sectors(Drive *drive, uint32_t sector, uint8_t *buffer , uint32_t count);
 
-
+typedef struct
+{
+    fat16_BootSector bpb;
+    Drive *drive;
+} fat16_Ref;
 //new algo functions
 typedef struct 
 {
     uint32_t current_sector;
     uint32_t entry_offset;
-    uint32_t root_dir_start;
-    uint32_t root_dir_end;
+    uint32_t dir_start;
+    uint32_t dir_end;
 } fat16_DirReader;
 
-void fat16_init_dir_reader(fat16_DirReader *reader, fat16_BootSector *bpb);
+void fat16_init_dir_reader(fat16_DirReader *reader, fat16_Ref *fat16, uint16_t start_cluster); 
 bool fat16_read_next_root_entry(Drive *drive, fat16_DirReader *reader, fat16_DirEntry *entry);
 //----------------
 
@@ -102,15 +106,11 @@ bool fat16_read_root_directory(Drive *drive, fat16_BootSector *bpb, fat16_DirEnt
                      const char *filename, fat16_DirEntry **out_file);
 */
 //new ver of fat16_find_file
-bool fat16_find_file(Drive *drive, fat16_BootSector *bpb, const char *filename, fat16_DirEntry *out_file);
+bool fat16_find_file(fat16_Ref *fat16, const char *filename, fat16_DirEntry *out_file);
 
-bool fat16_get_file_chain(Drive *drive , fat16_BootSector *bpb , const char *filename , uint16_t *out_array);
+bool fat16_get_file_chain(fat16_Ref *fat16 , const char *filename , uint16_t *out_array);
 
-typedef struct
-{
-    fat16_BootSector bpb;
-    Drive *drive;
-} fat16_Ref;
+
 
 typedef struct
 {
@@ -175,7 +175,7 @@ uint16_t fat16_get_next_cluster(fat16_Ref *fat16, uint16_t cluster);
  *@buffer - the data to write into the file
  *@size - the size of the data
  */
-bool fat16_add_root_entry(Drive *drive, fat16_BootSector *bpb, fat16_DirEntry *new_entry);
+bool fat16_add_root_entry(fat16_Ref *fat16, fat16_DirEntry *new_entry);
 /**
  * *@brief the function creates a dir entry 
  *
@@ -240,4 +240,4 @@ __attribute__((always_inline)) inline fat16_MDSCoreFlags fat16_get_mdscore_flags
 /**
  * @brief - Update the given dir entry in the root dir.
  */
-bool fat16_update_root_entry(Drive *drive, fat16_BootSector *bpb, fat16_DirEntry *dir_entry);
+bool fat16_update_root_entry(fat16_Ref *fat16, fat16_DirEntry *dir_entry);

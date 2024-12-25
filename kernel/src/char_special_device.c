@@ -21,7 +21,7 @@ static void create_char_device_file(const char *path, char_special_device_MinorD
     file.file.file_entry.firstClusterHigh = char_special_device_MAJOR_NUMBER;
     file.file.file_entry.firstClusterLow = minor_number;
 
-    success = fat16_update_root_entry(file.file.ref->drive, &file.file.ref->bpb, &file.file.file_entry);
+    success = fat16_update_root_entry(file.file.ref, &file.file.file_entry);
     assert(success && "fat16_update_root_entry");
 }
 
