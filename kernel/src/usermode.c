@@ -1,4 +1,5 @@
 #include "usermode.h"
+#include "io.h"
 #include "macro_utils.h"
 #include "mmu.h"
 #include "range.h"
@@ -64,10 +65,6 @@ void usermode_jump_to(void *address, const Regs *regs)
     __builtin_unreachable();
 }
 
-// The mmu structures are located in the lower address space, so we need to manually
-// check if the given address touches the mmu.
-static range_Range mmu_address;
-
 bool usermode_is_mapped(uint64_t begin, uint64_t end)
 {
     if (end < begin)
@@ -92,30 +89,19 @@ bool usermode_is_mapped(uint64_t begin, uint64_t end)
     return true;
 }
 
-bool is_usermode_address(void *address, size_t size)
+bool is_usermode_address(const void *address, const size_t size)
 {
-    void *begin = address;
-    uint64_t end_u64;
-    bool overflow = __builtin_add_overflow((uint64_t)address, size, &end_u64);
+    const uint64_t begin = (uint64_t)address;
+
+    uint64_t end;
+    const bool overflow = __builtin_add_overflow(begin, size, &end);
     if (overflow) return false;
 
-    void *end = (void *)end_u64;
 
-    // Non canonical or invalid address
-    #define CANONICAL_ADDRESS_LIMIT 0x0000800000000000
-    if ((uint64_t)address >= CANONICAL_ADDRESS_LIMIT || end_u64 >= CANONICAL_ADDRESS_LIMIT) return false;
+// Non canonical or invalid address
+#define CANONICAL_ADDRESS_LIMIT 0x0000800000000000
 
-    void *mmu_begin = (void *)mmu_address.begin;
-    void *mmu_end = mmu_begin + mmu_address.size;
-    if (begin < mmu_end && mmu_begin < end) return false; // overlaps with the MMU
-
-    return true;
-}
-
-void usermode_init_address_check(uint64_t mmu_map_base_address, uint64_t mmu_map_size)
-{
-    mmu_address.begin = mmu_map_base_address;
-    mmu_address.size = mmu_map_size;
+    return begin < CANONICAL_ADDRESS_LIMIT && end < CANONICAL_ADDRESS_LIMIT;
 }
 
 void usermode_init_smp()

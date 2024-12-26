@@ -30,9 +30,7 @@ void usermode_jump_to(void *address, const Regs *regs) __attribute__((noreturn))
  * @param size The size of the object at the address. (Important as address can only partially touch kernel).
  * @return True if doesn't touch anything kernel related. False otherwise.
  */
-bool is_usermode_address(void *address, size_t size) WUR __attribute__((pure));
-
-void usermode_init_address_check(uint64_t mmu_map_base_address, uint64_t mmu_map_size);
+bool is_usermode_address(const void *address, size_t size) WUR __attribute__((pure));
 
 /**
  * @brief - Initialize supported Supervisor Memory Protections (SMEP and/or SMAP), if available.

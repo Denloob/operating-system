@@ -91,8 +91,6 @@ void __attribute__((section(".entry"), sysv_abi)) kernel_main(uint32_t param_mmu
 
     init_kernel_memory(mmu_map_base_address, memory_map, memory_map_length);
 
-    usermode_init_address_check(mmu_map_base_address, MMU_TOTAL_CHUNK_SIZE);
-
     init_idt();
     syscall_initialize();
 
