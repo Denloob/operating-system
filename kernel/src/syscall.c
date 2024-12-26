@@ -26,19 +26,21 @@ static uint64_t g_ring3_rsp;
 
 static void syscall_execute_program(Regs *regs)
 {
+    regs->rax = false; // Return: failed.
+
     //Args:
     uint64_t id = regs->rdi;
     usermode_mem *path_to_file = (usermode_mem *)regs->rdx;
-    uint64_t path_lenght = regs->r10;
 
-    if (!usermode_is_mapped((uint64_t)path_to_file, (uint64_t)path_to_file + path_lenght))
+    uint64_t path_length;
+    bool valid = usermode_strlen(path_to_file, MAX_FILEPATH_LEN - 1, &path_length);
+    if (!valid)
     {
         return;
     }
-    
+
     char filepath[MAX_FILEPATH_LEN] = {0};
-    
-    usermode_copy_from_user(filepath, path_to_file, MAX_FILEPATH_LEN-1);
+    usermode_copy_from_user(filepath, path_to_file, path_length);
 
     res result = program_setup_from_drive(id , NULL , g_pml4 , &g_fs_fat16 , filepath);
 
@@ -47,21 +49,18 @@ static void syscall_execute_program(Regs *regs)
 
 static void syscall_read_write(Regs *regs, typeof(fread) fread_fwrite_func)
 {
+    regs->rax = 0; // Return: Read/Wrote 0 bytes.
 
     // Args:
     usermode_mem *filepath_user = (usermode_mem *)regs->rdi;
-    uint64_t filepath_len = regs->rsi;
-    usermode_mem *out_buffer = (usermode_mem *)regs->rdx;
-    uint64_t buffer_size = regs->r10;
+    usermode_mem *out_buffer = (usermode_mem *)regs->rsi;
+    uint64_t buffer_size = regs->rdx;
 
-    regs->rax = 0; // Read/Wrote 0 bytes.
-
-    if (filepath_len >= MAX_FILEPATH_LEN)
-    {
-        return;
-    }
-
-    if (!usermode_is_mapped((uint64_t)filepath_user, (uint64_t)filepath_user + filepath_len))
+    // Both calculates the length, and makes sure that filepath_user is, in fact,
+    //  a null terminated string in usermode memory, smaller than MAX_FILEPATH_LEN.
+    uint64_t filepath_len;
+    bool valid = usermode_strlen(filepath_user, MAX_FILEPATH_LEN - 1, &filepath_len);
+    if (!valid)
     {
         return;
     }
@@ -72,7 +71,7 @@ static void syscall_read_write(Regs *regs, typeof(fread) fread_fwrite_func)
     }
 
     char filepath[MAX_FILEPATH_LEN] = {0};
-    usermode_copy_from_user(filepath, (void *)regs->rdi, MIN(regs->rsi, sizeof(filepath) - 1));
+    usermode_copy_from_user(filepath, filepath_user, filepath_len);
 
     FILE file = {0};
     bool success = fat16_open(&g_fs_fat16, filepath, &file.file); // TODO: when we support `fd`s, that's how we will get the file handle. For now, this also works
