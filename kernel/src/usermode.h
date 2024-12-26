@@ -27,6 +27,9 @@ void usermode_jump_to(void *address, const Regs *regs) __attribute__((noreturn))
  *          that reading/writing to/from that address won't touch the kernel and
  *          can actually be maped (not in the memory hole).
  *
+ * @note - If you intend to access that memory, use usermode_is_mapped
+ * @see  - usermode_is_mapped
+ *
  * @param address The address to check.
  * @param size The size of the object at the address. (Important as address can only partially touch kernel).
  * @return True if doesn't touch anything kernel related. False otherwise.
