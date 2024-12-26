@@ -58,3 +58,21 @@ res usermode_copy_from_user(void *to, const usermode_mem *from, size_t len);
  * @brief - Check that the given memory range is mapped to be in usermode.
  */
 bool usermode_is_mapped(uint64_t begin, uint64_t end);
+
+/**
+ * @brief - Get the length of a usermode, null terminated, string in `str`.
+ *          If no null byte is found until max_length is reached,
+ *              or until the end of usermode memory, false is returned
+ *              and out_len will be set to the amount of bytes read so far.
+ *          Otherwise, out_len will contain the length of the string.
+ *
+ * @param str        - The usermode null terminated string to operate on.
+ * @param max_length - The maximum length to check to.For example, `0` would guarantee
+ *                      that false is returned. `1` guarantees that true is returned
+ *                      iff str points to an existing, usermode, null byte.
+ *                      Pass UINT64_MAX to not have a max length.
+ * @param out_len[out] - The amount of bytes read until `max_length`, a null byte,
+ *                          or the end of usermode mapped memory.
+ * @return - true if stopped because of a null byte, false otherwise.
+ */
+bool usermode_strlen(const usermode_mem *str, uint64_t max_length, uint64_t *out_len);

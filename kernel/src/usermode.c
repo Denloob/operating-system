@@ -2,6 +2,7 @@
 #include "io.h"
 #include "macro_utils.h"
 #include "mmu.h"
+#include "assert.h"
 #include "range.h"
 #include "memory.h"
 #include "regs.h"
@@ -171,4 +172,47 @@ res usermode_copy_from_user(void *to, const usermode_mem *from, size_t len)
     clac();
 
     return res_OK;
+}
+
+bool usermode_strlen(const usermode_mem *str, uint64_t max_length, uint64_t *out_len)
+{
+    *out_len = 0;
+
+    if (max_length == 0 || !usermode_is_mapped((uint64_t)str, (uint64_t)str + 1)) // No need to check for overflow, it's ok if it happens, the function will return false.
+    {
+        return false;
+    }
+
+    const char *it = &str->ch;
+    const char *end_of_safe_region = (const char *)PAGE_ALIGN_UP((uint64_t)it + 1); // We know that the memory between `str` and to this address is all usermode and mapped.
+
+    while (max_length > 0)
+    {
+        assert(it <= end_of_safe_region && "should always be true");
+
+        if (it == end_of_safe_region) // end_of_safe_region is always page aligned
+        {
+            end_of_safe_region += PAGE_SIZE;
+            if (!usermode_is_mapped((uint64_t)it, (uint64_t)end_of_safe_region))
+            {
+                return false;
+            }
+        }
+
+        stac();
+        bool found = *it == '\0';
+        clac();
+
+        if (found)
+        {
+            return true;
+        }
+
+        (*out_len)++;
+        it++;
+
+        max_length--;
+    }
+
+    return false;
 }
