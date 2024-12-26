@@ -23,8 +23,9 @@ void usermode_jump_to(void *address, const Regs *regs) __attribute__((noreturn))
 
 /**
  * @brief Check if the given address is a usermode address.
- *          Either result doesn't mean if it's valid, but it does guarantee
- *          that reading/writing to/from that address will/won't touch usermode/kernel.
+ *          Either result doesn't mean if it's valid, but `true` returned guarantees
+ *          that reading/writing to/from that address won't touch the kernel and
+ *          can actually be maped (not in the memory hole).
  *
  * @param address The address to check.
  * @param size The size of the object at the address. (Important as address can only partially touch kernel).
