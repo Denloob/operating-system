@@ -1,15 +1,18 @@
 #include "FAT16.h"
 #include "kernel_memory_info.h"
 #include "math.h"
+#include "mmap.h"
 #include "mmu.h"
 #include "regs.h"
 #include "syscall.h"
+#include "brk.h"
 #include "assert.h"
 #include <stdint.h>
 #include "program.h"
 #include "file.h"
 #include "fs.h"
 #include "res.h"
+#include "scheduler.h"
 #include "usermode.h"
 #include "execve.h"
 #include "shell.h"
@@ -43,6 +46,21 @@ static void syscall_execute_program(Regs *regs)
 
     res rs = execve(filepath, NULL);
     regs->rax = IS_OK(rs);
+}
+
+static void syscall_brk(Regs *regs)
+{
+    //Args:
+    const uint64_t addr = regs->rdi;
+
+    PCB *const pcb = scheduler_current_pcb();
+    if (is_usermode_address((void *)addr, 1))
+    {
+        res rs = brk((void *)addr, &pcb->page_break, MMAP_PROT_READ | MMAP_PROT_WRITE | MMAP_PROT_RING_3);
+        (void)rs; // Unused, see NOTES in man 2 brk
+    }
+
+    regs->rax = pcb->page_break;
 }
 
 static void syscall_read_write(Regs *regs, typeof(fread) fread_fwrite_func)
@@ -121,6 +139,9 @@ static void __attribute__((used, sysv_abi)) syscall_handler(Regs *user_regs)
             break;
         case SYSCALL_WRITE:
             syscall_write(user_regs);
+            break;
+        case SYSCALL_BRK:
+            syscall_brk(user_regs);
             break;
         case SYSCALL_EXECUTE:
             syscall_execute_program(user_regs);
