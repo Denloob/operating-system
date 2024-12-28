@@ -276,7 +276,7 @@ static void initialize_bins()
 static void initialize_top_chunk()
 {
     void *allocated_addr;
-    res rs = sbrk(PAGE_SIZE, &allocated_addr);
+    res rs = ksbrk(PAGE_SIZE, &allocated_addr);
     assert(IS_OK(rs));
 
     main_arena.top = allocated_addr;
@@ -306,7 +306,7 @@ WUR static res malloc_grow_heap(size_t wanted_size)
 
     size_t needed_size_left = wanted_size - top_size;
     size_t size_increase = PAGE_ALIGN_UP(needed_size_left);
-    res rs = sbrk(size_increase, NULL);
+    res rs = ksbrk(size_increase, NULL);
     if (IS_OK(rs))
     {
         size_t new_chunk_size;

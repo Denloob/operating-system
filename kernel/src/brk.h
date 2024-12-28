@@ -1,6 +1,7 @@
 #pragma once
 
 #include "compiler_macros.h"
+#include "mmap.h"
 #include "res.h"
 #include <stdint.h>
 
@@ -14,7 +15,7 @@
  * @param addr The new address for the page break.
  * @return res_OK on success, or one of the error codes on failure (also includes mmap error codes).
  */
-res brk(void *addr) WUR;
+res kbrk(void *addr) WUR;
 
 /**
  * @brief Move the page break. 
@@ -29,4 +30,9 @@ res brk(void *addr) WUR;
  *
  * @return res_OK on success, or one of the error codes on failure (also includes mmap error codes).
  */
-res sbrk(int64_t increment, void **prev_brk) WUR;
+res ksbrk(int64_t increment, void **prev_brk) WUR;
+
+// These functions are the same as kbrk/ksbrk but act on the given page_break_state
+//  instead of a global one, and allow specifying the allocated page protections.
+res brk(void *addr_in, uint64_t *page_break_state, mmap_Protection prot);
+res sbrk(int64_t increment, void **prev_brk, uint64_t *page_break_state, mmap_Protection prot);
