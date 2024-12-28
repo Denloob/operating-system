@@ -1,4 +1,5 @@
 #include "string.h"
+#include "assert.h"
 #include <stddef.h>
 
 int strlen(const char *s)
@@ -46,6 +47,17 @@ char *strncpy(char *dest, const char *src, size_t n)
 
     return dest;
 }
+
+char *strcpy(char *dest, const char *src)
+{
+    assert(dest && src);
+    while ((*dest++ = *src++))
+    {
+    }
+
+    return dest;
+}
+
 #define TOLOWER(c) (c | ('a' - 'A'))
 
 int strcasecmp(const char *s1, const char *s2)
