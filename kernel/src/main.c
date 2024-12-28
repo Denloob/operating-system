@@ -108,7 +108,8 @@ void __attribute__((section(".entry"), sysv_abi)) kernel_main(uint32_t param_mmu
     usermode_init_smp();
 
     io_clear_vga();
-    res rs = program_setup_from_drive(1, NULL, g_pml4, &g_fs_fat16, "prog.exe");
+    char *argv[] = {NULL};
+    res rs = program_setup_from_drive(1, NULL, g_pml4, &g_fs_fat16, "prog.exe", argv);
     assert(IS_OK(rs) && "Starting the main process failed");
 
     scheduler_start();

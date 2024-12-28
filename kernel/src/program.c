@@ -1,13 +1,67 @@
 #include "program.h"
+#include "kmalloc.h"
 #include "memory.h"
 #include "pcb.h"
+#include "string.h"
 #include "FAT16.h"
 #include "assert.h"
 #include "mmap.h"
 #include "res.h"
 #include "scheduler.h"
 
-res program_setup_from_drive(uint64_t id,  PCB *parent, mmu_PageMapEntry *kernel_pml, fat16_Ref *fat16, const char *path_to_file) 
+static void *push_to_stack(void *stack_top, uint64_t value)
+{
+    stack_top -= sizeof(uint64_t);
+    memmove(stack_top, &value, sizeof(uint64_t));
+
+    return stack_top;
+}
+
+static void *copy_argv_to_stack_and_push_argc(char **argv_to_copy, void *stack_top)
+{
+    size_t argv_len = 0;
+    char **it = argv_to_copy;
+    while (*it++)
+    {
+        argv_len++;
+    }
+
+    if (argv_len == 0)
+    {
+        stack_top = push_to_stack(stack_top, 0); // Push argv end NULL ptr.
+        stack_top = push_to_stack(stack_top, 0); // Push argc = 0
+        return stack_top;
+    }
+
+    char **argv_ptrs = kmalloc(sizeof(uint64_t) * argv_len);
+    if (argv_ptrs == NULL)
+    {
+        return NULL;
+    }
+
+    for (size_t i = 0; i < argv_len; i++)
+    {
+        size_t str_size = strlen(argv_to_copy[i]) + 1; // Include the null byte in the length
+        stack_top -= str_size;
+        memmove(stack_top, argv_to_copy[i], str_size);
+        argv_ptrs[i] = stack_top;
+    }
+
+    stack_top = push_to_stack(stack_top, 0); // Push argv end NULL ptr.
+    for (size_t len_i = argv_len; len_i > 0; len_i--)
+    {
+        size_t i = len_i - 1;
+        stack_top = push_to_stack(stack_top, (uint64_t)argv_ptrs[i]);
+    }
+
+    kfree(argv_ptrs);
+
+    stack_top = push_to_stack(stack_top, argv_len); // Push argc
+
+    return stack_top;
+}
+
+res program_setup_from_drive(uint64_t id,  PCB *parent, mmu_PageMapEntry *kernel_pml, fat16_Ref *fat16, const char *path_to_file, char **argv) 
 {
     //pcb handle
     PCB* program_pcb = PCB_init(id, parent, 0, kernel_pml);
@@ -44,9 +98,8 @@ res program_setup_from_drive(uint64_t id,  PCB *parent, mmu_PageMapEntry *kernel
         return rs;
     }
 
-    // TODO: actually put argv on the stack. Right now a push argc=0.
-    ((uint64_t *)STACK_VIRTUAL_BASE)[-1] = 0;
-    program_pcb->regs.rsp -= sizeof(uint64_t);
+    program_pcb->regs.rsp = (uint64_t)copy_argv_to_stack_and_push_argc(
+        argv, (void *)program_pcb->regs.rsp);
 
     rs = mprotect(stack_end, STACK_SIZE, MMAP_PROT_READ | MMAP_PROT_WRITE | MMAP_PROT_RING_3);
     if (!IS_OK(rs))

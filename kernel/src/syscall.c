@@ -42,7 +42,7 @@ static void syscall_execute_program(Regs *regs)
     char filepath[MAX_FILEPATH_LEN] = {0};
     usermode_copy_from_user(filepath, path_to_file, path_length);
 
-    res result = program_setup_from_drive(id , NULL , g_pml4 , &g_fs_fat16 , filepath);
+    res result = program_setup_from_drive(id , NULL , g_pml4 , &g_fs_fat16 , filepath, NULL);
 
     regs->rax = IS_OK(result);
 }
