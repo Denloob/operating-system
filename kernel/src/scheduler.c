@@ -11,6 +11,11 @@
 static PCB *g_current_process; // Process queue head
 static PCB *g_process_queue_tail;
 
+PCB *scheduler_current_pcb()
+{
+    return g_current_process;
+}
+
 void scheduler_context_switch_to(PCB *pcb, int pic_number)
 {
     g_current_process = pcb;

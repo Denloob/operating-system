@@ -42,5 +42,10 @@ void scheduler_process_enqueue(PCB *pcb);
  */
 void scheduler_start() __attribute__((noreturn));
 
+/**
+ * @brief Get the PCB of the current running process.
+ */
+PCB *scheduler_current_pcb();
+
 void scheduler_enable();
 void scheduler_disable();
