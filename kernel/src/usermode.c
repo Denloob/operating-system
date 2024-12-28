@@ -94,6 +94,13 @@ bool is_usermode_address(const void *address, const size_t size)
 {
     const uint64_t begin = (uint64_t)address;
 
+#define MIN_USERMODE_ADDRESS 0x10000
+
+    if (begin < MIN_USERMODE_ADDRESS)
+    {
+        return false;
+    }
+
     uint64_t end;
     const bool overflow = __builtin_add_overflow(begin, size, &end);
     if (overflow) return false;
