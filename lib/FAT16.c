@@ -1,4 +1,5 @@
 #include "FAT16.h"
+#include "io.h"
 #include "drive.h"
 #include "math.h"
 #include "memory.h"

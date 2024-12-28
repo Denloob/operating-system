@@ -1,6 +1,7 @@
 #include "test_filesystem.h"
 #include "fs.h"
 #include "assert.h"
+#include "io.h"
 #include "memory.h"
 #include "FAT16.h"
 #include "file.h"
