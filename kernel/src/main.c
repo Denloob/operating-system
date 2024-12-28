@@ -30,7 +30,7 @@
 #include "time.h"
 #include "usermode.h"
 #include "vga.h"
-#include "program.h"
+#include "execve.h"
 #include <stdbool.h>
 
 
@@ -108,8 +108,7 @@ void __attribute__((section(".entry"), sysv_abi)) kernel_main(uint32_t param_mmu
     usermode_init_smp();
 
     io_clear_vga();
-    char *argv[] = {NULL};
-    res rs = program_setup_from_drive(1, NULL, g_pml4, &g_fs_fat16, "prog.exe", argv);
+    res rs = execve("prog.exe", NULL);
     assert(IS_OK(rs) && "Starting the main process failed");
 
     scheduler_start();

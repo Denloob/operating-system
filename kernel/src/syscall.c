@@ -11,7 +11,7 @@
 #include "fs.h"
 #include "res.h"
 #include "usermode.h"
-#include "program.h"
+#include "execve.h"
 #include "shell.h"
 
 #define MSR_STAR   0xC0000081
@@ -29,8 +29,7 @@ static void syscall_execute_program(Regs *regs)
     regs->rax = false; // Return: failed.
 
     //Args:
-    uint64_t id = regs->rdi;
-    usermode_mem *path_to_file = (usermode_mem *)regs->rdx;
+    usermode_mem *path_to_file = (usermode_mem *)regs->rdi;
 
     uint64_t path_length;
     bool valid = usermode_strlen(path_to_file, MAX_FILEPATH_LEN - 1, &path_length);
@@ -42,9 +41,8 @@ static void syscall_execute_program(Regs *regs)
     char filepath[MAX_FILEPATH_LEN] = {0};
     usermode_copy_from_user(filepath, path_to_file, path_length);
 
-    res result = program_setup_from_drive(id , NULL , g_pml4 , &g_fs_fat16 , filepath, NULL);
-
-    regs->rax = IS_OK(result);
+    res rs = execve(filepath, NULL);
+    regs->rax = IS_OK(rs);
 }
 
 static void syscall_read_write(Regs *regs, typeof(fread) fread_fwrite_func)
