@@ -20,7 +20,7 @@ PCB* PCB_init(uint64_t id, PCB *parent, uint64_t entry_point, mmu_PageMapEntry *
     created_pcb->rip = entry_point;
     created_pcb->parent = parent;
     memset(&created_pcb->regs , 0 , sizeof(Regs));
-    created_pcb->state = UINT64_MAX;
+    created_pcb->page_break = UINT64_MAX;
 
     created_pcb->regs.rflags = 0x202; 
 
