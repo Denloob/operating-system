@@ -49,12 +49,30 @@ res brk(void *addr_in, uint64_t *page_break_state, mmap_Protection prot)
     }
 
     uint64_t map_size = addr_aligned - page_break_aligned;
-    res rs = mmap((void *)page_break_aligned, map_size, prot);
-    if (IS_OK(rs))
+
+    // Initially, never mmap with ring3.
+    const mmap_Protection actual_prot = prot & ~MMAP_PROT_RING_3;
+    res rs = mmap((void *)page_break_aligned, map_size, actual_prot);
+    if (!IS_OK(rs))
     {
-        *page_break_state = addr;
+        return rs;
     }
-    return rs;
+
+    *page_break_state = addr;
+
+    // If ring3 is actually needed, we first memset everything to 0
+    //  and mprotect to ring3.
+    if (prot & MMAP_PROT_RING_3)
+    {
+        memset((void *)page_break_aligned, 0, map_size);
+        rs = mprotect((void *)page_break_aligned, map_size, prot);
+        if (!IS_OK(rs))
+        {
+            return rs;
+        }
+    }
+
+    return res_OK;
 }
 
 res sbrk(int64_t increment, void **prev_brk, uint64_t *page_break_state, mmap_Protection prot)
