@@ -1,4 +1,5 @@
 #include <stdarg.h>
+#include <stdint.h>
 #include <sys/syscall.h>
 #include <unistd.h>
 
@@ -33,4 +34,39 @@ long syscall(long syscall_number, ...)
     va_end(args);
 
     return do_syscall(syscall_number, a0, a1, a2, a3, a4, a5);
+}
+
+ssize_t write(const char *path, const void *buf, size_t count)
+{
+    return syscall(SYS_write, path, buf, count);
+}
+
+ssize_t read(const char *path, void *buf, size_t count)
+{
+    return syscall(SYS_read, path, buf, count);
+}
+
+int brk(void *addr)
+{
+    void *new_page_break = (void *)syscall(SYS_brk, addr);
+
+    return new_page_break == addr ? 0 : -1;
+}
+
+void *sbrk(intptr_t increment)
+{
+    void *prev_brk = (void *)syscall(SYS_brk, 0);
+
+    uintptr_t new_break;
+    if (__builtin_add_overflow((uintptr_t)prev_brk, increment, &new_break))
+    {
+        return (void *)-1;
+    }
+
+    if (brk((void *)new_break) < 0)
+    {
+        return (void *)-1;
+    }
+
+    return prev_brk;
 }
