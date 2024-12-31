@@ -82,6 +82,8 @@ res program_setup_from_drive(uint64_t id,  PCB *parent, mmu_PageMapEntry *kernel
         return rs;
     }
 
+    program_pcb->page_break = 0xa110c00000; // TODO: put it right after .bss and .data
+
     program_pcb->rip = (uint64_t)entry_point; //rip = Register Instruction Pointer and not Rest in peace
 
     // Virtual memory consts for program stack
