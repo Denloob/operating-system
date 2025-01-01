@@ -25,4 +25,4 @@ void free(void *addr);
 void *malloc(size_t size) __attribute_malloc(free) _WUR;
 
 void *calloc(size_t amount, size_t size) __attribute_malloc(free) _WUR;
-void *realloc(void *ptr, size_t size) __attribute_malloc(free) _WUR;
+void *realloc(void *ptr, size_t size) _WUR;

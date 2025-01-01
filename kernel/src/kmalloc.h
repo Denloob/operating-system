@@ -25,6 +25,6 @@ void kfree(void *addr);
 void *kmalloc(size_t size) attribute__kmalloc WUR;
 
 void *kcalloc(size_t amount, size_t size) attribute__kmalloc WUR;
-void *krealloc(void *ptr, size_t size) attribute__kmalloc WUR;
+void *krealloc(void *ptr, size_t size) WUR;
 
 void test_kmalloc();
