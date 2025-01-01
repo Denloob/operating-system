@@ -1,6 +1,7 @@
 #include "error.isr.h"
 #include "io.h"
 #include "isr.h"
+#include "scheduler.h"
 #include "vga.h"
 #include "assert.h"
 #include "memory.h"
@@ -42,6 +43,15 @@ static bool gpf_has_error_code(GPFErrorCode code)
     return memcmp(&code, &empty_code, sizeof(empty_code)) != 0;
 }
 
+static void print_pid_if_usermode(isr_InterruptFrame *frame)
+{
+#define USERMODE_CS (0x20 | 3)
+    if (frame->cs == USERMODE_CS)
+    {
+        printf("PID=0x%llx; ", scheduler_current_pcb()->id);
+    }
+}
+
 static void __attribute__((used, sysv_abi))
 error_isr_general_protection_fault_impl(isr_InterruptFrame *frame, GPFErrorCode code)
 {
@@ -52,6 +62,8 @@ error_isr_general_protection_fault_impl(isr_InterruptFrame *frame, GPFErrorCode 
     }
 
     printf("\nGeneral protection fault: RIP=0x%llx; ", frame->rip);
+
+    print_pid_if_usermode(frame);
 
     if (!gpf_has_error_code(code))
     {
@@ -100,7 +112,11 @@ error_isr_page_fault_impl(isr_InterruptFrame *frame, PageFaultErrorCode error)
 
     uint64_t cr2;
     asm volatile ("mov %0, cr2" : "=r"(cr2));
-    printf("\nPage Fault: RIP=0x%llx; Virtual address cause: %llx\n", frame->rip, cr2);
+
+    printf("\nPage Fault: RIP=0x%llx; ", frame->rip);
+    print_pid_if_usermode(frame);
+    printf("Virtual address cause: %llx\n", cr2);
+
     printf("present = %d\n"
            "write = %d\n"
            "user = %d\n"
