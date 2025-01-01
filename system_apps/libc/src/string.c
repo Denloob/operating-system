@@ -15,7 +15,7 @@ size_t strlen(const char *s)
 }
 
 
-char *strchr(const char *str, char search_str)
+char *strchrnul(const char *str, char search_str)
 {
     while (*str) 
     {
@@ -25,12 +25,19 @@ char *strchr(const char *str, char search_str)
         }
         str++;
     }
-    if (search_str == '\0') 
+
+    return (char *)str;
+}
+
+char *strchr(const char *str, char search_str)
+{
+    char *res = strchrnul(str, search_str);
+    if (search_str != *res)
     {
-        return (char *)str;
+        return NULL;
     }
 
-    return NULL;
+    return res;
 }
 
 char *strncpy(char *dest, const char *src, size_t n)
