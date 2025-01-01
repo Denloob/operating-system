@@ -16,7 +16,8 @@ $(IMAGE_NAME).img: $(BOOTLOADER) $(KERNEL) sysapps initfat16 kernel.cfg
 	dd if=/dev/zero of=$@ bs=$$((1024 * 1024)) seek=$$(stat --format="%s" $@) count=32 # 32MB
 	mcopy $(KERNEL) a:
 	mcopy ./assets/cogs.bmp a:
-	mcopy ./system_apps/hello_world/hello_world a:/prog.exe
+	mcopy ./system_apps/init/init a:/init.exe
+	mcopy ./system_apps/sh/bin/sh a:/sh.exe
 	mcopy ./assets/cogs-parallel.bmp a:/cogs-par.bmp
 	mcopy ./assets/amongos.bmp a:
 	mcopy kernel.cfg a:
