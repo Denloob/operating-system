@@ -1,5 +1,6 @@
 #include "program.h"
 #include "kmalloc.h"
+#include "smartptr.h"
 #include "math.h"
 #include "memory.h"
 #include "pcb.h"
@@ -71,6 +72,13 @@ res program_setup_from_drive(uint64_t id,  PCB *parent, mmu_PageMapEntry *kernel
 
     //switch PML
     mmu_load_virt_pml4(program_pcb->paging);
+    defer({
+        if (scheduler_current_pcb() != NULL)
+        {
+            assert(scheduler_current_pcb()->paging != NULL);
+            mmu_load_virt_pml4(scheduler_current_pcb()->paging);
+        }
+    });
 
     //fs handling
     FILE file = {0};
