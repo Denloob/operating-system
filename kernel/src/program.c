@@ -1,5 +1,6 @@
 #include "program.h"
 #include "kmalloc.h"
+#include "math.h"
 #include "memory.h"
 #include "pcb.h"
 #include "string.h"
@@ -46,6 +47,8 @@ static void *copy_argv_to_stack_and_push_argc(char **argv_to_copy, void *stack_t
         memmove(stack_top, argv_to_copy[i], str_size);
         argv_ptrs[i] = stack_top;
     }
+
+    stack_top = (void *)math_ALIGN_DOWN((uint64_t)stack_top, 0x10);
 
     stack_top = push_to_stack(stack_top, 0); // Push argv end NULL ptr.
     for (size_t len_i = argv_len; len_i > 0; len_i--)
