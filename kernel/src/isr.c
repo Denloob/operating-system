@@ -6,7 +6,6 @@ void __attribute__((naked)) isr_trampoline()
     asm volatile ("push rbp\n" 
                   "mov rbp, rsp\n"
                   // 16 byte align the stack
-                  "sub rsp, 8\n"
                   "and rsp, ~0xf\n" : : : "memory"); 
     PUSH_CALLER_STORED(); 
     STORE_SSE();
@@ -27,7 +26,6 @@ void __attribute__((naked)) isr_trampoline_error()
     asm volatile ("push rbp\n" 
                   "mov rbp, rsp\n"
                   // 16 byte align the stack
-                  "sub rsp, 8\n"
                   "and rsp, ~0xf\n" : : : "memory"); 
     PUSH_CALLER_STORED(); 
     STORE_SSE(); // Modifies RAX, must be after the push

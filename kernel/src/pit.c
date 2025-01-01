@@ -36,7 +36,6 @@ static void __attribute__((naked, used)) handle_special_time_event()
     asm volatile(
                 "mov %[g_interrupt_frame_ptr_tmp], rsp\n" // We haven't pushed anything yet, so rsp is actually the interrupt frame.
                 // 16 byte align the stack
-                "sub rsp, 8\n"
                 "and rsp, ~0xf\n"
 
                 // Put the `Regs` struct on to the stack. We will pass a pointer to it.

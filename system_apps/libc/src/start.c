@@ -17,7 +17,6 @@ void __attribute__((naked)) _start()
         "mov r15, rsp\n"  // `argv` comes right after it
 
         // Align the stack to 16
-        "sub rsp, 0x8\n"
         "and rsp, ~0xf\n"
 
         "call init_stdio_streams\n"
