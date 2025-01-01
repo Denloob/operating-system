@@ -18,7 +18,7 @@ void __attribute__((naked)) _start()
 
         // Align the stack to 16
         "sub rsp, 0x8\n"
-        "and rsp, ~0x10\n"
+        "and rsp, ~0xf\n"
 
         "call init_stdio_streams\n"
 
