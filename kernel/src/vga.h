@@ -17,6 +17,13 @@
 #define VGA_TEXT_WIDTH_BYTES (VGA_TEXT_WIDTH * 2)
 #define VGA_TEXT_HEIGHT 25
 
+typedef enum {
+    VGA_MODE_TYPE_GRAPHICS,
+    VGA_MODE_TYPE_TEXT,
+} vga_ModeType;
+
+vga_ModeType vga_current_mode();
+
 void vga_mode_graphics();
 void vga_mode_text();
 
