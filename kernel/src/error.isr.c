@@ -45,8 +45,11 @@ static bool gpf_has_error_code(GPFErrorCode code)
 static void __attribute__((used, sysv_abi))
 error_isr_general_protection_fault_impl(isr_InterruptFrame *frame, GPFErrorCode code)
 {
-    vga_mode_text();
-    io_clear_vga();
+    if (vga_current_mode() != VGA_MODE_TYPE_TEXT)
+    {
+        vga_mode_text();
+        io_clear_vga();
+    }
 
     printf("\nGeneral protection fault: RIP=0x%llx; ", frame->rip);
 
@@ -89,8 +92,11 @@ typedef struct
 void __attribute__((used, sysv_abi))
 error_isr_page_fault_impl(isr_InterruptFrame *frame, PageFaultErrorCode error)
 {
-    vga_mode_text();
-    io_clear_vga();
+    if (vga_current_mode() != VGA_MODE_TYPE_TEXT)
+    {
+        vga_mode_text();
+        io_clear_vga();
+    }
 
     uint64_t cr2;
     asm volatile ("mov %0, cr2" : "=r"(cr2));
