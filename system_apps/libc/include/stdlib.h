@@ -22,7 +22,7 @@ void free(void *addr);
  * @param size - The size of the chunk to allocate.
  * @return - Address of the allocated chunk on success, NULL on failure.
  */
-void *malloc(size_t size) __attribute_malloc _WUR;
+void *malloc(size_t size) __attribute_malloc(free) _WUR;
 
-void *calloc(size_t amount, size_t size) __attribute_malloc _WUR;
-void *realloc(void *ptr, size_t size) __attribute_malloc _WUR;
+void *calloc(size_t amount, size_t size) __attribute_malloc(free) _WUR;
+void *realloc(void *ptr, size_t size) __attribute_malloc(free) _WUR;

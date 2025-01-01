@@ -4,7 +4,7 @@
 #define _WUR __attribute__((warn_unused_result))
 
 #if (!defined(__GNUC__) || defined(__clang__))
-    #define __attribute_malloc __attribute__((malloc))
+    #define __attribute_malloc(deallocator) __attribute__((malloc))
 #else
-    #define __attribute_malloc __attribute__((malloc(free)))
+    #define __attribute_malloc(deallocator) __attribute__((malloc(deallocator)))
 #endif
