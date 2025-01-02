@@ -289,7 +289,7 @@ char key_to_char(int keycode)
     switch (keycode)
     {
         default:
-            return 0;
+            return 0xa8; // An unpside down question mark in our font
 
         case 0x02:
             return '1';
