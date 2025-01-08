@@ -75,7 +75,19 @@ size_t handle_read(uint8_t *buffer, uint64_t buffer_size, uint64_t file_offset, 
             for (int i = 0; i < buffer_size; i++)
             {
                 buffer[i] = key_to_char(io_input_keyboard_key());
+                if (buffer[i] == '\b')
+                {
+                    if (i > 0)
+                    {
+                        putc('\b');
+                        i--;
+                    }
+                    i--;
+                    continue;
+                }
+
                 putc(buffer[i]); // TODO: add a way to configure the displaying/not-displaying. Maybe it should be a shell feature instead of being a kernel feature.
+
                 if (buffer[i] == '\n')
                 {
                     return i + 1;
