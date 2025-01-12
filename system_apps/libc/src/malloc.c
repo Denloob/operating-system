@@ -712,6 +712,11 @@ void *malloc(size_t size)
 
 void free(void *addr)
 {
+    if (addr == NULL)
+    {
+        return;
+    }
+
     malloc_chunk *chunk = addr2chunk(addr);
 
     assert(chunk->chunk_size > 0 && "chunk size 0");
