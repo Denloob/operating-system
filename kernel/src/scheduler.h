@@ -47,5 +47,10 @@ void scheduler_start() __attribute__((noreturn));
  */
 PCB *scheduler_current_pcb();
 
+/**
+ * @brief Dequeue the current process from the queue and context switch to the next one in the queue.
+ */
+void scheduler_process_dequeue_current_and_context_switch() __attribute__((noreturn));
+
 void scheduler_enable();
 void scheduler_disable();

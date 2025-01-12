@@ -75,3 +75,9 @@ int execve_new(const char *path, char *const *argv)
 {
     return syscall(SYS_execve, path, argv) ? 0 : -1;
 }
+
+void exit(int status)
+{
+    syscall(SYS_exit, status);
+    __builtin_unreachable();
+}

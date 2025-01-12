@@ -19,3 +19,5 @@ int execve_new(const char *path, char *const *argv);
 
 void *sbrk(intptr_t increment);
 int brk(void *addr);
+
+void exit(int status) __attribute__((noreturn));

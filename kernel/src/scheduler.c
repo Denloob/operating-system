@@ -1,4 +1,5 @@
 #include "isr.h"
+#include "kmalloc.h"
 #include "pit.h"
 #include "pic.h"
 #include "pcb.h"
@@ -72,7 +73,24 @@ void scheduler_context_switch_from(Regs *regs, isr_InterruptFrame *frame, int pi
     scheduler_context_switch_to(next_pcb, pic_number);
 }
 
+void scheduler_process_dequeue_current_and_context_switch()
+{
+    PCB *next_pcb = g_current_process->queue_next;
 
+    assert(next_pcb != NULL);
+
+    if (next_pcb == g_current_process)
+    {
+        assert(false && "Shuting down"); // TODO: when we will have an IO queue, we won't want to shutdown
+        shutdown();
+    }
+
+    // TODO: Unmap all usermode pages by iterating over the mmu struct
+    //       Dealloc mmu structures.
+    kfree(g_current_process);
+
+    scheduler_context_switch_to(next_pcb, SCHEDULER_NOT_A_PIC_INTERRUPT);
+}
 
 void scheduler_enable()
 {

@@ -7,6 +7,7 @@ typedef enum {
     SYSCALL_BRK     = 12,
 
     SYSCALL_EXECUTE = 59,
+    SYSCALL_EXIT    = 60,
 } syscall_Number;
 
 /**

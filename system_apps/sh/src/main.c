@@ -56,6 +56,4 @@ int main()
 
         fputs("`\n", stdout);
     }
-
-    while (true) { /* hang */ };
 }

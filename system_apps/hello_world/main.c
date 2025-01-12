@@ -9,5 +9,5 @@ int main()
 
     syscall(SYS_write, PATH, TEXT, sizeof(TEXT) - 1);
 
-    while (true) { /* hang */ };
+    return 0;
 }

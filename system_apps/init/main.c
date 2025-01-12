@@ -7,5 +7,5 @@ int main()
 {
     execve_new("sh.exe", NULL);
 
-    while (true) { /* hang */ }; // TODO: exit(0)
+    return 0;
 }

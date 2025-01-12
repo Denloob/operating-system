@@ -25,6 +25,7 @@ void __attribute__((naked)) _start()
         "mov rsi, r15\n"
         "call main\n" // call main(argc, argv)
 
-        ".l: jmp .l\n" // TODO: when implemented, call exit syscall
+        "mov rdi, rax\n"
+        "call exit\n"
     );
 }

@@ -1,6 +1,7 @@
 #include "FAT16.h"
 #include "kernel_memory_info.h"
 #include "math.h"
+#include "kmalloc.h"
 #include "mmap.h"
 #include "mmu.h"
 #include "regs.h"
@@ -26,6 +27,12 @@
 #define MAX_FILEPATH_LEN 512
 // Here the RSP of the syscall caller will be stored.
 static uint64_t g_ring3_rsp;
+
+static void syscall_exit(Regs *regs)
+{
+    scheduler_process_dequeue_current_and_context_switch();
+    assert(false && "Unreachable");
+}
 
 static void syscall_execute_program(Regs *regs)
 {
@@ -145,6 +152,9 @@ static void __attribute__((used, sysv_abi)) syscall_handler(Regs *user_regs)
             break;
         case SYSCALL_EXECUTE:
             syscall_execute_program(user_regs);
+            break;
+        case SYSCALL_EXIT:
+            syscall_exit(user_regs);
             break;
     }
 
