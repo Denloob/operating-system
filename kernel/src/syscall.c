@@ -1,4 +1,5 @@
 #include "FAT16.h"
+#include "smartptr.h"
 #include "kernel_memory_info.h"
 #include "math.h"
 #include "kmalloc.h"
@@ -25,6 +26,8 @@
 #define MSR_EFER   0xC0000080
 
 #define MAX_FILEPATH_LEN 512
+#define MAX_ARGV_LEN     128
+#define MAX_ARGV_ELEMENT_LEN 512
 // Here the RSP of the syscall caller will be stored.
 static uint64_t g_ring3_rsp;
 
@@ -40,6 +43,7 @@ static void syscall_execute_program(Regs *regs)
 
     //Args:
     usermode_mem *path_to_file = (usermode_mem *)regs->rdi;
+    usermode_mem *usermode_argv = (usermode_mem *)regs->rsi;
 
     uint64_t path_length;
     bool valid = usermode_strlen(path_to_file, MAX_FILEPATH_LEN - 1, &path_length);
@@ -51,7 +55,61 @@ static void syscall_execute_program(Regs *regs)
     char filepath[MAX_FILEPATH_LEN] = {0};
     usermode_copy_from_user(filepath, path_to_file, path_length);
 
-    res rs = execve(filepath, NULL);
+    uint64_t argv_length = 0;
+    (void)argv_length; // It's used, but clang doesn't know that.
+
+    char **argv = NULL;
+    defer({
+        for (int i = 0; i < argv_length; i++)
+        {
+            kfree(argv[i]);
+        }
+
+        kfree(argv);
+    });
+
+    if (usermode_argv != NULL)
+    {
+        uint64_t usermode_argv_length;
+        valid = usermode_len(usermode_argv, sizeof(char *), MAX_ARGV_LEN - 1, &usermode_argv_length);
+        if (!valid)
+        {
+            return;
+        }
+
+        argv = kcalloc(usermode_argv_length + 1, sizeof(char *));
+        if (argv == NULL)
+        {
+            return;
+        }
+        argv[usermode_argv_length] = NULL;
+
+        for (int i = 0; i < usermode_argv_length; i++)
+        {
+            usermode_mem *current_argv_ptr = (usermode_mem *)((uint64_t)usermode_argv + i * sizeof(char *));
+
+            usermode_mem *current_argv = NULL;
+            usermode_copy_from_user(&current_argv, current_argv_ptr, sizeof(char *));
+
+            uint64_t current_length;
+            valid = usermode_strlen(current_argv, MAX_ARGV_ELEMENT_LEN - 1, &current_length);
+            if (!valid)
+            {
+                return;
+            }
+
+            argv[i] = kcalloc(current_length + 1, 1);
+            if (argv[i] == NULL)
+            {
+                return;
+            }
+            argv_length++;
+
+            usermode_copy_from_user(argv[i], current_argv, current_length);
+        }
+    }
+
+    res rs = execve(filepath, (const char *const *)argv);
     regs->rax = IS_OK(rs);
 }
 
