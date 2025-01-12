@@ -17,6 +17,7 @@ $(IMAGE_NAME).img: $(BOOTLOADER) $(KERNEL) sysapps initfat16 kernel.cfg
 	mcopy $(KERNEL) a:
 	mcopy ./assets/cogs.bmp a:
 	mcopy ./system_apps/init/init a:/init.exe
+	mcopy ./system_apps/echo/echo a:/echo.exe
 	mcopy ./system_apps/sh/bin/sh a:/sh.exe
 	mcopy ./assets/cogs-parallel.bmp a:/cogs-par.bmp
 	mcopy ./assets/amongos.bmp a:
