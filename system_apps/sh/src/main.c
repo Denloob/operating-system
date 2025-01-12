@@ -35,25 +35,6 @@ int main()
             continue;
         }
 
-        fputs("Executing: `", stdout);
-        fputs(cmd->shell_command[0], stdout);
-        fputs("`", stdout);
-        if (cmd->length == 1)
-        {
-            putchar('\n');
-            continue;
-        }
-
-        fputs(" with the arguments: `", stdout);
-        for (size_t i = 1; i < cmd->length; i++)
-        {
-            fputs(cmd->shell_command[i], stdout);
-            if (i < cmd->length - 1)
-            {
-                fputs("`, `", stdout);
-            }
-        }
-
-        fputs("`\n", stdout);
+        execve_new(cmd->shell_command[0], &cmd->shell_command[0]);
     }
 }

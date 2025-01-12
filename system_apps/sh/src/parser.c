@@ -152,6 +152,8 @@ ShellCommand *parser_parse_shell_expression(const char *expression, size_t lengt
         if (!currently_parsing_token)
         {
             free(cmd->shell_command[cmd->length - 1]);
+            cmd->shell_command[cmd->length - 1] = NULL; // argv NULL
+
             cmd->length--;
         }
         else
@@ -162,6 +164,13 @@ ShellCommand *parser_parse_shell_expression(const char *expression, size_t lengt
 
             *cur_token_ptr = new_buf;
             (*cur_token_ptr)[cur_token_length] = '\0';
+
+            new_buf = realloc(cmd->shell_command, cmd->length + 1); // Make sure there's enough space for argv NULL.
+            if (new_buf == NULL)
+                goto fail_oom;
+
+            cmd->shell_command = new_buf;
+            cmd->shell_command[cmd->length] = NULL;
         }
     }
 
