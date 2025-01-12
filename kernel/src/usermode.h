@@ -76,3 +76,14 @@ bool usermode_is_mapped(uint64_t begin, uint64_t end);
  * @return - true if stopped because of a null byte, false otherwise.
  */
 bool usermode_strlen(const usermode_mem *str, uint64_t max_length, uint64_t *out_len);
+
+/**
+ * @brief - Get the length of a usermode, null terminated, array in `arr`
+ *          where each element is of size `element_size`.
+ *          For more details, see usermode_strlen. This function is identical to
+ *          usermode_strlen, except that elements of the "string" aren't 1 byte long.
+ * @see - usermode_strlen 
+ *
+ * @return - true if stopped because of a null element, false otherwise.
+ */
+bool usermode_len(const usermode_mem *arr, size_t element_size, uint64_t max_length, uint64_t *out_len);

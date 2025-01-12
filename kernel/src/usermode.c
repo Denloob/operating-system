@@ -181,23 +181,27 @@ res usermode_copy_from_user(void *to, const usermode_mem *from, size_t len)
     return res_OK;
 }
 
-bool usermode_strlen(const usermode_mem *str, uint64_t max_length, uint64_t *out_len)
+bool usermode_strlen(const usermode_mem *arr, uint64_t max_length, uint64_t *out_len)
 {
+    return usermode_len(arr, 1, max_length, out_len);
+}
+
+bool usermode_len(const usermode_mem *arr, size_t element_size, uint64_t max_length, uint64_t *out_len)
+{
+    assert(element_size < PAGE_SIZE && "not supported");
     *out_len = 0;
 
-    if (max_length == 0 || !usermode_is_mapped((uint64_t)str, (uint64_t)str + 1)) // No need to check for overflow, it's ok if it happens, the function will return false.
+    if (max_length == 0 || !usermode_is_mapped((uint64_t)arr, (uint64_t)arr + element_size)) // No need to check for overflow, it's ok if it happens, the function will return false.
     {
         return false;
     }
 
-    const char *it = &str->ch;
-    const char *end_of_safe_region = (const char *)PAGE_ALIGN_UP((uint64_t)it + 1); // We know that the memory between `str` and to this address is all usermode and mapped.
+    const char *it = &arr->ch;
+    const char *end_of_safe_region = (const char *)PAGE_ALIGN_UP((uint64_t)it + element_size); // We know that the memory between `arr` and to this address is all usermode and mapped.
 
     while (max_length > 0)
     {
-        assert(it <= end_of_safe_region && "should always be true");
-
-        if (it == end_of_safe_region) // end_of_safe_region is always page aligned
+        if (it + element_size >= end_of_safe_region) // Overflow can't happen, usermode mem is bellow the memory hole, and element_size didn't escape usermode range before, so it can't now.
         {
             end_of_safe_region += PAGE_SIZE;
             if (!usermode_is_mapped((uint64_t)it, (uint64_t)end_of_safe_region))
@@ -207,7 +211,15 @@ bool usermode_strlen(const usermode_mem *str, uint64_t max_length, uint64_t *out
         }
 
         stac();
-        bool found = *it == '\0';
+        bool found = true;
+        for (size_t i = 0; i < element_size; i++)
+        {
+            if (it[i] != 0)
+            {
+                found = false;
+                break;
+            }
+        }
         clac();
 
         if (found)
@@ -216,7 +228,7 @@ bool usermode_strlen(const usermode_mem *str, uint64_t max_length, uint64_t *out
         }
 
         (*out_len)++;
-        it++;
+        it += element_size;
 
         max_length--;
     }
