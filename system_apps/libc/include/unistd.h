@@ -21,3 +21,6 @@ void *sbrk(intptr_t increment);
 int brk(void *addr);
 
 void exit(int status) __attribute__((noreturn));
+
+// A successful call to reboot does not return.
+int reboot(int op); // @see <sys/reboot.h>

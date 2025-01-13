@@ -1,4 +1,5 @@
 #include "FAT16.h"
+#include "io.h"
 #include "smartptr.h"
 #include "kernel_memory_info.h"
 #include "math.h"
@@ -35,6 +36,37 @@ static void syscall_exit(Regs *regs)
 {
     scheduler_process_dequeue_current_and_context_switch();
     assert(false && "Unreachable");
+}
+
+static void syscall_reboot(Regs *regs)
+{
+    syscall_RebootCode code = regs->rdi;
+    uint64_t magic1 = regs->rsi;
+    uint64_t magic2 = regs->rdx;
+    regs->rax = -1; // Return: failed.
+
+    if (magic1 != SYSCALL_REBOOT_MAGIC1 || magic2 != SYSCALL_REBOOT_MAGIC2)
+    {
+        return;
+    }
+
+    switch (code)
+    {
+        default:
+            return;
+
+        case SYSCALL_REBOOT_HALT:
+            puts("System halted.");
+            cli_hlt();
+        case SYSCALL_REBOOT_POWER_OFF:
+            puts("Power down.");
+            shutdown();
+        case SYSCALL_REBOOT_RESTART:
+            puts("Restarting system.");
+            reboot();
+    }
+
+    cli_hlt(); // For good measure.
 }
 
 static void syscall_execute_program(Regs *regs)
@@ -213,6 +245,9 @@ static void __attribute__((used, sysv_abi)) syscall_handler(Regs *user_regs)
             break;
         case SYSCALL_EXIT:
             syscall_exit(user_regs);
+            break;
+        case SYSCALL_REBOOT:
+            syscall_reboot(user_regs);
             break;
     }
 

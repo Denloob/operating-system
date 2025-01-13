@@ -1,6 +1,7 @@
 #include <stdarg.h>
 #include <stdint.h>
 #include <sys/syscall.h>
+#include <sys/reboot.h>
 #include <unistd.h>
 
 static long __attribute__((sysv_abi, naked)) do_syscall(long syscall_number, long a0, long a1, long a2, long a3, long a4, long a5)
@@ -80,4 +81,9 @@ void exit(int status)
 {
     syscall(SYS_exit, status);
     __builtin_unreachable();
+}
+
+int reboot(int op)
+{
+    return syscall(SYS_reboot, op, RB_SYS_MAGIC1, RB_SYS_MAGIC2);
 }

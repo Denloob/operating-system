@@ -18,6 +18,7 @@ $(IMAGE_NAME).img: $(BOOTLOADER) $(KERNEL) sysapps initfat16 kernel.cfg
 	mcopy ./assets/cogs.bmp a:
 	mcopy ./system_apps/init/init a:/init.exe
 	mcopy ./system_apps/echo/echo a:/echo.exe
+	mcopy ./system_apps/reboot/reboot a:/reboot.exe
 	mcopy ./system_apps/sh/bin/sh a:/sh.exe
 	mcopy ./assets/cogs-parallel.bmp a:/cogs-par.bmp
 	mcopy ./assets/amongos.bmp a:
@@ -39,7 +40,7 @@ $(KERNEL):
 
 QEMU_LOG_OPTIONS := -d int,cpu_reset,in_asm,guest_errors -D log.txt
 QEMU_CPU := Skylake-Client,-xsavec,-rtm,-hle,-pcid,-invpcid,-tsc-deadline
-QEMU_MISC_OPTIONS := -no-reboot -monitor stdio -cpu $(QEMU_CPU)
+QEMU_MISC_OPTIONS := -monitor stdio -cpu $(QEMU_CPU)
 
 QEMU_DEBUG_OPTIONS := -gdb tcp::1234 -S
 GDB_COMMAND := gdb $(shell realpath $(DEBUG_SYM)) -ex "target remote localhost:1234"
