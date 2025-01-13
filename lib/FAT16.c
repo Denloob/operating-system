@@ -15,11 +15,27 @@
 #define FAT16_EXTENSION_SIZE 3
 #define FAT16_FULL_FILENAME_SIZE (FAT16_FILENAME_SIZE + FAT16_EXTENSION_SIZE)
 
+/**
+ * @brief - Convert a filename like `kernel.bin` into fat16-padded name like `kernel  bin`.
+ */
+void filename_to_fat16_filename(const char *filename, char out_buf[static FAT16_FULL_FILENAME_SIZE])
+{
+    memset(out_buf, ' ', FAT16_FULL_FILENAME_SIZE);
+    char *dot = memrchr(filename, '.', MIN(strlen(filename), FAT16_FILENAME_SIZE + 1));
+    assert(dot != NULL && "Invalid path");
+
+    size_t extension_len = strlen(dot) - 1;
+    assert(extension_len <= 3 && "Extensions longer than 3 bytes are not supported");
+
+    memmove(out_buf,                       filename, dot - filename);
+    memmove(out_buf + FAT16_FILENAME_SIZE, dot + 1,  extension_len);
+}
+
 typedef struct
 {
     uint8_t buf[SECTOR_SIZE];
     uint32_t cached_sector;
-    bool valid; // true iff cache contains anything. Do not read cache unless true.
+    bool valid; // true ifc cache contains anything. Do not read cache unless true.
 } FatCache;
 
 
@@ -145,26 +161,12 @@ bool fat16_read_root_directory(Drive *drive, fat16_BootSector *bpb, fat16_DirEnt
 #endif
 }
 
-/**
- * @brief - Convert a filename like `kernel.bin` into fat16-padded name like `kernel  bin`.
- */
-void filename_to_fat16_filename(const char *filename, char out_buf[static FAT16_FULL_FILENAME_SIZE])
-{
-    memset(out_buf, ' ', FAT16_FULL_FILENAME_SIZE);
-    char *dot = memrchr(filename, '.', MIN(strlen(filename), FAT16_FILENAME_SIZE + 1));
-    assert(dot != NULL && "Invalid path");
 
-    size_t extension_len = strlen(dot) - 1;
-    assert(extension_len <= 3 && "Extensions longer than 3 bytes are not supported");
 
-    memmove(out_buf,                       filename, dot - filename);
-    memmove(out_buf + FAT16_FILENAME_SIZE, dot + 1,  extension_len);
-}
-
-bool fat16_find_file(fat16_Ref *fat16, const char *filename, fat16_DirEntry *out_file)
+bool fat16_find_file(fat16_Ref *fat16, const char *filename, fat16_DirEntry *out_file , int start_cluster)
 {
     fat16_DirReader reader;
-    fat16_init_dir_reader(&reader, fat16 , 0);
+    fat16_init_dir_reader(&reader, fat16 , start_cluster);
 
     fat16_DirEntry entry;
     while (fat16_read_next_root_entry(fat16->drive, &reader, &entry)) 
@@ -177,6 +179,44 @@ bool fat16_find_file(fat16_Ref *fat16, const char *filename, fat16_DirEntry *out
     }
 
     return false;
+}
+
+
+bool fat16_find_file_based_on_path(fat16_Ref *fat16 , const char *path ,fat16_DirEntry *out_file)
+{
+    int add_to_i =0; //check if path starts with /
+    
+    int start_cluster = 0; //root cluster
+    
+    int index=0; //index of filename building
+    char filename[FAT16_FULL_FILENAME_SIZE] = ""; 
+
+    int path_length = strlen(path);
+    if(path[0] == '/')
+    {
+        add_to_i++;
+    }
+    //main loop
+    for(int i=0+add_to_i; i<path_length;i++)
+    {
+        if(path[i] == '/')
+        {
+            //search dir
+            if(!fat16_find_file(fat16, filename, out_file , start_cluster)){return false;};
+            filename[0] = '\0';
+            index=0;
+            start_cluster = out_file->firstClusterLow;
+        }
+        else
+        {
+            filename[index] = path[i];
+            index++;
+        } 
+    }
+    //after for loop filename will have the file and not the dir
+    char DENIS_MADE_ME_CREATE_THIS_ARRAY[FAT16_FULL_FILENAME_SIZE] = "";
+    filename_to_fat16_filename(filename, DENIS_MADE_ME_CREATE_THIS_ARRAY);
+    return fat16_find_file(fat16, DENIS_MADE_ME_CREATE_THIS_ARRAY, out_file, start_cluster);
 }
 
 bool get_next_cluster(Drive *drive, fat16_BootSector *bpb, uint16_t cur_cluster, uint16_t *next_cluster, FatCache *cache)
@@ -198,15 +238,17 @@ bool get_next_cluster(Drive *drive, fat16_BootSector *bpb, uint16_t cur_cluster,
 }
 
 
-bool fat16_get_file_chain(fat16_Ref *fat16, const char *filename, uint16_t *out_array)
+bool fat16_get_file_chain(fat16_Ref *fat16, fat16_DirEntry *fileEntry, uint16_t *out_array)
 {
+    /*
     fat16_DirEntry fileEntry;
     if (!fat16_find_file(fat16, filename, &fileEntry))
     {
         return false;
     }
+    */
 
-    uint16_t curr_cluster = fileEntry.firstClusterLow;
+    uint16_t curr_cluster = fileEntry->firstClusterLow;
     uint16_t *chain_ptr = out_array;
     uint16_t range_start = curr_cluster;
     uint16_t range_length = 0;
@@ -358,21 +400,18 @@ bool fat16_ref_init(fat16_Ref *fat16, Drive *drive)
 bool fat16_open(fat16_Ref *fat16, const char *path, fat16_File *out_file)
 {
     assert(fat16 && path && out_file);
-
     out_file->ref = fat16;
-
-    char fat16_filename[FAT16_FULL_FILENAME_SIZE];
-    filename_to_fat16_filename(path, fat16_filename);
+    //The find_path function handles the filename problem
+    //char fat16_filename[FAT16_FULL_FILENAME_SIZE];
+    //filename_to_fat16_filename(path, fat16_filename);
 
     fat16_DirEntry dir_entry;
-    if (!fat16_find_file(fat16, fat16_filename, &dir_entry)) 
+    if (!fat16_find_file_based_on_path(fat16, path, &dir_entry)) 
     {
         return false;
     }
-
     out_file->file_entry = dir_entry;
-    fat16_get_file_chain(fat16, fat16_filename, out_file->chain);
- 
+    fat16_get_file_chain(fat16, &dir_entry, out_file->chain);
     return true;
 }
 
@@ -406,10 +445,10 @@ bool fat16_write_FAT_at(Drive *drive, fat16_BootSector *bpb, const uint8_t FAT[s
 
 
 
-bool fat16_add_root_entry(fat16_Ref *fat16, fat16_DirEntry *new_entry) 
+bool fat16_add_root_entry(fat16_Ref *fat16, fat16_DirEntry *new_entry , uint16_t first_cluster) 
 {
     fat16_DirReader reader;
-    fat16_init_dir_reader(&reader, fat16 , 0);
+    fat16_init_dir_reader(&reader, fat16 , first_cluster);
 
     fat16_DirEntry entry;
     while (fat16_read_next_root_entry(fat16->drive, &reader, &entry)) 
@@ -561,11 +600,11 @@ bool fat16_unlink_clusters(fat16_Ref *fat16 , uint16_t back_cluster , uint16_t f
 }
 
 
-uint32_t fat16_get_file_end_offset(fat16_Ref *fat16, const fat16_DirEntry *entry) 
+uint32_t fat16_get_file_end_offset(fat16_Ref *fat16, fat16_DirEntry *entry) 
 {
     uint16_t file_chain[MAX_CHAIN_LEN];
 
-    if (!fat16_get_file_chain(fat16, (char *)&entry->filename[0], file_chain)) {return 0;}
+    if (!fat16_get_file_chain(fat16,entry, file_chain)) {return 0;}
 
     int len = 0;
     while (file_chain[len] != FAT16_CLUSTER_EOF && len < MAX_CHAIN_LEN) {len++;}
@@ -597,14 +636,54 @@ bool fat16_create_file(fat16_Ref *fat16, const char *full_filename)
         return false;
     }
 
-    if (!fat16_add_root_entry(fat16, &new_entry)) 
+    if (!fat16_add_root_entry(fat16, &new_entry,0)) 
     {
         printf("Failed to add the directory entry to the root directory\n");
         return false;
     }
 
     return true;
+}
 
+bool fat16_create_directory(fat16_Ref *fat16 , const char* direcotry_name , char* where_to_create)
+{   
+
+    uint16_t first_cluster=0; //root cluster
+    if(strcmp(where_to_create, "root"))
+    {
+        //meaning the directory is not the root 
+        fat16_DirEntry dir_entry;
+        if (!fat16_find_file_based_on_path(fat16, where_to_create, &dir_entry)) 
+        {
+            return false;
+        }
+        first_cluster= (dir_entry.firstClusterHigh << 16) | dir_entry.firstClusterLow;
+    }
+
+    char dirname[FAT16_FILENAME_SIZE] = { ' ' };
+    char extension[FAT16_EXTENSION_SIZE] = { ' ' };
+    memmove(dirname, direcotry_name, FAT16_FILENAME_SIZE);
+    memmove(extension, direcotry_name + FAT16_FILENAME_SIZE, FAT16_EXTENSION_SIZE);
+
+    fat16_DirEntry new_entry;
+    if (!fat16_create_dir_entry(fat16, direcotry_name, extension, 0x20 /* Archive attribute */, &new_entry)) {
+        printf("Failed to create directory entry structure\n");
+        return false;
+    }
+    
+    //allocate directory cluster
+    uint16_t clusters_needed = 1;
+    uint16_t allocated_clusters[clusters_needed];
+    if (!fat16_allocate_clusters(fat16, clusters_needed, allocated_clusters))
+    {
+        return false; 
+    }
+
+    new_entry.firstClusterLow = allocated_clusters[0] & 0xFFFF;
+    new_entry.firstClusterHigh = (allocated_clusters[0] >> 16) & 0xFFFF;
+    if (!fat16_add_root_entry(fat16, &new_entry , first_cluster)) {return false;}
+
+    return true;
 }
 bool fat16_create_file_with_return(fat16_File *out_file, fat16_Ref *fat16, const char *full_filename)
 {
@@ -623,7 +702,7 @@ bool fat16_create_file_with_return(fat16_File *out_file, fat16_Ref *fat16, const
         return false;
     }
 
-    if (!fat16_add_root_entry(fat16, &new_entry)) 
+    if (!fat16_add_root_entry(fat16, &new_entry,0)) 
     {
         printf("Failed to add the directory entry to the root directory\n");
         return false;
@@ -734,7 +813,7 @@ uint64_t fat16_write_to_file(fat16_File *file,Drive *drive,fat16_BootSector *bpb
         }
 
         cur_cluster = allocated_clusters[0];
-        fat16_get_file_chain(file->ref, (char *)entry->filename, file->chain);
+        fat16_get_file_chain(file->ref, entry, file->chain);
     }
     else
     {
@@ -828,7 +907,7 @@ uint64_t fat16_write_to_file(fat16_File *file,Drive *drive,fat16_BootSector *bpb
             break;
         }
 
-        fat16_get_file_chain(file->ref, (char *)entry->filename, file->chain);
+        fat16_get_file_chain(file->ref, entry, file->chain);
     }
 
     uint32_t new_filesize = file_offset + bytes_written;

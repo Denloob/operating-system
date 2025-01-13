@@ -106,11 +106,11 @@ bool fat16_read_root_directory(Drive *drive, fat16_BootSector *bpb, fat16_DirEnt
                      const char *filename, fat16_DirEntry **out_file);
 */
 //new ver of fat16_find_file
-bool fat16_find_file(fat16_Ref *fat16, const char *filename, fat16_DirEntry *out_file);
+bool fat16_find_file(fat16_Ref *fat16, const char *filename, fat16_DirEntry *out_file , int start_cluster);
 
-bool fat16_get_file_chain(fat16_Ref *fat16 , const char *filename , uint16_t *out_array);
+bool fat16_find_file_based_on_path(fat16_Ref *fat16 , const char *path ,fat16_DirEntry *out_file);
 
-
+bool fat16_get_file_chain(fat16_Ref *fat16 , fat16_DirEntry *fileEntry, uint16_t *out_array);
 
 typedef struct
 {
@@ -175,7 +175,7 @@ uint16_t fat16_get_next_cluster(fat16_Ref *fat16, uint16_t cluster);
  *@buffer - the data to write into the file
  *@size - the size of the data
  */
-bool fat16_add_root_entry(fat16_Ref *fat16, fat16_DirEntry *new_entry);
+bool fat16_add_root_entry(fat16_Ref *fat16, fat16_DirEntry *new_entry , uint16_t first_cluster);
 /**
  * *@brief the function creates a dir entry 
  *
@@ -214,7 +214,7 @@ bool fat16_link_clusters(fat16_Ref *fat16, uint16_t back_cluster, uint16_t front
  */
 bool fat16_unlink_clusters(fat16_Ref *fat16 , uint16_t back_cluster , uint16_t front_cluster);
 
-uint32_t fat16_get_file_end_offset(fat16_Ref *fat16, const fat16_DirEntry *entry);
+uint32_t fat16_get_file_end_offset(fat16_Ref *fat16, fat16_DirEntry *entry);
 
 
 bool fat16_create_file_with_return(fat16_File *out_file, fat16_Ref *fat16, const char *full_filename);
@@ -241,3 +241,4 @@ __attribute__((always_inline)) inline fat16_MDSCoreFlags fat16_get_mdscore_flags
  * @brief - Update the given dir entry in the root dir.
  */
 bool fat16_update_root_entry(fat16_Ref *fat16, fat16_DirEntry *dir_entry);
+
