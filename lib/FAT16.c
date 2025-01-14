@@ -328,7 +328,7 @@ uint16_t get_file_offseted_cluster(fat16_File *file, uint32_t file_offset)
 uint64_t fat16_read_file(fat16_File *file, Drive *drive, fat16_BootSector *bpb,
                      uint8_t *out_buffer, uint64_t buffer_size, uint64_t file_offset )
 {
-    assert(file->file_entry.reserved == fat16_MDSCoreFlags_FILE && "Cannot read with fat16 a non-regular mdscore file");
+    assert(fat16_get_mdscore_flags(file) == fat16_MDSCoreFlags_FILE && "Cannot read with fat16 a non-regular mdscore file");
     if (file_offset >= file->file_entry.fileSize)
     {
         return 0;

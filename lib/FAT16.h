@@ -44,14 +44,15 @@ typedef struct
     uint8_t  fileSystemType[8];    // (FAT16)
 } __attribute__((packed)) fat16_BootSector;
 
+#define fat16_MDSCore_FLAGS_MASK 0xe7 // The mask is used because the bits 0x18 are used for case by MTools.
 typedef enum {
+    fat16_MDSCoreFlags_FILE   = 0, // A regular fat16 file.
     fat16_MDSCoreFlags_DEVICE = 1, /* This is not a file, it's a device.
                                     * For devices, `firstClusterHigh` is the major device number, and
                                     * `firstClusterLow` is the minor device number.
                                     * The major number is used to identify the driver responsible for the device.
                                     * The minor number is used to identify the part of the driver.
                                     */
-    fat16_MDSCoreFlags_FILE = 0x18, // A regular fat16 file, with nothing special about it. (0x18 was chosen as mtools sets the reserved value to that number).
 } fat16_MDSCoreFlags;
 
 typedef struct
@@ -59,7 +60,7 @@ typedef struct
     uint8_t  filename[8];
     uint8_t  extension[3];
     uint8_t  attributes;
-    uint8_t  reserved; // Used by MDSCore for special flags. See fat16_MDSCoreFlags enum.
+    uint8_t  reserved; // Masked with fat16_MDSCore_FLAGS_MASK, used by MDSCore for special flags. See fat16_MDSCoreFlags enum.
     uint8_t  creationTimeTenths;
     uint16_t creationTime;
     uint16_t creationDate;
@@ -233,8 +234,10 @@ uint16_t get_next_cluster_from_chain(const uint16_t *chain, uint16_t current_clu
 
 uint64_t fat16_write(fat16_File *file, uint8_t *out_buffer, uint64_t buffer_size, uint64_t file_offset);
 
-__attribute__((always_inline)) inline fat16_MDSCoreFlags fat16_get_mdscore_flags(fat16_File *file) {
-  return file->file_entry.reserved;
+__attribute__((always_inline)) inline
+fat16_MDSCoreFlags fat16_get_mdscore_flags(fat16_File *file)
+{
+    return file->file_entry.reserved & fat16_MDSCore_FLAGS_MASK;
 }
 
 /**
