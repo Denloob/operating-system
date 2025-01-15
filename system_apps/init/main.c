@@ -5,7 +5,7 @@
 
 int main()
 {
-    execve_new("sh.exe", NULL);
+    execve_new("sh", NULL);
 
     return 0;
 }
