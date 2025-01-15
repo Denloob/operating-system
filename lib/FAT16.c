@@ -21,8 +21,15 @@
 void filename_to_fat16_filename(const char *filename, char out_buf[static FAT16_FULL_FILENAME_SIZE])
 {
     memset(out_buf, ' ', FAT16_FULL_FILENAME_SIZE);
-    char *dot = memrchr(filename, '.', MIN(strlen(filename), FAT16_FILENAME_SIZE + 1));
-    assert(dot != NULL && "Invalid path");
+    size_t filename_length = strlen(filename);
+    char *dot = memrchr(filename, '.', MIN(filename_length, FAT16_FILENAME_SIZE + 1));
+    if (dot == NULL)
+    {
+        assert(filename_length <= FAT16_FILENAME_SIZE && "Invalid path");
+        memmove(out_buf, filename, filename_length);
+        memset(out_buf + FAT16_FILENAME_SIZE, ' ', FAT16_EXTENSION_SIZE);
+        return;
+    }
 
     size_t extension_len = strlen(dot) - 1;
     assert(extension_len <= 3 && "Extensions longer than 3 bytes are not supported");
