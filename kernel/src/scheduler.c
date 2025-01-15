@@ -1,5 +1,6 @@
 #include "isr.h"
 #include "kmalloc.h"
+#include "smartptr.h"
 #include "pit.h"
 #include "pic.h"
 #include "pcb.h"
@@ -11,6 +12,63 @@
 
 static PCB *g_current_process; // Process queue head
 static PCB *g_process_queue_tail;
+
+static PCB *g_io_head; // Process IO linked list
+
+void scheduler_io_push(PCB *pcb, pcb_IORefresh refresh_func)
+{
+    pcb->refresh = refresh_func;
+    pcb->queue_next = g_io_head;
+    g_io_head->queue_prev = pcb;
+    pcb->queue_prev = NULL;
+}
+
+void scheduler_io_remove(PCB *pcb)
+{
+    assert(pcb && g_io_head);
+
+    defer({
+        pcb->queue_next = NULL;
+        pcb->queue_prev = NULL;
+        pcb->refresh = NULL;
+    });
+
+    if (pcb == g_io_head)
+    {
+        g_io_head = pcb->queue_next;
+        if (g_io_head)
+        {
+            g_io_head->queue_prev = NULL;
+        }
+        return;
+    }
+
+    assert(pcb->queue_prev); // There's always prev, as pcb != g_io_head.
+    assert(pcb->queue_prev->queue_next == pcb);
+
+    if (!pcb->queue_next)
+    {
+        pcb->queue_prev->queue_next = NULL;
+        return;
+    }
+
+    assert(pcb->queue_next->queue_prev == pcb);
+
+    PCB *next = pcb->queue_next;
+    PCB *prev = pcb->queue_prev;
+
+    prev->queue_next = next;
+    next->queue_prev = prev;
+}
+
+void scheduler_io_refresh()
+{
+    for (PCB *it = g_io_head; it != NULL; it = it->queue_next)
+    {
+        assert(it->refresh);
+        it->refresh(it);
+    }
+}
 
 PCB *scheduler_current_pcb()
 {

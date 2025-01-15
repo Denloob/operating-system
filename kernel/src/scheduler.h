@@ -54,3 +54,26 @@ void scheduler_process_dequeue_current_and_context_switch() __attribute__((noret
 
 void scheduler_enable();
 void scheduler_disable();
+
+/**
+ * @brief - Push to the global IO list.
+ *
+ * @param pcb - The pcb to remove
+ * @param refresh_func - The function to refresh the PCB with.
+ * @see - pcb_IORefresh
+ */
+void scheduler_io_push(PCB *pcb, pcb_IORefresh refresh_func);
+
+/**
+ * @brief - Remove from the global IO list
+ *
+ * @param pcb - The pcb to remove
+ */
+void scheduler_io_remove(PCB *pcb);
+
+/**
+ * @brief Refresh the IO list by going over each element and checking if the IO
+ *          operation is complete. If it is, the PCB is rescheduled to the process
+ *          queue.
+ */
+void scheduler_io_refresh();
