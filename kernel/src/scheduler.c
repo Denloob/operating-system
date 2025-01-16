@@ -63,10 +63,18 @@ void scheduler_io_remove(PCB *pcb)
 
 void scheduler_io_refresh()
 {
-    for (PCB *it = g_io_head; it != NULL; it = it->queue_next)
+    for (PCB *it = g_io_head; it != NULL;)
     {
+        PCB *next = it->queue_next;
+
         assert(it->refresh);
-        it->refresh(it);
+        if (it->refresh(it))
+        {
+            scheduler_io_remove(it);
+            scheduler_process_enqueue(it);
+        }
+
+        it = next;
     }
 }
 
