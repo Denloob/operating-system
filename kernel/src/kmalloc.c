@@ -643,7 +643,7 @@ malloc_chunk *try_consolidate_previous(malloc_chunk *chunk)
 
     malloc_chunk *prev = prev_chunk(chunk);
 
-    unlink_chunk(chunk);
+    unlink_chunk(prev);
 
     combine_free_chunks(prev, chunk);
     return prev;
@@ -660,7 +660,6 @@ void try_consolidate_next(malloc_chunk *chunk, malloc_state *arena)
 
     if (next == arena->top)
     {
-        unlink_chunk(chunk);
         combine_chunk_with_top(chunk, arena);
         return;
     }
@@ -677,12 +676,15 @@ void try_consolidate_next(malloc_chunk *chunk, malloc_state *arena)
  *          Consolidates if possible, and does nothing otherwise.
  *
  * @param chunk The chunk to try to consolidate with the next/prev chunk.
+ * @return - Pointer to the consolidated chunk.
  */
-void try_consolidate(malloc_chunk *chunk, malloc_state *arena)
+malloc_chunk *try_consolidate(malloc_chunk *chunk, malloc_state *arena)
 {
     // NOTE: it's important we first try to consolidate with prev, because a successful consolidation with top would result in `chunk` no longer being a normal chunk
     chunk = try_consolidate_previous(chunk);
-    try_consolidate_next(chunk, arena);
+    try_consolidate_next(chunk, arena); // Consolidating with next can't move `chunk` addr to a different location
+
+    return chunk;
 }
 
 /*
@@ -725,9 +727,12 @@ void kfree(void *addr)
 
     malloc_bin *unsorted_bin = bin_at(&main_arena, 0);
 
-    bin_insert_unsorted(unsorted_bin, chunk);
+    chunk = try_consolidate(chunk, &main_arena);
 
-    try_consolidate(chunk, &main_arena);
+    if (chunk != main_arena.top)
+    {
+        bin_insert_unsorted(unsorted_bin, chunk);
+    }
 }
 
 
