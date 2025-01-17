@@ -69,8 +69,9 @@ void scheduler_io_remove(PCB *pcb)
     next->queue_prev = prev;
 }
 
-void scheduler_io_refresh()
+PCB *scheduler_io_refresh()
 {
+    PCB *first_rescheduled = NULL;
     for (PCB *it = g_io_head; it != NULL;)
     {
         PCB *next = it->queue_next;
@@ -78,12 +79,15 @@ void scheduler_io_refresh()
         assert(it->refresh);
         if (it->refresh(it) == PCB_IO_REFRESH_DONE)
         {
+            first_rescheduled = it;
             scheduler_io_remove(it);
             scheduler_process_enqueue(it);
         }
 
         it = next;
     }
+
+    return first_rescheduled;
 }
 
 PCB *scheduler_current_pcb()
