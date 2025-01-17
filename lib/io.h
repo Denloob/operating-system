@@ -3,9 +3,11 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stddef.h>
+#include "printf.h"
 
 void put(const char *str);
 void putc(char ch);
+#define putchar putc
 void puts(const char *str);
 
 static inline void sti()
@@ -66,13 +68,6 @@ static inline uint32_t in_dword(uint16_t port)
 }
 
 void repeated_in_dword(uint16_t port , uint32_t *out , uint64_t count);
-
-char *itoa(int value, char *str, size_t size, int base);
-char *ltoa(long value, char *str, size_t size, int base);
-char *lltoa(long long value, char *str, size_t size, int base);
-
-void printf(const char *fmt, ...)
-    __attribute__((format(printf, 1, 2)));
 
 void io_clear_vga();
 
