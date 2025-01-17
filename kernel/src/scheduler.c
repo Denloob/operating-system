@@ -17,6 +17,11 @@ static PCB *g_io_head; // Process IO linked list
 
 static PCB *wait_until_one_IO_is_ready()
 {
+    if (g_io_head == NULL)
+    {
+        return NULL;
+    }
+
     PCB *pcb = NULL;
     while ((pcb = scheduler_io_refresh()) == NULL)
         continue;
@@ -111,6 +116,12 @@ void scheduler_context_switch_to(PCB *pcb, int pic_number)
     if (pcb == NULL)
     {
         pcb = wait_until_one_IO_is_ready();
+        if (pcb == NULL)
+        {
+            assert(false && "No processes left to run; shutdown");
+            shutdown();
+            assert(false && "Unreachable");
+        }
     }
     assert(pcb != NULL);
 
@@ -196,13 +207,6 @@ void scheduler_process_dequeue_current_and_context_switch()
 
     if (next_pcb == g_current_process)
     {
-        if (g_io_head == NULL)
-        {
-            assert(false && "Shuting down");
-            shutdown();
-            assert(false && "Unreachable");
-        }
-
         next_pcb = NULL;
     }
 
