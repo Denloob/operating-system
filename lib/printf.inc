@@ -128,6 +128,15 @@ void printf(const char *fmt, ...)
                 __printf_putstring(str);
                 break;
             }
+            case 'p':
+            {
+                is_long_long = true;
+                ch = 'x';
+
+                putchar('0');
+                putchar('x');
+                /* fall through */
+            }
             case 'd':
             case 'x':
             {
