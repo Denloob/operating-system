@@ -17,10 +17,18 @@ static PCB *g_io_head; // Process IO linked list
 
 void scheduler_io_push(PCB *pcb, pcb_IORefresh refresh_func)
 {
+    assert(refresh_func != NULL);
+
     pcb->refresh = refresh_func;
+
     pcb->queue_next = g_io_head;
-    g_io_head->queue_prev = pcb;
     pcb->queue_prev = NULL;
+
+    if (g_io_head != NULL)
+    {
+        g_io_head->queue_prev = pcb;
+    }
+    g_io_head = pcb;
 }
 
 void scheduler_io_remove(PCB *pcb)
