@@ -15,6 +15,15 @@ static PCB *g_process_queue_tail;
 
 static PCB *g_io_head; // Process IO linked list
 
+static PCB *wait_until_one_IO_is_ready()
+{
+    PCB *pcb = NULL;
+    while ((pcb = scheduler_io_refresh()) == NULL)
+        continue;
+
+    return pcb;
+}
+
 void scheduler_io_push(PCB *pcb, pcb_IORefresh refresh_func)
 {
     assert(refresh_func != NULL);
@@ -97,8 +106,16 @@ PCB *scheduler_current_pcb()
 
 void scheduler_context_switch_to(PCB *pcb, int pic_number)
 {
+    asm volatile("clac" ::: "memory"); // Ensure we are never returning to usermode with AC set.
+
+    if (pcb == NULL)
+    {
+        pcb = wait_until_one_IO_is_ready();
+    }
+    assert(pcb != NULL);
+
     g_current_process = pcb;
-    
+
     pcb->state = PCB_STATE_RUNNING;
     mmu_load_virt_pml4(pcb->paging);
 
@@ -151,16 +168,42 @@ void scheduler_context_switch_from(Regs *regs, isr_InterruptFrame *frame, int pi
     scheduler_context_switch_to(next_pcb, pic_number);
 }
 
-void scheduler_process_dequeue_current_and_context_switch()
+void scheduler_move_current_process_to_io_queue_and_context_switch(pcb_IORefresh refresh_func)
 {
+    assert(g_current_process != NULL);
+
+    PCB *target = g_current_process;
     PCB *next_pcb = g_current_process->queue_next;
 
-    assert(next_pcb != NULL);
+    // It's OK if next_pcb is null.
 
     if (next_pcb == g_current_process)
     {
-        assert(false && "Shuting down"); // TODO: when we will have an IO queue, we won't want to shutdown
-        shutdown();
+        next_pcb = NULL;
+    }
+
+    scheduler_io_push(target, refresh_func);
+
+    scheduler_context_switch_to(next_pcb, SCHEDULER_NOT_A_PIC_INTERRUPT);
+
+    assert(false && "Unreachable");
+}
+
+void scheduler_process_dequeue_current_and_context_switch()
+{
+    PCB *next_pcb = g_current_process->queue_next;
+    // It's OK if next_pcb is NULL.
+
+    if (next_pcb == g_current_process)
+    {
+        if (g_io_head == NULL)
+        {
+            assert(false && "Shuting down");
+            shutdown();
+            assert(false && "Unreachable");
+        }
+
+        next_pcb = NULL;
     }
 
     // TODO: Unmap all usermode pages by iterating over the mmu struct

@@ -79,3 +79,5 @@ void scheduler_io_remove(PCB *pcb);
  * @return pointer to the first PCB rescheduled, if any. NULL otherwise.
  */
 PCB *scheduler_io_refresh();
+
+void scheduler_move_current_process_to_io_queue_and_context_switch(pcb_IORefresh refresh_func) __attribute__((noreturn));

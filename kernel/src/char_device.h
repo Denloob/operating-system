@@ -2,7 +2,7 @@
 
 #include "FAT16.h"
 
-typedef size_t (*char_device_ReadWriteFunc)(uint8_t *buffer, uint64_t buffer_size, uint64_t file_offset, int minor_number);
+typedef size_t (*char_device_ReadWriteFunc)(uint8_t *buffer, uint64_t buffer_size, uint64_t file_offset, int minor_number, bool block);
 
 typedef struct char_device_Descriptor {
     int major_number;
@@ -21,7 +21,7 @@ typedef struct char_device_Descriptor {
  *
  * @return How many bytes written
  */
-size_t char_device_write(fat16_File *file, uint8_t *buffer, uint64_t buffer_size, uint64_t file_offset);
+size_t char_device_write(fat16_File *file, uint8_t *buffer, uint64_t buffer_size, uint64_t file_offset, bool block);
 
 /**
  * @brief - Read to a character devices described in fat16_File.
@@ -31,7 +31,7 @@ size_t char_device_write(fat16_File *file, uint8_t *buffer, uint64_t buffer_size
  *
  * @return How many bytes read
  */
-size_t char_device_read(fat16_File *file, uint8_t *buffer, uint64_t buffer_size, uint64_t file_offset);
+size_t char_device_read(fat16_File *file, uint8_t *buffer, uint64_t buffer_size, uint64_t file_offset, bool block);
 
 /**
  * @brief   - Register a character device. The of the descriptor should

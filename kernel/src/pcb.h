@@ -45,6 +45,7 @@ struct PCB
     pcb_State   state;
 
     pcb_IORefresh refresh; // Used only in IO doubly-linked list
+    void *refresh_arg;
 
     mmu_PageMapEntry *paging;
     // TODO: open file descriptors, signal info

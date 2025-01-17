@@ -200,12 +200,12 @@ static void syscall_read_write(Regs *regs, typeof(fread) fread_fwrite_func)
 
 static void syscall_read(Regs *regs)
 {
-    syscall_read_write(regs, fread);
+    syscall_read_write(regs, process_fread);
 }
 
 static void syscall_write(Regs *regs)
 {
-    syscall_read_write(regs, fwrite);
+    syscall_read_write(regs, process_fwrite);
 }
 
 static void __attribute__((used, sysv_abi)) syscall_handler(Regs *user_regs)
@@ -216,6 +216,13 @@ static void __attribute__((used, sysv_abi)) syscall_handler(Regs *user_regs)
     //          hence, the kernel probably should not modify them.
     uint64_t original_rip = user_regs->rcx;
     uint64_t original_rflags = user_regs->r11;
+
+    // If we block, we won't use `user_regs`, instead we will context switch to
+    //  the pcb. If it happens, you better make sure that there was no data lost.
+    PCB *pcb = scheduler_current_pcb();
+    pcb->rip = original_rip;
+    pcb->regs = *user_regs;
+    pcb->regs.rflags = original_rflags;
 
     /* Calling convention:
      *     Syscall Number:  $rax

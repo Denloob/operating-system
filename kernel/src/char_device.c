@@ -26,7 +26,7 @@ static char_device_Descriptor *find_descriptor(fat16_File *file)
 }
 
 
-size_t char_device_write(fat16_File *file, uint8_t *buffer, uint64_t buffer_size, uint64_t file_offset)
+size_t char_device_write(fat16_File *file, uint8_t *buffer, uint64_t buffer_size, uint64_t file_offset, bool block)
 {
     char_device_Descriptor *desc = find_descriptor(file);
 
@@ -38,10 +38,10 @@ size_t char_device_write(fat16_File *file, uint8_t *buffer, uint64_t buffer_size
     assert(desc->write);
 
     const int minor_number = file->file_entry.firstClusterLow;
-    return desc->write(buffer, buffer_size, file_offset, minor_number);
+    return desc->write(buffer, buffer_size, file_offset, minor_number, block);
 }
 
-size_t char_device_read(fat16_File *file, uint8_t *buffer, uint64_t buffer_size, uint64_t file_offset)
+size_t char_device_read(fat16_File *file, uint8_t *buffer, uint64_t buffer_size, uint64_t file_offset, bool block)
 {
     char_device_Descriptor *desc = find_descriptor(file);
 
@@ -53,7 +53,7 @@ size_t char_device_read(fat16_File *file, uint8_t *buffer, uint64_t buffer_size,
     assert(desc->read);
 
     const int minor_number = file->file_entry.firstClusterLow;
-    return desc->read(buffer, buffer_size, file_offset, minor_number);
+    return desc->read(buffer, buffer_size, file_offset, minor_number, block);
 }
 
 void char_device_register(char_device_Descriptor *desc)

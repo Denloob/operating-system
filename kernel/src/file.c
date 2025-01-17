@@ -2,7 +2,7 @@
 #include "assert.h"
 #include "char_device.h"
 
-size_t fread(void *ptr, size_t size, size_t count, FILE *stream)
+static size_t internal_fread(void *ptr, size_t size, size_t count, FILE *stream, bool block)
 {
     size_t bytes_read = 0;
     switch (fat16_get_mdscore_flags(&stream->file))
@@ -11,7 +11,7 @@ size_t fread(void *ptr, size_t size, size_t count, FILE *stream)
             bytes_read = fat16_read(&stream->file, ptr, size * count, stream->offset);
             break;
         case fat16_MDSCoreFlags_DEVICE:
-            bytes_read = char_device_read(&stream->file, ptr, size * count, stream->offset);
+            bytes_read = char_device_read(&stream->file, ptr, size * count, stream->offset, block);
             break;
     }
     stream->offset += bytes_read;
@@ -19,7 +19,17 @@ size_t fread(void *ptr, size_t size, size_t count, FILE *stream)
     return bytes_read / size;
 }
 
-size_t fwrite(void *ptr, size_t size, size_t count, FILE *stream)
+size_t fread(void *ptr, size_t size, size_t count, FILE *stream)
+{
+    return internal_fread(ptr, size, count, stream, false);
+}
+
+size_t process_fread(void *ptr, size_t size, size_t count, FILE *stream)
+{
+    return internal_fread(ptr, size, count, stream, true);
+}
+
+static size_t internal_fwrite(void *ptr, size_t size, size_t count, FILE *stream, bool block)
 {
     size_t bytes_written = 0;
     switch (fat16_get_mdscore_flags(&stream->file))
@@ -28,12 +38,22 @@ size_t fwrite(void *ptr, size_t size, size_t count, FILE *stream)
             bytes_written = fat16_write(&stream->file, ptr , size * count, stream->offset);
             break;
         case fat16_MDSCoreFlags_DEVICE:
-            bytes_written = char_device_write(&stream->file, ptr, size * count, stream->offset);
+            bytes_written = char_device_write(&stream->file, ptr, size * count, stream->offset, block);
             break;
     }
     stream->offset += bytes_written;
 
     return bytes_written / size;
+}
+
+size_t fwrite(void *ptr, size_t size, size_t count, FILE *stream)
+{
+    return internal_fwrite(ptr, size, count, stream, false);
+}
+
+size_t process_fwrite(void *ptr, size_t size, size_t count, FILE *stream)
+{
+    return internal_fwrite(ptr, size, count, stream, true);
 }
 
 int fseek(FILE *stream, int64_t offset, file_Whence whence)
