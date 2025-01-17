@@ -2,6 +2,8 @@
 
 #include <stddef.h>
 
+#include "printf.h"
+
 typedef struct _IO_FILE FILE;
 
 /* Standard streams.  */

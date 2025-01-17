@@ -12,6 +12,10 @@ FILE *stdin;
 FILE *stdout;
 FILE *stderr;
 
+#include <assert.h>
+// assert needed for printf.inc
+#include "printf.inc"
+
 int fputc(int c, FILE *stream)
 {
     if (fwrite(&c, 1, 1, stream) == 1)
