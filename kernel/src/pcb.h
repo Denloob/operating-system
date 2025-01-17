@@ -15,6 +15,11 @@ typedef enum
 
 typedef struct PCB PCB;
 
+typedef enum {
+    PCB_IO_REFRESH_DONE,
+    PCB_IO_REFRESH_CONTINUE,
+} pcb_IORefreshResult;
+
 /**
  * @brief - Refresh the IO operation of the PCB. If the operation was
  *            complete, return true.
@@ -22,9 +27,9 @@ typedef struct PCB PCB;
  *            in the given PCB, returning true if and only if the process is
  *            ready to get back into the process queue.
  * @param pcb - the PCB to refresh. The PCB is in the IO queue.
- * @return - true if the PCB is ready to be executed. False otherwise.
+ * @return - PCB_IO_REFRESH_DONE if the PCB is ready to be executed. PCB_IO_REFRESH_CONTINUE otherwise.
  */
-typedef bool (*pcb_IORefresh)(PCB *pcb);
+typedef pcb_IORefreshResult (*pcb_IORefresh)(PCB *pcb);
 
 struct PCB
 {

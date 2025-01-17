@@ -76,7 +76,7 @@ void scheduler_io_refresh()
         PCB *next = it->queue_next;
 
         assert(it->refresh);
-        if (it->refresh(it))
+        if (it->refresh(it) == PCB_IO_REFRESH_DONE)
         {
             scheduler_io_remove(it);
             scheduler_process_enqueue(it);
