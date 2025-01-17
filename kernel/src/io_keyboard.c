@@ -4,6 +4,13 @@
 #include "res.h"
 #include <stdbool.h>
 
+bool io_keyboard_is_key_ready()
+{
+    bool is_ringbuffer_empty = io_keyboard_buffer_head == io_keyboard_buffer_tail;
+
+    return !is_ringbuffer_empty;
+}
+
 int io_keyboard_wait_key()
 {
     bool is_ringbuffer_empty;
