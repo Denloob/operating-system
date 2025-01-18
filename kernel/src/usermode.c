@@ -166,8 +166,9 @@ struct usermode_mem {
 
 res usermode_copy_from_user(void *to, const usermode_mem *from, size_t len)
 {
-    // TODO: check that the pages actually exist
-    if (!is_usermode_address((void *)from, len))
+    uint64_t from_end;
+    bool overflow = __builtin_add_overflow((uint64_t)from, len, &from_end);
+    if (overflow || !usermode_is_mapped((uint64_t)from, from_end))
     {
         return res_usermode_NOT_USERMODE_ADDRESS; 
     }
