@@ -196,9 +196,15 @@ bool fat16_find_file_based_on_path(fat16_Ref *fat16 , const char *path ,fat16_Di
     int start_cluster = 0; //root cluster
     
     int index=0; //index of filename building
-    char filename[FAT16_FULL_FILENAME_SIZE] = ""; 
+    char filename[FAT16_FULL_FILENAME_SIZE]; // Not null terminated!!
+    memset(filename, ' ', sizeof(filename));
 
     int path_length = strlen(path);
+    if (path_length == 0)
+    {
+        return false;
+    }
+
     if(path[0] == '/')
     {
         add_to_i++;
@@ -208,20 +214,37 @@ bool fat16_find_file_based_on_path(fat16_Ref *fat16 , const char *path ,fat16_Di
     {
         if(path[i] == '/')
         {
+            // Detect the `//` `/dir//file`
+            bool any_filename = index > 0;
+            if (!any_filename)
+            {
+                continue;
+            }
+
             //search dir
-            if(!fat16_find_file(fat16, filename, out_file , start_cluster)){return false;};
-            filename[0] = '\0';
-            index=0;
+            if (!fat16_find_file(fat16, filename, out_file, start_cluster))
+            {
+                return false;
+            }
             start_cluster = out_file->firstClusterLow;
+
+            memset(filename, ' ', sizeof(filename));
+            index = 0;
         }
         else
         {
+            if (index >= sizeof(filename))
+            {
+                return false;
+            }
+
             filename[index] = path[i];
             index++;
         } 
     }
     //after for loop filename will have the file and not the dir
     char DENIS_MADE_ME_CREATE_THIS_ARRAY[FAT16_FULL_FILENAME_SIZE] = "";
+    filename[index] = '\0';
     filename_to_fat16_filename(filename, DENIS_MADE_ME_CREATE_THIS_ARRAY);
     return fat16_find_file(fat16, DENIS_MADE_ME_CREATE_THIS_ARRAY, out_file, start_cluster);
 }
