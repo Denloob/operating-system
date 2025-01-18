@@ -1,6 +1,7 @@
 #include "PCI.h"
 #include "assert.h"
 #include "io.h"
+#include "res.h"
 
 #define PORT_CONFIG_ADDRESS 0xCF8
 #define PORT_CONFIG_DATA 0xCFC
@@ -40,6 +41,11 @@ uint16_t pci_get_device_id(uint8_t bus, uint8_t device, uint8_t function)
     return (pci_config_read(bus, device, function, 0x00) >> 16) & 0xFFFF;
 }
 
+uint32_t pci_get_device_and_vendor_id(uint8_t bus, uint8_t device, uint8_t function)
+{
+    return pci_config_read(bus, device, function, 0x00);
+}
+
 uint8_t pci_get_class_code(uint8_t bus, uint8_t device, uint8_t function) 
 {
     return (pci_config_read(bus, device, function, 0x08) >> 24) & 0xFF;
@@ -55,7 +61,32 @@ uint32_t pci_get_bar(uint8_t bus, uint8_t device, uint8_t function, uint8_t bar_
     return pci_config_read(bus, device, function, 0x10 + (bar_index * 4));
 }
 
+res pci_find_device(uint16_t vendor_id, uint16_t device_id, pci_DeviceAddress *out)
+{
+    assert(out != NULL);
 
+    uint32_t target_vendor_and_device = (device_id << 16) | vendor_id;
+    for (int bus = 0; bus < 256; bus++)
+    {
+        for (int device = 0; device < 32; device++)
+        {
+            for (int function = 0; function < 8; function++)
+            {
+                uint32_t vendor_and_device = pci_get_device_and_vendor_id(bus, device, function);
+                if (target_vendor_and_device == vendor_and_device)
+                {
+                    out->bus = bus;
+                    out->device = device;
+                    out->function = function;
+
+                    return res_OK;
+                }
+            }
+        }
+    }
+
+    return res_pci_DEVICE_NOT_FOUND;
+}
 
 void pci_scan_for_ide()
 {

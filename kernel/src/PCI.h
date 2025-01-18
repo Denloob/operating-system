@@ -1,5 +1,6 @@
 #pragma once
 
+#include "res.h"
 #include <stdint.h>
 #include <stdbool.h>
 
@@ -39,6 +40,11 @@
  * DMA - The CPU is less involved, and the controller can transfer data directly to memory, freeing up CPU time. .
  */
 
+typedef struct {
+    uint8_t bus;
+    uint8_t device;
+    uint8_t function;
+} pci_DeviceAddress;
 
 /*
  * @brief - Reads a 32-bit value from the PCI configuration space at the given bus, device, function, and offset.
@@ -69,6 +75,14 @@ uint16_t pci_get_vendor_id(uint8_t bus, uint8_t device, uint8_t function);
  * @return - The 16-bit device ID.
  */
 uint16_t pci_get_device_id(uint8_t bus, uint8_t device, uint8_t function);
+
+/**
+ * @brief Like pci_get_device_id and pci_get_vendor_id but retrieves both in one
+ *          PCI operation.
+ * 
+ * @return `(device_id << 16) | (vendor_id)`. Both ids are 16 bits.
+ */
+uint32_t pci_get_device_and_vendor_id(uint8_t bus, uint8_t device, uint8_t function);
 
 /*
  * @brief - Retrieves the Class Code from the PCI configuration space for the given device.
@@ -116,3 +130,12 @@ uint32_t pci_get_bar(uint8_t bus, uint8_t device, uint8_t function, uint8_t bar_
  * It prints the bus, device, and function number for each IDE controller found, as well as its BARs.
  */
 void pci_scan_for_ide();
+
+#define res_pci_DEVICE_NOT_FOUND "No PCI device was found for the given query"
+
+/**
+ * @brief Find a PCI device with the given vendor ID and device ID.
+ *
+ * @return res_OK or one of the errors above.
+ */
+res pci_find_device(uint16_t vendor_id, uint16_t device_id, pci_DeviceAddress *out);
