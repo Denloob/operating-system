@@ -54,6 +54,9 @@ void usermode_init_smp();
  */
 res usermode_copy_from_user(void *to, const usermode_mem *from, size_t len) WUR;
 
+// @see usermode_copy_from_user
+res usermode_copy_to_user(usermode_mem *to, const void *from, size_t len) WUR;
+
 /**
  * @brief - Check that the given memory range is mapped to be in usermode.
  */

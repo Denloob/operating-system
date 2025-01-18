@@ -164,6 +164,24 @@ struct usermode_mem {
     char ch;
 };
 
+res usermode_copy_to_user(usermode_mem *to, const void *from, size_t len)
+{
+    uint64_t to_end;
+    bool overflow = __builtin_add_overflow((uint64_t)to, len, &to_end);
+    if (overflow || !usermode_is_mapped((uint64_t)to, to_end))
+    {
+        return res_usermode_NOT_USERMODE_ADDRESS; 
+    }
+
+    stac();
+
+    memmove(to, from, len);
+
+    clac();
+
+    return res_OK;
+}
+
 res usermode_copy_from_user(void *to, const usermode_mem *from, size_t len)
 {
     uint64_t from_end;
