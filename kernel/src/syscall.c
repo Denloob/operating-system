@@ -84,8 +84,9 @@ static void syscall_execute_program(Regs *regs)
         return;
     }
 
-    char filepath[MAX_FILEPATH_LEN] = {0};
-    usermode_copy_from_user(filepath, path_to_file, path_length);
+    char filepath[FS_MAX_FILEPATH_LEN] = {0};
+    res rs = usermode_copy_from_user(filepath, path_to_file, path_length);
+    assert(IS_OK(rs) && "checked before, should be good");
 
     uint64_t argv_length = 0;
     (void)argv_length; // It's used, but clang doesn't know that.
@@ -121,7 +122,8 @@ static void syscall_execute_program(Regs *regs)
             usermode_mem *current_argv_ptr = (usermode_mem *)((uint64_t)usermode_argv + i * sizeof(char *));
 
             usermode_mem *current_argv = NULL;
-            usermode_copy_from_user(&current_argv, current_argv_ptr, sizeof(char *));
+            rs = usermode_copy_from_user(&current_argv, current_argv_ptr, sizeof(char *));
+            assert(IS_OK(rs) && "checked before, should be good");
 
             uint64_t current_length;
             valid = usermode_strlen(current_argv, MAX_ARGV_ELEMENT_LEN - 1, &current_length);
@@ -137,11 +139,12 @@ static void syscall_execute_program(Regs *regs)
             }
             argv_length++;
 
-            usermode_copy_from_user(argv[i], current_argv, current_length);
+            rs = usermode_copy_from_user(argv[i], current_argv, current_length);
+            assert(IS_OK(rs) && "checked before, should be good");
         }
     }
 
-    res rs = execve(filepath, (const char *const *)argv);
+    rs = execve(filepath, (const char *const *)argv);
     regs->rax = IS_OK(rs);
 }
 
@@ -183,8 +186,9 @@ static void syscall_read_write(Regs *regs, typeof(fread) fread_fwrite_func)
         return;
     }
 
-    char filepath[MAX_FILEPATH_LEN] = {0};
-    usermode_copy_from_user(filepath, filepath_user, filepath_len);
+    char filepath[FS_MAX_FILEPATH_LEN] = {0};
+    res rs = usermode_copy_from_user(filepath, filepath_user, filepath_len);
+    assert(IS_OK(rs) && "checked before, should be good");
 
     FILE file = {0};
     bool success = fat16_open(&g_fs_fat16, filepath, &file.file); // TODO: when we support `fd`s, that's how we will get the file handle. For now, this also works

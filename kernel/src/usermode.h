@@ -52,7 +52,7 @@ void usermode_init_smp();
  *
  * @return - res_OK on success, or one of the error codes on failure.
  */
-res usermode_copy_from_user(void *to, const usermode_mem *from, size_t len);
+res usermode_copy_from_user(void *to, const usermode_mem *from, size_t len) WUR;
 
 /**
  * @brief - Check that the given memory range is mapped to be in usermode.
