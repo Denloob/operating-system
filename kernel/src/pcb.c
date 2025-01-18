@@ -13,13 +13,21 @@ PCB* PCB_init(uint64_t id, PCB *parent, uint64_t entry_point, mmu_PageMapEntry *
     const int kernel_start_index = 256;
     const int kernel_end_index = 512;
 
-    PCB* created_pcb = kmalloc(sizeof(struct PCB));
+    PCB* created_pcb = kcalloc(1, sizeof(struct PCB));
+
+    if (parent != NULL)
+    {
+        memmove(created_pcb->cwd, parent->cwd, sizeof(created_pcb->cwd));
+    }
+    else
+    {
+        created_pcb->cwd[0] = '/'; // NULL terminated because of kcalloc.
+    }
     
     created_pcb->state = PCB_STATE_READY;
     created_pcb->id = id;
     created_pcb->rip = entry_point;
     created_pcb->parent = parent;
-    memset(&created_pcb->regs , 0 , sizeof(Regs));
     created_pcb->page_break = UINT64_MAX;
 
     created_pcb->regs.rflags = 0x202; 

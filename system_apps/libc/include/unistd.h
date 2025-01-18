@@ -24,3 +24,6 @@ void exit(int status) __attribute__((noreturn));
 
 // A successful call to reboot does not return.
 int reboot(int op); // @see <sys/reboot.h>
+
+char *getcwd(char *buf, size_t size);
+int chdir(const char *path);

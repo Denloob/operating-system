@@ -1,6 +1,7 @@
 #pragma once
 
 #include "mmu.h"
+#include "fs.h"
 #include "regs.h"
 #include <stdint.h>
 
@@ -44,6 +45,7 @@ struct PCB
     uint64_t    page_break;
     pcb_State   state;
 
+    char cwd[FS_MAX_FILEPATH_LEN];
     pcb_IORefresh refresh; // Used only in IO doubly-linked list
     void *refresh_arg;
 

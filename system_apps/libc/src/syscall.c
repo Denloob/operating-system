@@ -3,6 +3,7 @@
 #include <sys/syscall.h>
 #include <sys/reboot.h>
 #include <unistd.h>
+#include <stdbool.h>
 
 static long __attribute__((sysv_abi, naked)) do_syscall(long syscall_number, long a0, long a1, long a2, long a3, long a4, long a5)
 {
@@ -86,4 +87,20 @@ void exit(int status)
 int reboot(int op)
 {
     return syscall(SYS_reboot, op, RB_SYS_MAGIC1, RB_SYS_MAGIC2);
+}
+
+char *getcwd(char *buf, size_t size)
+{
+    long ret = syscall(SYS_getcwd, buf, size);
+    if (ret < 0)
+    {
+        return NULL;
+    }
+
+    return buf;
+}
+
+int chdir(const char *path)
+{
+    return syscall(SYS_chdir, path) ? 0 : -1;
 }

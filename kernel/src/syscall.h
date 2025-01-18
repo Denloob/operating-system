@@ -9,6 +9,9 @@ typedef enum {
     SYSCALL_EXECUTE = 59,
     SYSCALL_EXIT    = 60,
 
+    SYSCALL_GETCWD  = 79,
+    SYSCALL_CHDIR   = 80,
+
     SYSCALL_REBOOT  = 169,
 } syscall_Number;
 

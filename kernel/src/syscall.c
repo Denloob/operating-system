@@ -1,4 +1,5 @@
 #include "FAT16.h"
+#include "string.h"
 #include "io.h"
 #include "smartptr.h"
 #include "kernel_memory_info.h"
@@ -26,7 +27,6 @@
 #define MSR_SFMASK 0xC0000084
 #define MSR_EFER   0xC0000080
 
-#define MAX_FILEPATH_LEN 512
 #define MAX_ARGV_LEN     128
 #define MAX_ARGV_ELEMENT_LEN 512
 // Here the RSP of the syscall caller will be stored.
@@ -36,6 +36,63 @@ static void syscall_exit(Regs *regs)
 {
     scheduler_process_dequeue_current_and_context_switch();
     assert(false && "Unreachable");
+}
+
+static void syscall_chdir(Regs *regs)
+{
+    usermode_mem *new_cwd = (usermode_mem *)regs->rdi;
+
+    // TODO: Parse the dir and check if it actually exists
+
+    uint64_t path_length;
+    bool valid = usermode_strlen(new_cwd, FS_MAX_FILEPATH_LEN - 1, &path_length);
+    if (!valid)
+    {
+        regs->rax = false; // Return: failed
+        return;
+    }
+
+    assert(path_length < FS_MAX_FILEPATH_LEN);
+
+    if (path_length == 0)
+    {
+        regs->rax = false; // Fail
+        return;
+    }
+
+    char first_char;
+    res rs = usermode_copy_from_user(&first_char, new_cwd, 1);
+    assert(IS_OK(rs) && "checked before, should be good");
+
+    if (first_char != '/')
+    {
+        assert(false && "Relative chdir is unsupported"); // TODO: implement relative paths
+    }
+
+    PCB *pcb = scheduler_current_pcb();
+    rs = usermode_copy_from_user(pcb->cwd, new_cwd, path_length);
+    assert(IS_OK(rs) && "checked before, should be good");
+    pcb->cwd[path_length] = '\0';
+}
+
+static void syscall_getcwd(Regs *regs)
+{
+    usermode_mem *buf = (usermode_mem *)regs->rdi; 
+    size_t size = regs->rsi;
+
+    PCB *pcb = scheduler_current_pcb();
+    size_t cwd_length = strlen(pcb->cwd);
+    assert(cwd_length < FS_MAX_FILEPATH_LEN);
+
+    size_t bytes_to_copy = MIN(size, cwd_length);
+    res rs = usermode_copy_to_user(buf, pcb->cwd, bytes_to_copy);
+    if (!IS_OK(rs))
+    {
+        regs->rax = -1; // Fail
+        return;
+    }
+
+    regs->rax = bytes_to_copy;
 }
 
 static void syscall_reboot(Regs *regs)
@@ -78,7 +135,7 @@ static void syscall_execute_program(Regs *regs)
     usermode_mem *usermode_argv = (usermode_mem *)regs->rsi;
 
     uint64_t path_length;
-    bool valid = usermode_strlen(path_to_file, MAX_FILEPATH_LEN - 1, &path_length);
+    bool valid = usermode_strlen(path_to_file, FS_MAX_FILEPATH_LEN - 1, &path_length);
     if (!valid)
     {
         return;
@@ -173,9 +230,9 @@ static void syscall_read_write(Regs *regs, typeof(fread) fread_fwrite_func)
     uint64_t buffer_size = regs->rdx;
 
     // Both calculates the length, and makes sure that filepath_user is, in fact,
-    //  a null terminated string in usermode memory, smaller than MAX_FILEPATH_LEN.
+    //  a null terminated string in usermode memory, smaller than FS_MAX_FILEPATH_LEN.
     uint64_t filepath_len;
-    bool valid = usermode_strlen(filepath_user, MAX_FILEPATH_LEN - 1, &filepath_len);
+    bool valid = usermode_strlen(filepath_user, FS_MAX_FILEPATH_LEN - 1, &filepath_len);
     if (!valid)
     {
         return;
@@ -259,6 +316,12 @@ static void __attribute__((used, sysv_abi)) syscall_handler(Regs *user_regs)
             break;
         case SYSCALL_REBOOT:
             syscall_reboot(user_regs);
+            break;
+        case SYSCALL_GETCWD:
+            syscall_getcwd(user_regs);
+            break;
+        case SYSCALL_CHDIR:
+            syscall_chdir(user_regs);
             break;
     }
 
