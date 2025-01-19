@@ -91,6 +91,7 @@ PCB *scheduler_io_refresh()
         PCB *next = it->queue_next;
 
         assert(it->refresh);
+        mmu_load_virt_pml4(it->paging);
         if (it->refresh(it) == PCB_IO_REFRESH_DONE)
         {
             first_rescheduled = it;
