@@ -40,6 +40,7 @@
  * DMA - The CPU is less involved, and the controller can transfer data directly to memory, freeing up CPU time. .
  */
 
+// An address of a PCI device.
 typedef struct {
     uint8_t bus;
     uint8_t device;
@@ -49,14 +50,11 @@ typedef struct {
 /*
  * @brief - Reads a 32-bit value from the PCI configuration space at the given bus, device, function, and offset.
  * 
- * @bus - The PCI bus number (0-255).
- * @device - The PCI device number on the bus (0-31).
- * @function - The PCI function number (0-7).
  * @offset - The offset into the PCI configuration space (must be aligned to 4 bytes).
  * 
  * @return - The 32-bit value from the configuration space.
  */
-uint32_t pci_config_read(uint8_t bus, uint8_t device, uint8_t function, uint8_t offset);
+uint32_t pci_config_read(pci_DeviceAddress address, uint8_t offset);
 
 /*
  * @brief - Retrieves the Vendor ID from the PCI configuration space for the given device.
@@ -65,7 +63,7 @@ uint32_t pci_config_read(uint8_t bus, uint8_t device, uint8_t function, uint8_t 
  * 
  * @return -The 16-bit vendor ID.
  */
-uint16_t pci_get_vendor_id(uint8_t bus, uint8_t device, uint8_t function);
+uint16_t pci_get_vendor_id(pci_DeviceAddress address);
 
 /*
  * @brief - Retrieves the Device ID from the PCI configuration space for the given device.
@@ -74,7 +72,7 @@ uint16_t pci_get_vendor_id(uint8_t bus, uint8_t device, uint8_t function);
  *
  * @return - The 16-bit device ID.
  */
-uint16_t pci_get_device_id(uint8_t bus, uint8_t device, uint8_t function);
+uint16_t pci_get_device_id(pci_DeviceAddress address);
 
 /**
  * @brief Like pci_get_device_id and pci_get_vendor_id but retrieves both in one
@@ -82,7 +80,7 @@ uint16_t pci_get_device_id(uint8_t bus, uint8_t device, uint8_t function);
  * 
  * @return `(device_id << 16) | (vendor_id)`. Both ids are 16 bits.
  */
-uint32_t pci_get_device_and_vendor_id(uint8_t bus, uint8_t device, uint8_t function);
+uint32_t pci_get_device_and_vendor_id(pci_DeviceAddress address);
 
 /*
  * @brief - Retrieves the Class Code from the PCI configuration space for the given device.
@@ -91,7 +89,7 @@ uint32_t pci_get_device_and_vendor_id(uint8_t bus, uint8_t device, uint8_t funct
  * 
  * @returns - The 8-bit class code.
  */
-uint8_t pci_get_class_code(uint8_t bus, uint8_t device, uint8_t function);
+uint8_t pci_get_class_code(pci_DeviceAddress address);
 
 /*
  * @brief - Retrieves the Subclass Code from the PCI configuration space for the given device.
@@ -100,21 +98,18 @@ uint8_t pci_get_class_code(uint8_t bus, uint8_t device, uint8_t function);
  * 
  * @return - The 8-bit subclass code.
  */
-uint8_t pci_get_subclass_code(uint8_t bus, uint8_t device, uint8_t function);
+uint8_t pci_get_subclass_code(pci_DeviceAddress address);
 
 /*
  * @brief - Reads a Base Address Register (BAR) from the PCI configuration space.
  * 
  * Bars - These registers define the I/O or memory addresses used to interact with the device.
  * 
- * @bus - The PCI bus number.
- * @device - The PCI device number.
- * @function - The PCI function number.
  * @bar_index -The index of the BAR to read (0-5).
  * 
  * @return - The 32-bit BAR value, which can be either a memory-mapped or I/O port address.
  */
-uint32_t pci_get_bar(uint8_t bus, uint8_t device, uint8_t function, uint8_t bar_index);
+uint32_t pci_get_bar(pci_DeviceAddress address, uint8_t bar_index);
 
 /*
  * @brief: 

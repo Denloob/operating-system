@@ -6,18 +6,18 @@
 #define PORT_CONFIG_ADDRESS 0xCF8
 #define PORT_CONFIG_DATA 0xCFC
 
-static void pci_config_address(uint8_t bus, uint8_t device, uint8_t function, uint8_t offset) 
+static void pci_config_address(pci_DeviceAddress address, uint8_t offset) 
 {
     assert((offset & 0b11) == 0 && "Offset must fe aligned to 4 bytes");
-    assert((function & (~0x7)) == 0 && "Function has to be max 3 bits long");
-    assert((device & (~0x1f)) == 0 && "");
+    assert((address.function & (~0x7)) == 0 && "Function has to be max 3 bits long");
+    assert((address.device & (~0x1f)) == 0 && "");
 
-    uint32_t address = (1 << 31)                 // Enable bit
-                     | ((uint32_t)bus << 16)     // Bus number
-                     | ((uint32_t)device << 11)  // Device number
-                     | ((uint32_t)function << 8) // Function number
-                     | (offset);                 // Offset (aligned to 4 bytes)
-    out_dword(PORT_CONFIG_ADDRESS, address);
+    uint32_t numerical_address = (1 << 31)     // Enable bit
+                     | (address.bus << 16)     // Bus number
+                     | (address.device << 11)  // Device number
+                     | (address.function << 8) // Function number
+                     | (offset);               // Offset (aligned to 4 bytes)
+    out_dword(PORT_CONFIG_ADDRESS, numerical_address);
 }
 
 static uint32_t pci_config_data() 
@@ -25,40 +25,40 @@ static uint32_t pci_config_data()
     return in_dword(PORT_CONFIG_DATA);
 }
 
-uint32_t pci_config_read(uint8_t bus, uint8_t device, uint8_t function, uint8_t offset) 
+uint32_t pci_config_read(pci_DeviceAddress address, uint8_t offset) 
 {
-    pci_config_address(bus, device, function, offset);
+    pci_config_address(address, offset);
     return pci_config_data();
 }
 
-uint16_t pci_get_vendor_id(uint8_t bus, uint8_t device, uint8_t function) 
+uint16_t pci_get_vendor_id(pci_DeviceAddress address) 
 {
-    return pci_config_read(bus, device, function, 0x00) & 0xFFFF;
+    return pci_config_read(address, 0x00) & 0xFFFF;
 }
 
-uint16_t pci_get_device_id(uint8_t bus, uint8_t device, uint8_t function)
+uint16_t pci_get_device_id(pci_DeviceAddress address)
 {
-    return (pci_config_read(bus, device, function, 0x00) >> 16) & 0xFFFF;
+    return (pci_config_read(address, 0x00) >> 16) & 0xFFFF;
 }
 
-uint32_t pci_get_device_and_vendor_id(uint8_t bus, uint8_t device, uint8_t function)
+uint32_t pci_get_device_and_vendor_id(pci_DeviceAddress address)
 {
-    return pci_config_read(bus, device, function, 0x00);
+    return pci_config_read(address, 0x00);
 }
 
-uint8_t pci_get_class_code(uint8_t bus, uint8_t device, uint8_t function) 
+uint8_t pci_get_class_code(pci_DeviceAddress address) 
 {
-    return (pci_config_read(bus, device, function, 0x08) >> 24) & 0xFF;
+    return (pci_config_read(address, 0x08) >> 24) & 0xFF;
 }
 
-uint8_t pci_get_subclass_code(uint8_t bus, uint8_t device, uint8_t function) 
+uint8_t pci_get_subclass_code(pci_DeviceAddress address) 
 {
-    return (pci_config_read(bus, device, function, 0x08) >> 16) & 0xFF;
+    return (pci_config_read(address, 0x08) >> 16) & 0xFF;
 }
 
-uint32_t pci_get_bar(uint8_t bus, uint8_t device, uint8_t function, uint8_t bar_index) 
+uint32_t pci_get_bar(pci_DeviceAddress address, uint8_t bar_index) 
 {
-    return pci_config_read(bus, device, function, 0x10 + (bar_index * 4));
+    return pci_config_read(address, 0x10 + (bar_index * 4));
 }
 
 res pci_find_device(uint16_t vendor_id, uint16_t device_id, pci_DeviceAddress *out)
@@ -72,7 +72,7 @@ res pci_find_device(uint16_t vendor_id, uint16_t device_id, pci_DeviceAddress *o
         {
             for (int function = 0; function < 8; function++)
             {
-                uint32_t vendor_and_device = pci_get_device_and_vendor_id(bus, device, function);
+                uint32_t vendor_and_device = pci_get_device_and_vendor_id((pci_DeviceAddress){bus, device, function});
                 if (target_vendor_and_device == vendor_and_device)
                 {
                     out->bus = bus;
@@ -96,11 +96,12 @@ void pci_scan_for_ide()
         {
             for(uint8_t function=0; function<8;function++)
             {
-                uint16_t vendor_id = pci_get_vendor_id(bus, device, function);
+                pci_DeviceAddress address = {bus, device, function};
+                uint16_t vendor_id = pci_get_vendor_id(address);
                 if (vendor_id == 0xFFFF) continue; // Device doesn't exist
 
-                uint8_t class_code = pci_get_class_code(bus, device, function);
-                uint8_t subclass_code = pci_get_subclass_code(bus, device, function);
+                uint8_t class_code = pci_get_class_code(address);
+                uint8_t subclass_code = pci_get_subclass_code(address);
 
                 if (class_code == 0x01 && subclass_code == 0x01) //check for IDE controller
                 { 
@@ -108,7 +109,7 @@ void pci_scan_for_ide()
                     // Print BARs
                     for (uint8_t bar = 0; bar < 6; bar++)
                     {
-                        uint32_t bar_value = pci_get_bar(bus, device, function, bar);
+                        uint32_t bar_value = pci_get_bar(address, bar);
                         if (bar_value)
                         {
                             printf("BAR 0x%x: 0x%x\n", bar, bar_value);
