@@ -311,8 +311,9 @@ WUR static res malloc_grow_heap(size_t wanted_size)
     {
         size_t new_chunk_size;
         bool overflow = __builtin_add_overflow(main_arena.top->chunk_size, size_increase, &new_chunk_size);
-        if (overflow)
-            return res_INVALID_ARG;
+        assert(!overflow && "Unless you have 1<<64 ram, that's not possible"); // If ksbrk succeeded, this should not happen!
+
+        main_arena.top->chunk_size = new_chunk_size;
     }
 
     return rs;

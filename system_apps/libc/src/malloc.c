@@ -317,8 +317,10 @@ _WUR static bool malloc_grow_heap(size_t wanted_size)
 
     size_t new_chunk_size;
     bool overflow = __builtin_add_overflow(main_arena.top->chunk_size, size_increase, &new_chunk_size);
+    assert(!overflow && "Unless you have 1<<64 ram, that's not possible");
+    main_arena.top->chunk_size = new_chunk_size;
 
-    return !overflow;
+    return true;
 }
 
 /**
