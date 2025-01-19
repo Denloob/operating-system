@@ -25,6 +25,19 @@ static uint32_t pci_config_data()
     return in_dword(PORT_CONFIG_DATA);
 }
 
+static void pci_config_data_write(uint32_t value) 
+{
+    out_dword(PORT_CONFIG_DATA, value);
+}
+
+// NOTE: We are writing **32 bit** values! For example, writing to offset 0x4
+//          will overwrite both status and command!
+void pci_config_write(pci_DeviceAddress address, uint8_t offset, uint32_t value)
+{
+    pci_config_address(address, offset);
+    pci_config_data_write(value);
+}
+
 uint32_t pci_config_read(pci_DeviceAddress address, uint8_t offset) 
 {
     pci_config_address(address, offset);
@@ -44,6 +57,16 @@ uint16_t pci_get_device_id(pci_DeviceAddress address)
 uint32_t pci_get_device_and_vendor_id(pci_DeviceAddress address)
 {
     return pci_config_read(address, 0x00);
+}
+
+#define CMD_STATUS_OFFSET 0x4
+
+void pci_set_bus_master(pci_DeviceAddress address)
+{
+#define BUS_MASTER_BIT 2
+    uint32_t old_value = pci_config_read(address, CMD_STATUS_OFFSET);
+    uint32_t new_value = old_value | (1 << BUS_MASTER_BIT);
+    pci_config_write(address, CMD_STATUS_OFFSET, new_value);
 }
 
 uint8_t pci_get_class_code(pci_DeviceAddress address) 

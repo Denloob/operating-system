@@ -56,6 +56,19 @@ typedef struct {
  */
 uint32_t pci_config_read(pci_DeviceAddress address, uint8_t offset);
 
+/**
+ * @brief Write a 32 bit `value` at the given `address` and `offset`.
+ *         NOTE: the write is always 32 bit! For example, writing to offset 0x4
+ *          will overwrite both status and command!
+ */
+void pci_config_write(pci_DeviceAddress address, uint8_t offset, uint32_t value);
+
+/**
+ * @brief Set the Bus Master bit in the Command PCI configuration space register
+ *          of the given device `address`.
+ */
+void pci_set_bus_master(pci_DeviceAddress address);
+
 /*
  * @brief - Retrieves the Vendor ID from the PCI configuration space for the given device.
  * 
