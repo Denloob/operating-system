@@ -2,6 +2,7 @@
 #include "char_special_device.h"
 #include "mmu_config.h"
 #include "fs.h"
+#include "rtl8139.h"
 #include "scheduler.h"
 #include "syscall.h"
 #include "tss.h"
@@ -106,10 +107,13 @@ void __attribute__((section(".entry"), sysv_abi)) kernel_main(uint32_t param_mmu
 
     char_special_device_init();
 
+    res rs = rtl8139_init();
+    assert(IS_OK(rs) && "RTL8139 was not found");
+
     usermode_init_smp();
 
     io_clear_vga();
-    res rs = execve("init", NULL);
+    rs = execve("init", NULL);
     assert(IS_OK(rs) && "Starting the main process failed");
 
     scheduler_start();
