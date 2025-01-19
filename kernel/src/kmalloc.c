@@ -307,16 +307,18 @@ WUR static res malloc_grow_heap(size_t wanted_size)
     size_t needed_size_left = wanted_size - top_size;
     size_t size_increase = PAGE_ALIGN_UP(needed_size_left);
     res rs = ksbrk(size_increase, NULL);
-    if (IS_OK(rs))
+    if (!IS_OK(rs))
     {
-        size_t new_chunk_size;
-        bool overflow = __builtin_add_overflow(main_arena.top->chunk_size, size_increase, &new_chunk_size);
-        assert(!overflow && "Unless you have 1<<64 ram, that's not possible"); // If ksbrk succeeded, this should not happen!
-
-        main_arena.top->chunk_size = new_chunk_size;
+        return rs;
     }
 
-    return rs;
+    size_t new_chunk_size;
+    bool overflow = __builtin_add_overflow(main_arena.top->chunk_size, size_increase, &new_chunk_size);
+    assert(!overflow && "Unless you have 1<<64 ram, that's not possible"); // If ksbrk succeeded, this should not happen!
+
+    main_arena.top->chunk_size = new_chunk_size;
+
+    return res_OK;
 }
 
 /**
