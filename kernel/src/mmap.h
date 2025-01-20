@@ -61,3 +61,14 @@ void munmap(void *addr, size_t size);
  * @return res_OK or one of the errors defined above.
  */
 res mprotect(void *addr, size_t size, mmap_Protection prot);
+
+/**
+ * @brief - Allocate contiguous physical memory of size `wanted_size`.
+ *
+ * @param want_size The size of the contiguous memory to allocate.
+ *                      Must be page aligned
+ * @param out_result[out]      - The start address of the allocated physical memory.
+ * @return - true on success, false otherwise. If the function didn't succeed
+ *              there's no free contiguous memory range of the requested size.
+ */
+bool mmap_allocate_contiguous(uint64_t want_size, uint64_t *out_result);

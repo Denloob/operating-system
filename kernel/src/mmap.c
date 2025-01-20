@@ -50,6 +50,14 @@ void phys_memory_add(const range_Range *range)
     (*len)++;
 }
 
+bool mmap_allocate_contiguous(uint64_t want_size, uint64_t *out_result)
+{
+    assert(g_phys_memory_map.base);
+
+    return range_pop_of_size(g_phys_memory_map.base, g_phys_memory_map.length,
+                                     want_size, out_result);
+}
+
 /**
  * @brief - Allocate physical memory of size `0 < result_size < want_size`, page
  *              aligned.
