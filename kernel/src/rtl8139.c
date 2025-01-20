@@ -5,6 +5,7 @@
 #include "assert.h"
 #include "io.h"
 #include "kmalloc.h"
+#include "memory.h"
 #include "mmap.h"
 #include "mmu.h"
 
@@ -100,32 +101,64 @@ static void rtl8139_software_reset()
 #define RECV_BUFFER_CANARY1 0xbd2410f129cb24a1
 #define RECV_BUFFER_CANARY2 0x068b9a4fda74e441
 
-#define RECV_BUFFER_SIZE (8192 + 16 + 1500 + 16) // Smallest buffer size supported by rtl8139 + 1500 "overflow" + 16 magic bytes to detect actual overflows
-static char *g_recv_buffer;
+#define RECV_BUFFER_SIZE (8192 + 16 + 1500) // Smallest buffer size supported by rtl8139 + 1500 "overflow"
+
+// Structure describing all the buffers for the transmit/receive packets
+//  needed by the RTL.
+// We put them all in one struct so we can allocate their physical memory
+//  contiguously easily without losing data on alignment.
+typedef struct {
+    char recv_buffer[RECV_BUFFER_SIZE];
+    uint64_t canary1;
+    uint64_t canary2;
+} rtl_PacketBuffers;
+
+#define PACKET_BUFFER_VIRTUAL_ADDR 0xffff813900000000
+static rtl_PacketBuffers *g_packet_buffers;
 
 static void write_recv_buffer_canary()
 {
-    *(uint64_t *)(&g_recv_buffer[RECV_BUFFER_SIZE - 16]) = RECV_BUFFER_CANARY1;
-    *(uint64_t *)(&g_recv_buffer[RECV_BUFFER_SIZE - 8]) = RECV_BUFFER_CANARY2;
+    g_packet_buffers->canary1 = RECV_BUFFER_CANARY1;
+    g_packet_buffers->canary2 = RECV_BUFFER_CANARY2;
 }
 
-__attribute__((unused)) // TODO: use when reading the buffer
+__attribute__((unused))
 static void validate_recv_buffer_canary()
 {
-    assert(*(uint64_t *)(&g_recv_buffer[RECV_BUFFER_SIZE - 16]) == RECV_BUFFER_CANARY1);
-    assert(*(uint64_t *)(&g_recv_buffer[RECV_BUFFER_SIZE - 8]) == RECV_BUFFER_CANARY2);
+    assert(g_packet_buffers->canary1 == RECV_BUFFER_CANARY1);
+    assert(g_packet_buffers->canary2 == RECV_BUFFER_CANARY2);
 }
 
-static void rtl8139_init_recv_buffer()
+static bool rtl8139_allocate_packet_buffers_phys(uint64_t *out_phys_address, uint64_t size)
 {
-    g_recv_buffer = kmalloc(RECV_BUFFER_SIZE);
+    assert(out_phys_address);
+    bool success = mmap_allocate_contiguous(size, out_phys_address);
+    return success;
+}
+
+WUR
+static res rtl8139_init_recv_buffer()
+{
+    uint64_t physical_buffer_addresses_addr;
+    const uint64_t buffer_addresses_size = PAGE_ALIGN_UP(sizeof(*g_packet_buffers));
+    bool success = rtl8139_allocate_packet_buffers_phys(&physical_buffer_addresses_addr,
+                                                        buffer_addresses_size);
+    if (!success)
+    {
+        return res_rtl8139_PACKETS_BUFFER_NO_MEMORY;
+    }
+
+    mmu_map_range(physical_buffer_addresses_addr,
+                  physical_buffer_addresses_addr + buffer_addresses_size,
+                  PACKET_BUFFER_VIRTUAL_ADDR, MMU_EXECUTE_DISABLE | MMU_READ_WRITE);
+
+    g_packet_buffers = (void *)PACKET_BUFFER_VIRTUAL_ADDR;
+
     write_recv_buffer_canary();
 
-    mmu_PageTableEntry *page = mmu_page_existing(g_recv_buffer);
-    uint64_t physical_buffer_addr = mmu_page_table_entry_address_get(page);
-    assert(physical_buffer_addr < (UINT32_MAX - RECV_BUFFER_SIZE) && "Physical memory of the buffer must be inside the 32 bit range");
+    rtl_write(dword, rtl8139_REG_RBSTART, physical_buffer_addresses_addr);
 
-    rtl_write(dword, rtl8139_REG_RBSTART, physical_buffer_addr);
+    return res_OK;
 }
 
 static void rtl8139_set_interrupt_mask(uint16_t value)
@@ -155,7 +188,11 @@ res rtl8139_init()
     rtl8139_power_on();
     rtl8139_software_reset();
 
-    rtl8139_init_recv_buffer();
+    rs = rtl8139_init_recv_buffer();
+    if (!IS_OK(rs))
+    {
+        return res_rtl8139_PACKETS_BUFFER_NO_MEMORY;
+    }
 
     rtl8139_set_interrupt_mask(rtl8139_IMR_RECEIVE_OK | rtl8139_IMR_RECEIVE_ERR |
                                rtl8139_IMR_TRANSMIT_OK | rtl8139_IMR_TRANSMIT_ERR);

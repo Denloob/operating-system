@@ -13,5 +13,6 @@ typedef struct {
 
 #define res_rtl8139_DEVICE_NOT_FOUND "RTL8139 was not found"
 #define res_rtl8139_UNEXPECTED_DEVICE_BEHAVIOR "RTL8139 behaved unexpectedly"
+#define res_rtl8139_PACKETS_BUFFER_NO_MEMORY "Couldn't find enough memory to allocate the RTL8139 packets buffer"
 
 res rtl8139_init() WUR;
