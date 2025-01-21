@@ -205,7 +205,7 @@ bool fat16_find_file_based_on_path(fat16_Ref *fat16 , const char *path ,fat16_Di
     int start_cluster = 0; //root cluster
     
     int index=0; //index of filename building
-    char filename[FAT16_FULL_FILENAME_SIZE]; // Not null terminated!!
+    char filename[FAT16_FULL_FILENAME_SIZE + 1 + 1]; // Not null terminated!! We reserved one byte for `.` in filenames of length 11 and 1 for a null byte right before the final parsing. This is pretty much a hack.
     memset(filename, ' ', sizeof(filename));
 
     int path_length = strlen(path);
@@ -223,6 +223,13 @@ bool fat16_find_file_based_on_path(fat16_Ref *fat16 , const char *path ,fat16_Di
     {
         if(path[i] == '/')
         {
+            if (index == FAT16_FULL_FILENAME_SIZE + 1) // HACK: we made `filename` buffer a byte larger to allow final filenames
+                                           // with a dot like `12345678.123`. If we are here, turned out it was a dir,
+                                           // so if our index reached the end of the buffer, it was one byte too long.
+            {
+                return false;
+            }
+
             // Detect the `//` `/dir//file`
             bool any_filename = index > 0;
             if (!any_filename)
@@ -242,7 +249,7 @@ bool fat16_find_file_based_on_path(fat16_Ref *fat16 , const char *path ,fat16_Di
         }
         else
         {
-            if (index >= sizeof(filename))
+            if (index >= FAT16_FULL_FILENAME_SIZE + 1)
             {
                 return false;
             }
