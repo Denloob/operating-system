@@ -304,7 +304,9 @@ static void malloc_initialize()
  */
 _WUR static bool malloc_grow_heap(size_t wanted_size)
 {
-    size_t top_size = main_arena.top->chunk_size;
+    size_t top_size = chunk_size(main_arena.top);
+    assert(top_size >= MIN_CHUNK_SIZE);
+    top_size -= MIN_CHUNK_SIZE;
     assert(wanted_size > top_size && "asked to grow heap when the requested size fits already");
 
     size_t needed_size_left = wanted_size - top_size;
@@ -332,7 +334,9 @@ _WUR static bool malloc_grow_heap(size_t wanted_size)
 __attribute__((const))
 bool is_heap_big_enough_for_chunk(size_t chunk_size)
 {
-    return chunk_size <= main_arena.top->chunk_size;
+    const size_t top_size = chunk_size(main_arena.top);
+    assert(top_size >= MIN_CHUNK_SIZE);
+    return chunk_size < top_size - MIN_CHUNK_SIZE;
 }
 
 /**
