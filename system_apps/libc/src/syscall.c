@@ -104,3 +104,8 @@ int chdir(const char *path)
 {
     return syscall(SYS_chdir, path) ? 0 : -1;
 }
+
+pid_t waitpid(pid_t pid, int *wstatus, int options)
+{
+    return syscall(SYS_waitpid, pid, wstatus, options);
+}

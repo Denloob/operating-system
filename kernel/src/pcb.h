@@ -12,6 +12,7 @@ typedef enum
     PCB_STATE_RUNNING,
     PCB_STATE_WAITING_FOR_IO,
     PCB_STATE_READY,
+    PCB_STATE_ZOMBIE,
 } pcb_State;
 
 
@@ -68,6 +69,7 @@ struct PCB
     uint64_t    rip;
     uint64_t    page_break;
     pcb_State   state;
+    int         return_code; // Accessible only if state is PCB_STATE_ZOMBIE
 
     char cwd[FS_MAX_FILEPATH_LEN];
     pcb_IORefresh refresh; // Used only in IO doubly-linked list

@@ -20,6 +20,7 @@
 #include "usermode.h"
 #include "execve.h"
 #include "shell.h"
+#include "waitpid.h"
 
 #define MSR_STAR   0xC0000081
 #define MSR_LSTAR  0xC0000082
@@ -34,6 +35,7 @@ static uint64_t g_ring3_rsp;
 
 static void syscall_exit(Regs *regs)
 {
+    scheduler_current_pcb()->return_code = regs->rdi;
     scheduler_process_dequeue_current_and_context_switch();
     assert(false && "Unreachable");
 }
@@ -93,6 +95,14 @@ static void syscall_getcwd(Regs *regs)
     }
 
     regs->rax = bytes_to_copy;
+}
+
+static void syscall_waitpid(Regs *regs)
+{
+    uint64_t pid = regs->rdi;
+    usermode_mem *wstatus = (usermode_mem *)regs->rsi;
+    int options = regs->rdx;
+    regs->rax = waitpid(pid, wstatus, options); // Normally won't return. Returns only on error or if NO HANG option is specified.
 }
 
 static void syscall_reboot(Regs *regs)
@@ -322,6 +332,9 @@ static void __attribute__((used, sysv_abi)) syscall_handler(Regs *user_regs)
             break;
         case SYSCALL_CHDIR:
             syscall_chdir(user_regs);
+            break;
+        case SYSCALL_WAITPID:
+            syscall_waitpid(user_regs);
             break;
     }
 
