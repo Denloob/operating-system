@@ -20,22 +20,31 @@
  */
 void filename_to_fat16_filename(const char *filename, char out_buf[static FAT16_FULL_FILENAME_SIZE])
 {
-    memset(out_buf, ' ', FAT16_FULL_FILENAME_SIZE);
     size_t filename_length = strlen(filename);
-    char *dot = memrchr(filename, '.', MIN(filename_length, FAT16_FILENAME_SIZE + 1));
-    if (dot == NULL)
+    while (filename_length > 0 && filename[filename_length - 1] == ' ')
     {
-        assert(filename_length <= FAT16_FILENAME_SIZE && "Invalid path");
-        memmove(out_buf, filename, filename_length);
-        memset(out_buf + FAT16_FILENAME_SIZE, ' ', FAT16_EXTENSION_SIZE);
-        return;
+        filename_length--;
     }
 
-    size_t extension_len = strlen(dot) - 1;
-    assert(extension_len <= 3 && "Extensions longer than 3 bytes are not supported");
+    memset(out_buf, ' ', FAT16_FULL_FILENAME_SIZE);
 
-    memmove(out_buf,                       filename, dot - filename);
-    memmove(out_buf + FAT16_FILENAME_SIZE, dot + 1,  extension_len);
+    char *dot = memrchr(filename, '.', filename_length);
+
+    if (dot == NULL) // If no dot is found, treat it as a name without an extension
+    {
+        assert(filename_length <= FAT16_FILENAME_SIZE && "Filename exceeds the maximum size for FAT16");
+        memmove(out_buf, filename, filename_length); // Copy the filename portion
+        return; // No extension to process
+    }
+
+    size_t name_length = dot - filename;
+    size_t extension_length = filename_length - name_length - 1;
+
+    assert(name_length <= FAT16_FILENAME_SIZE && "Filename exceeds the maximum size for FAT16");
+    assert(extension_length <= FAT16_EXTENSION_SIZE && "Extensions longer than 3 bytes are not supported");
+
+    memmove(out_buf, filename, name_length);                           // Copy the name portion
+    memmove(out_buf + FAT16_FILENAME_SIZE, dot + 1, extension_length); // Copy the extension portion
 }
 
 typedef struct
