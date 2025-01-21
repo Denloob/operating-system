@@ -3,6 +3,7 @@
 #include "mmu.h"
 #include "fs.h"
 #include "regs.h"
+#include "res.h"
 #include <stdint.h>
 
 typedef enum
@@ -32,6 +33,28 @@ typedef enum {
  */
 typedef pcb_IORefreshResult (*pcb_IORefresh)(PCB *pcb);
 
+#define res_pcb_ProcessChildrenArray_OUT_OF_MEMORY "Ran out of memory"
+
+typedef struct {
+    size_t length;
+    size_t capacity;
+    size_t last_child_idx;
+    size_t last_free_idx;
+    union {
+        PCB *pcb;
+        struct {
+            uint64_t index : 62;
+            uint64_t has_index : 1;
+            uint64_t is_used : 1; // PCB addr highest address is always set
+        };
+    } *arr;
+} pcb_ProcessChildrenArray;
+
+bool pcb_ProcessChildrenArray_init(pcb_ProcessChildrenArray *arr);
+bool pcb_ProcessChildrenArray_get_last_child(pcb_ProcessChildrenArray *arr, PCB **out);
+PCB *pcb_ProcessChildrenArray_remove(pcb_ProcessChildrenArray *arr, size_t index);
+res pcb_ProcessChildrenArray_push(pcb_ProcessChildrenArray *arr, PCB *el);
+
 struct PCB
 {
     // Singly-linked list of PCBs. Next element will run after the current one.
@@ -50,6 +73,9 @@ struct PCB
     void *refresh_arg;
 
     mmu_PageMapEntry *paging;
+
+    pcb_ProcessChildrenArray children;
+
     // TODO: open file descriptors, signal info
 };
 
