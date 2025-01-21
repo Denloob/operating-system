@@ -113,7 +113,7 @@ void __attribute__((section(".entry"), sysv_abi)) kernel_main(uint32_t param_mmu
     usermode_init_smp();
 
     io_clear_vga();
-    rs = execve("init", NULL);
+    rs = execve("init", NULL, NULL);
     assert(IS_OK(rs) && "Starting the main process failed");
 
     scheduler_start();

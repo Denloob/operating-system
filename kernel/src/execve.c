@@ -7,7 +7,7 @@
 
 static uint64_t id = 1;
 
-res execve(const char *path, const char *const *argv)
+res execve(const char *path, const char *const *argv, PCB *parent)
 {
     const char *empty_argv[] = {path, NULL};
     if (argv == NULL)
@@ -17,7 +17,7 @@ res execve(const char *path, const char *const *argv)
         argv = empty_argv;
     }
 
-    res rs = program_setup_from_drive(id, NULL, g_pml4, &g_fs_fat16, path, (char **)argv); // const-cast here is safe. @see - program_setup_from_drive
+    res rs = program_setup_from_drive(id, parent, g_pml4, &g_fs_fat16, path, (char **)argv); // const-cast here is safe. @see - program_setup_from_drive
     if (!IS_OK(rs))
     {
         return rs;

@@ -69,6 +69,11 @@ res program_setup_from_drive(uint64_t id,  PCB *parent, mmu_PageMapEntry *kernel
 {
     //pcb handle
     PCB* program_pcb = PCB_init(id, parent, 0, kernel_pml);
+    if (program_pcb == NULL)
+    {
+        return res_program_OUT_OF_MEMORY;
+    }
+    
 
     //switch PML
     mmu_load_virt_pml4(program_pcb->paging);

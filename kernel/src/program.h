@@ -2,6 +2,8 @@
 #include "elf.h"
 #include "res.h"
 
+ #define res_program_OUT_OF_MEMORY "Ran out of memory allocating program"
+
 /**
  * @param argv - The argv to copy into the process. Assume that `argv`'s content won't change (aka const). We can't specify so in C because of C limitations.
  */

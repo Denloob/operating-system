@@ -201,7 +201,7 @@ static void syscall_execute_program(Regs *regs)
         }
     }
 
-    rs = execve(filepath, (const char *const *)argv);
+    rs = execve(filepath, (const char *const *)argv, scheduler_current_pcb());
     regs->rax = IS_OK(rs);
 }
 

@@ -15,10 +15,21 @@ PCB* PCB_init(uint64_t id, PCB *parent, uint64_t entry_point, mmu_PageMapEntry *
     const int kernel_end_index = 512;
 
     PCB* created_pcb = kcalloc(1, sizeof(struct PCB));
+    if (created_pcb == NULL)
+    {
+        return NULL;
+    }
+    
+    if (!pcb_ProcessChildrenArray_init(&created_pcb->children))
+    {
+        kfree(created_pcb);
+        return NULL;
+    }
 
     if (parent != NULL)
     {
         memmove(created_pcb->cwd, parent->cwd, sizeof(created_pcb->cwd));
+        pcb_ProcessChildrenArray_push(&parent->children, created_pcb);
     }
     else
     {
@@ -47,6 +58,19 @@ PCB* PCB_init(uint64_t id, PCB *parent, uint64_t entry_point, mmu_PageMapEntry *
     return created_pcb;
 }
 
+void PCB_cleanup(PCB *pcb)
+{
+    if (pcb == NULL)
+    {
+        return;
+    }
+
+    // TODO: free the pages
+
+    pcb_ProcessChildrenArray_cleanup(&pcb->children);
+    kfree(pcb);
+}
+
 bool pcb_ProcessChildrenArray_init(pcb_ProcessChildrenArray *arr)
 {
     memset(arr, 0, sizeof(*arr));
@@ -54,6 +78,17 @@ bool pcb_ProcessChildrenArray_init(pcb_ProcessChildrenArray *arr)
     arr->capacity = 2;
     arr->arr = kcalloc(arr->capacity, sizeof(*arr->arr));
     return arr != NULL;
+}
+
+void pcb_ProcessChildrenArray_cleanup(pcb_ProcessChildrenArray *arr)
+{
+    if (arr == NULL)
+    {
+        return;
+    }
+
+    kfree(arr->arr);
+    memset(arr, 0, sizeof(*arr));
 }
 
 bool pcb_ProcessChildrenArray_get_last_child(pcb_ProcessChildrenArray *arr, PCB **out)

@@ -54,6 +54,7 @@ bool pcb_ProcessChildrenArray_init(pcb_ProcessChildrenArray *arr);
 bool pcb_ProcessChildrenArray_get_last_child(pcb_ProcessChildrenArray *arr, PCB **out);
 PCB *pcb_ProcessChildrenArray_remove(pcb_ProcessChildrenArray *arr, size_t index);
 res pcb_ProcessChildrenArray_push(pcb_ProcessChildrenArray *arr, PCB *el);
+void pcb_ProcessChildrenArray_cleanup(pcb_ProcessChildrenArray *arr);
 
 struct PCB
 {
@@ -79,6 +80,7 @@ struct PCB
     // TODO: open file descriptors, signal info
 };
 
+void PCB_cleanup(PCB *pcb);
 PCB* PCB_init(uint64_t id, PCB *parent, uint64_t entry_point, mmu_PageMapEntry *kernel_pml);
 
 

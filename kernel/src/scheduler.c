@@ -211,9 +211,7 @@ void scheduler_process_dequeue_current_and_context_switch()
         next_pcb = NULL;
     }
 
-    // TODO: Unmap all usermode pages by iterating over the mmu struct
-    //       Dealloc mmu structures.
-    kfree(g_current_process);
+    PCB_cleanup(g_current_process);
 
     scheduler_context_switch_to(next_pcb, SCHEDULER_NOT_A_PIC_INTERRUPT);
 }
