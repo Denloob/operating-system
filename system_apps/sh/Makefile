@@ -6,7 +6,7 @@ LIBC_INCLUDE := ../libc/include
 LIBC := ../libc/bin/libc.a
 
 CC = gcc
-CFLAGS := -I$(LIBC_INCLUDE) -ffreestanding -nostdlib -masm=intel -Wall -Werror -flto -fno-pie -fno-stack-protector -O3 -mgeneral-regs-only
+CFLAGS := -I$(LIBC_INCLUDE) -ffreestanding -nostdlib -masm=intel -Wall -Werror -flto -fno-pie -fno-stack-protector -O3
 LDFLAGS := -ffreestanding -nostdlib -static -flto -static
 LDLIBS := -L${TOOLCHAIN_PATH}/lib/gcc/x86_64-elf/14.2.0 -lgcc
 
