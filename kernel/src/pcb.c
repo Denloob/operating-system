@@ -91,23 +91,6 @@ void pcb_ProcessChildrenArray_cleanup(pcb_ProcessChildrenArray *arr)
     memset(arr, 0, sizeof(*arr));
 }
 
-bool pcb_ProcessChildrenArray_get_last_child(pcb_ProcessChildrenArray *arr, PCB **out)
-{
-    assert(arr->last_child_idx <= arr->length);
-    if (arr->last_child_idx == arr->length)
-    {
-        return false;
-    }
-
-    assert(arr->arr[arr->last_child_idx].is_used);
-    if (out != NULL)
-    {
-        *out = arr->arr[arr->last_child_idx].pcb;
-    }
-
-    return true;
-}
-
 bool pcb_ProcessChildrenArray_have_free_elements(pcb_ProcessChildrenArray *arr)
 {
     assert(arr->length <= arr->last_free_idx);
@@ -168,7 +151,6 @@ res pcb_ProcessChildrenArray_push(pcb_ProcessChildrenArray *arr, PCB *el)
             arr->last_free_idx = arr->length;
         }
 
-        arr->last_child_idx = index;
         arr->arr[index].pcb = el;
         assert(arr->arr[index].is_used); // Set by setting .pcb
         return res_OK;

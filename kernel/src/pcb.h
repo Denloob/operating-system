@@ -38,7 +38,6 @@ typedef pcb_IORefreshResult (*pcb_IORefresh)(PCB *pcb);
 typedef struct {
     size_t length;
     size_t capacity;
-    size_t last_child_idx;
     size_t last_free_idx;
     union {
         PCB *pcb;
@@ -51,7 +50,6 @@ typedef struct {
 } pcb_ProcessChildrenArray;
 
 bool pcb_ProcessChildrenArray_init(pcb_ProcessChildrenArray *arr);
-bool pcb_ProcessChildrenArray_get_last_child(pcb_ProcessChildrenArray *arr, PCB **out);
 PCB *pcb_ProcessChildrenArray_remove(pcb_ProcessChildrenArray *arr, size_t index);
 res pcb_ProcessChildrenArray_push(pcb_ProcessChildrenArray *arr, PCB *el);
 void pcb_ProcessChildrenArray_cleanup(pcb_ProcessChildrenArray *arr);
