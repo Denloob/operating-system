@@ -203,3 +203,19 @@ PCB *pcb_ProcessChildrenArray_remove(pcb_ProcessChildrenArray *arr, size_t index
 
     return pcb;
 }
+
+size_t pcb_ProcessChildrenArray_find(pcb_ProcessChildrenArray *arr, PCB *el)
+{
+    assert(el != NULL);
+
+    for (size_t i = 0; i < arr->length; i++)
+    {
+        if (arr->arr[i].pcb == el)
+        {
+            assert(arr->arr[i].is_used);
+            return i;
+        }
+    }
+
+    return arr->length;
+}
