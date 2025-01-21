@@ -5,12 +5,21 @@
 #include <unistd.h>
 #include <string.h>
 #include <stdbool.h>
+#include <sys/wait.h>
 
 int main()
 {
+    int8_t return_code = 0;
     while (true)
     {
-        fputs("shcore $ ", stdout);
+        if (return_code == 0)
+        {
+            fputs("shcore $ ", stdout);
+        }
+        else
+        {
+            printf("shcore [%d]$ ", return_code);
+        }
 
         char buf[1024] = {0};
         size_t input_len = fread(buf, 1, sizeof(buf), stdin);
@@ -35,6 +44,24 @@ int main()
             continue;
         }
 
-        execve_new(cmd->shell_command[0], &cmd->shell_command[0]);
+        int fail = execve_new(cmd->shell_command[0], &cmd->shell_command[0]);
+        if (fail)
+        {
+            printf("Unknown command: '%s'\n", cmd->shell_command[0]);
+        }
+        else
+        {
+            int wstatus;
+            pid_t child_pid = waitpid(-1, &wstatus, 0);
+            if (child_pid == -1)
+            {
+                printf("waitpid: something went wrong\n");
+            }
+            else
+            {
+                assert(WIFEXITED(wstatus));
+                return_code = WEXITSTATUS(wstatus);
+            }
+        }
     }
 }
