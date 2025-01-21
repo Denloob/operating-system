@@ -81,3 +81,9 @@ void scheduler_io_remove(PCB *pcb);
 PCB *scheduler_io_refresh();
 
 void scheduler_move_current_process_to_io_queue_and_context_switch(pcb_IORefresh refresh_func) __attribute__((noreturn));
+
+/**
+ * @brief Find a process with the given pid.
+ * @return PCB of that process if found, NULL otherwise.
+ */
+PCB *scheduler_find_by_pid(uint64_t pid);

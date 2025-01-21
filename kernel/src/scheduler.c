@@ -233,3 +233,24 @@ void scheduler_start()
     scheduler_enable();
     scheduler_context_switch_to(g_process_queue_tail, SCHEDULER_NOT_A_PIC_INTERRUPT);
 }
+
+PCB *scheduler_find_by_pid(uint64_t pid)
+{
+    for (PCB *it = g_current_process; it != NULL; it = it->queue_next)
+    {
+        if (it->id == pid)
+        {
+            return it;
+        }
+    }
+
+    for (PCB *it = g_io_head; it != NULL; it = it->queue_next)
+    {
+        if (it->id == pid)
+        {
+            return it;
+        }
+    }
+
+    return NULL;
+}
