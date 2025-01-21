@@ -55,8 +55,8 @@ bool pcb_ProcessChildrenArray_get_last_child(pcb_ProcessChildrenArray *arr, PCB 
 PCB *pcb_ProcessChildrenArray_remove(pcb_ProcessChildrenArray *arr, size_t index);
 res pcb_ProcessChildrenArray_push(pcb_ProcessChildrenArray *arr, PCB *el);
 void pcb_ProcessChildrenArray_cleanup(pcb_ProcessChildrenArray *arr);
-// Returns the index of `el` if found. Otherwise arr->length;
-size_t pcb_ProcessChildrenArray_find(pcb_ProcessChildrenArray *arr, PCB *el);
+// Returns the index of the PCB with `pid` if found. Otherwise arr->length;
+size_t pcb_ProcessChildrenArray_find(pcb_ProcessChildrenArray *arr, uint64_t pid);
 
 struct PCB
 {
