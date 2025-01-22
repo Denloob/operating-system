@@ -1,5 +1,6 @@
 #pragma once
 
+#include "file_descriptor_hashmap.h"
 #include "mmu.h"
 #include "fs.h"
 #include "regs.h"
@@ -78,8 +79,9 @@ struct PCB
     mmu_PageMapEntry *paging;
 
     pcb_ProcessChildrenArray children;
+    FileDescriptorHashmap fd_map;
 
-    // TODO: open file descriptors, signal info
+    // TODO: signal info
 };
 
 void PCB_cleanup(PCB *pcb);

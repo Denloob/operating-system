@@ -1,4 +1,5 @@
 #include "pcb.h"
+#include "file_descriptor_hashmap.h"
 #include "mmu.h"
 #include "mmu_config.h"
 #include "assert.h"
@@ -19,9 +20,16 @@ PCB* PCB_init(uint64_t id, PCB *parent, uint64_t entry_point, mmu_PageMapEntry *
     {
         return NULL;
     }
+
+    if (!file_descriptor_hashmap_init(&created_pcb->fd_map))
+    {
+        kfree(created_pcb);
+        return NULL;
+    }
     
     if (!pcb_ProcessChildrenArray_init(&created_pcb->children))
     {
+        file_descriptor_hashmap_cleanup(&created_pcb->fd_map);
         kfree(created_pcb);
         return NULL;
     }
@@ -67,6 +75,7 @@ void PCB_cleanup(PCB *pcb)
 
     // TODO: free the pages
 
+    file_descriptor_hashmap_cleanup(&pcb->fd_map);
     pcb_ProcessChildrenArray_cleanup(&pcb->children);
     kfree(pcb);
 }
