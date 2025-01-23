@@ -102,3 +102,17 @@ int strcmp(const char *str1, const char *str2)
     }
     return *(unsigned char *)str1 - *(unsigned char *)str2;
 }
+
+int all_chars_are_same(const char *str) 
+{
+    size_t length = strlen(str); 
+    char first_char = str[0];   
+    for (size_t i = 1; i < length; i++) 
+    {
+        if (str[i] != first_char) 
+        {
+            return 0; 
+        }
+    }
+    return 1; 
+}
