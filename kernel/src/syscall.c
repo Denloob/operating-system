@@ -14,8 +14,8 @@
 #include "brk.h"
 #include "assert.h"
 #include <stdint.h>
-#include <time.h>
 #include "program.h"
+#include "memory.h"
 #include "file.h"
 #include "fs.h"
 #include "res.h"
@@ -123,14 +123,12 @@ static void syscall_chdir(Regs *regs)
 {
     usermode_mem *new_cwd = (usermode_mem *)regs->rdi;
 
-    // TODO: Parse the dir and check if it actually exists
-    //if(fat16_find_file_based_on_path(&g_fs_fat16, new_cwd, NULL));
+    regs->rax = false; // Return: failed
 
     uint64_t path_length;
     bool valid = usermode_strlen(new_cwd, FS_MAX_FILEPATH_LEN - 1, &path_length);
     if (!valid)
     {
-        regs->rax = false; // Return: failed
         return;
     }
 
@@ -138,7 +136,6 @@ static void syscall_chdir(Regs *regs)
 
     if (path_length == 0)
     {
-        regs->rax = false; // Fail
         return;
     }
 
@@ -151,10 +148,27 @@ static void syscall_chdir(Regs *regs)
         assert(false && "Relative chdir is unsupported"); // TODO: implement relative paths
     }
 
-    PCB *pcb = scheduler_current_pcb();
-    rs = usermode_copy_from_user(pcb->cwd, new_cwd, path_length);
+    char filepath[FS_MAX_FILEPATH_LEN] = {0};
+    rs = usermode_copy_from_user(filepath, new_cwd, path_length);
     assert(IS_OK(rs) && "checked before, should be good");
+
+    fat16_DirEntry dir;
+    if (!fat16_find_file_based_on_path(&g_fs_fat16, filepath, &dir))
+    {
+        return;
+    }
+
+    bool is_actually_dir = (dir.attributes & fat16_DIRENTRY_ATTR_IS_DIRECTORY) != 0;
+    if (!is_actually_dir)
+    {
+        return;
+    }
+
+    PCB *pcb = scheduler_current_pcb();
+    memmove(pcb->cwd, filepath, path_length);
     pcb->cwd[path_length] = '\0';
+
+    regs->rax = true; // Success
 }
 
 static void syscall_getcwd(Regs *regs)
