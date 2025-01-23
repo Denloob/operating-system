@@ -189,7 +189,7 @@ uint16_t fat16_get_next_cluster(fat16_Ref *fat16, uint16_t cluster);
  *@buffer - the data to write into the file
  *@size - the size of the data
  */
-bool fat16_add_root_entry(fat16_Ref *fat16, fat16_DirEntry *new_entry , uint16_t first_cluster);
+bool fat16_add_dir_entry_to(fat16_Ref *fat16, fat16_DirEntry *new_entry , uint16_t first_cluster);
 
 #define fat16_DIRENTRY_ATTR_IS_DIRECTORY 0x10
 

@@ -521,7 +521,7 @@ bool fat16_write_FAT_at(Drive *drive, fat16_BootSector *bpb, const uint8_t FAT[s
 
 
 
-bool fat16_add_root_entry(fat16_Ref *fat16, fat16_DirEntry *new_entry , uint16_t first_cluster) 
+bool fat16_add_dir_entry_to(fat16_Ref *fat16, fat16_DirEntry *new_entry , uint16_t first_cluster) 
 {
     fat16_DirReader reader;
     fat16_init_dir_reader(&reader, fat16 , first_cluster);
@@ -712,7 +712,7 @@ bool fat16_create_file(fat16_Ref *fat16, const char *full_filename)
         return false;
     }
 
-    if (!fat16_add_root_entry(fat16, &new_entry,0)) 
+    if (!fat16_add_dir_entry_to(fat16, &new_entry,0)) 
     {
         printf("Failed to add the directory entry to the root directory\n");
         return false;
@@ -757,7 +757,7 @@ bool fat16_create_directory(fat16_Ref *fat16 , const char* directory_name , cons
     new_entry.firstClusterLow = allocated_clusters[0] & 0xFFFF;
     new_entry.firstClusterHigh = (allocated_clusters[0] >> 16) & 0xFFFF;
 
-    success = fat16_add_root_entry(fat16, &new_entry , first_cluster);
+    success = fat16_add_dir_entry_to(fat16, &new_entry , first_cluster);
     if (!success)
     {
         // TODO: deallocate clusters in `allocated_clusters`
@@ -784,7 +784,7 @@ bool fat16_create_file_with_return(fat16_File *out_file, fat16_Ref *fat16, const
         return false;
     }
 
-    if (!fat16_add_root_entry(fat16, &new_entry,0)) 
+    if (!fat16_add_dir_entry_to(fat16, &new_entry,0)) 
     {
         printf("Failed to add the directory entry to the root directory\n");
         return false;
