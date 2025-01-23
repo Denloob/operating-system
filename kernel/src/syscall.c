@@ -342,6 +342,50 @@ static void syscall_read(Regs *regs)
     syscall_read_write(regs, process_fread, file_descriptor_perm_READ);
 }
 
+
+
+static void syscall_getdents(Regs *regs) 
+{
+    usermode_mem *user_path = (usermode_mem *)regs->rdi;
+    usermode_mem *user_out_entries_buffer = (usermode_mem *)regs->rsi;
+    int max_entries = (int)regs->rdx;
+    fat16_Ref *fat16 = (fat16_Ref *)regs->r10;
+
+    regs->rax = -1;
+
+    char path[FS_MAX_FILEPATH_LEN] = {0};
+    uint64_t path_len;
+    bool valid_path = usermode_strlen(user_path, FS_MAX_FILEPATH_LEN - 1, &path_len);
+    if (!valid_path) {return;}
+    res copy_result = usermode_copy_from_user(path, user_path, path_len);
+    assert(IS_OK(copy_result) && "Path copy should be valid");
+
+    fat16_DirEntry dir_entry = {0};
+    bool found = fat16_find_file_based_on_path(fat16, path, &dir_entry);
+    if (!found) {return;}
+
+    uint16_t first_cluster = dir_entry.firstClusterLow | (dir_entry.firstClusterHigh<< 16);
+
+    size_t buffer_size = sizeof(fat16_dirent) * max_entries;
+    fat16_dirent *kernel_out_entries_buffer = kmalloc(buffer_size);
+    if (kernel_out_entries_buffer == NULL) {
+        return; // Memory allocation failed
+    }
+
+    int count = fat16_getdents(first_cluster, kernel_out_entries_buffer, max_entries, fat16);
+
+    if (count > 0) {
+        res copy_result = usermode_copy_to_user(user_out_entries_buffer, kernel_out_entries_buffer, count * sizeof(fat16_dirent));
+        assert(IS_OK(copy_result) && "Failed to copy to user memory");
+    }
+
+    kfree(kernel_out_entries_buffer);
+
+    regs->rax = count; 
+}
+
+
+
 static void syscall_write(Regs *regs)
 {
     syscall_read_write(regs, process_fwrite, file_descriptor_perm_WRITE);
@@ -406,6 +450,9 @@ static void __attribute__((used, sysv_abi)) syscall_handler(Regs *user_regs)
             break;
         case SYSCALL_WAITPID:
             syscall_waitpid(user_regs);
+            break;
+        case SYSCALL_GETDENTS:
+            syscall_getdents(user_regs);
             break;
     }
 

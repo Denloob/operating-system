@@ -15,7 +15,10 @@ typedef enum {
 
     SYSCALL_REBOOT  = 169,
 
+    SYSCALL_GETDENTS = 217,
+
     SYSCALL_WAITPID = 1001,
+
 } syscall_Number;
 
 typedef enum {
