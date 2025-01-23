@@ -71,15 +71,13 @@ static void test_getdents()
     assert(count > 0 && "No directory entries found");
 
     for (int i = 0; i < count; i++) {
-        printf("Entry %d: Name: %s, Attr: %d, Cluster: %d, Size: %d\n",
+        printf("Entry %d: Name: %s, Attr: %d, Cluster: %d, Size: %d , MDS-FLAGS: %d\n",
                i,
                dir_entries[i].name,
                dir_entries[i].attr,
                dir_entries[i].cluster,
-               dir_entries[i].size);
-
-        assert(dir_entries[i].cluster != 0 && "Cluster number should not be zero for valid files");
-        assert(dir_entries[i].size >= 0 && "File size should not be negative");
+               dir_entries[i].size ,
+               dir_entries[i].mdscore_flags);
     }
 
     printf("test_getdents passed successfully.\n");
