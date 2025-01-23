@@ -176,3 +176,29 @@ void *memrchr(const void *s_in, int c_in, size_t n)
 
     return NULL;
 }
+
+int strcmp(const char *s1, const char *s2)
+{
+    while (*s1 && (*s1 == *s2)) 
+    {
+        s1++;
+        s2++;
+    }
+    return *(unsigned char *)s1 - *(unsigned char *)s2;
+}
+
+int strncmp(const char *s1, const char *s2, size_t n)
+{
+    int result = 0;
+
+    if (s1 == s2 || n == 0)
+        return 0;
+
+    while ((result = *s1 - *s2++) == 0)
+    {
+        if (*s1++ == '\0' || --n == 0)
+            break;
+    }
+
+    return result;
+}
