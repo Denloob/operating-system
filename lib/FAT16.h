@@ -205,6 +205,13 @@ bool fat16_add_root_entry(fat16_Ref *fat16, fat16_DirEntry *new_entry , uint16_t
 bool fat16_create_dir_entry(fat16_Ref *fat16 , const char *filename , const char *extension , uint8_t attributes , fat16_DirEntry *created_entry);
 
 /**
+ * @brief Create a directory in the given path with the given name.
+ *
+ * @return Whether the function succeeded
+ */
+bool fat16_create_directory(fat16_Ref *fat16 , const char* directory_name , const char *where_to_create);
+
+/**
  *@brief finds a free clutser in the FAT and returns its number
  */
 bool fat16_allocate_clusters(fat16_Ref *fat16, uint8_t amount_of_clusters, uint16_t *out_array);

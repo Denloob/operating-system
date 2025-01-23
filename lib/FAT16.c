@@ -721,46 +721,52 @@ bool fat16_create_file(fat16_Ref *fat16, const char *full_filename)
     return true;
 }
 
-bool fat16_create_directory(fat16_Ref *fat16 , const char* direcotry_name , char* where_to_create)
-{   
-
-    uint16_t first_cluster=0; //root cluster
-    if(strcmp(where_to_create, "root"))
+bool fat16_create_directory(fat16_Ref *fat16 , const char* directory_name , const char *where_to_create)
+{
+    //meaning the directory is not the root 
+    fat16_DirEntry dir_entry;
+    if (!fat16_find_file_based_on_path(fat16, where_to_create, &dir_entry)) 
     {
-        //meaning the directory is not the root 
-        fat16_DirEntry dir_entry;
-        if (!fat16_find_file_based_on_path(fat16, where_to_create, &dir_entry)) 
-        {
-            return false;
-        }
-        first_cluster= (dir_entry.firstClusterHigh << 16) | dir_entry.firstClusterLow;
-    }
-
-    char dirname[FAT16_FILENAME_SIZE] = { ' ' };
-    char extension[FAT16_EXTENSION_SIZE] = { ' ' };
-    memmove(dirname, direcotry_name, FAT16_FILENAME_SIZE);
-    memmove(extension, direcotry_name + FAT16_FILENAME_SIZE, FAT16_EXTENSION_SIZE);
-
-    fat16_DirEntry new_entry;
-    if (!fat16_create_dir_entry(fat16, direcotry_name, extension, 0x20 /* Archive attribute */, &new_entry)) {
-        printf("Failed to create directory entry structure\n");
         return false;
     }
-    
+    uint16_t first_cluster = (dir_entry.firstClusterHigh << 16) | dir_entry.firstClusterLow;
+
+    char dirname[FAT16_FULL_FILENAME_SIZE];
+    memset(dirname, ' ', sizeof(dirname));
+    strncpy(dirname, directory_name, FAT16_FULL_FILENAME_SIZE);
+
+    fat16_DirEntry new_entry;
+    bool success = fat16_create_dir_entry(fat16, dirname,
+                                          dirname + FAT16_FILENAME_SIZE,
+                                          fat16_DIRENTRY_ATTR_IS_DIRECTORY,
+                                          &new_entry);
+    if (!success)
+    {
+        return false;
+    }
+
     //allocate directory cluster
-    uint16_t clusters_needed = 1;
-    uint16_t allocated_clusters[clusters_needed];
-    if (!fat16_allocate_clusters(fat16, clusters_needed, allocated_clusters))
+#define CLUSTERS_NEEDED 1
+    uint16_t allocated_clusters[CLUSTERS_NEEDED];
+    success = fat16_allocate_clusters(fat16, CLUSTERS_NEEDED, allocated_clusters);
+    if (!success)
     {
         return false; 
     }
 
     new_entry.firstClusterLow = allocated_clusters[0] & 0xFFFF;
     new_entry.firstClusterHigh = (allocated_clusters[0] >> 16) & 0xFFFF;
-    if (!fat16_add_root_entry(fat16, &new_entry , first_cluster)) {return false;}
+
+    success = fat16_add_root_entry(fat16, &new_entry , first_cluster);
+    if (!success)
+    {
+        // TODO: deallocate clusters in `allocated_clusters`
+        return false;
+    }
 
     return true;
 }
+
 bool fat16_create_file_with_return(fat16_File *out_file, fat16_Ref *fat16, const char *full_filename)
 {
 
