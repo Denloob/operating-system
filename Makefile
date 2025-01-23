@@ -17,6 +17,7 @@ $(IMAGE_NAME).img: $(BOOTLOADER) $(KERNEL) sysapps initfat16 kernel.cfg
 	mcopy $(KERNEL) a:
 	mcopy ./assets/cogs.bmp a:
 	mcopy ./system_apps/init/init a:/init
+	mcopy ./system_apps/cat/cat a:/cat
 	mcopy ./system_apps/echo/echo a:/echo
 	mcopy ./system_apps/reboot/reboot a:/reboot
 	mcopy ./system_apps/sh/bin/sh a:/sh
