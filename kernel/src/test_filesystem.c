@@ -60,7 +60,34 @@ static void test_file_creation_and_writing()
     assert(result == check_value && "fread didn't get the expected value");
 }
 
+static void test_getdents()
+{
+    fat16_dirent dir_entries[16]; // Buffer for up to 16 entries
+    int max_entries = 16;
+
+    int count = fat16_getdents(0, dir_entries, max_entries ,&g_fs_fat16);
+    printf("Number of entries read: %d\n", count);
+
+    assert(count > 0 && "No directory entries found");
+
+    for (int i = 0; i < count; i++) {
+        printf("Entry %d: Name: %s, Attr: %d, Cluster: %d, Size: %d\n",
+               i,
+               dir_entries[i].name,
+               dir_entries[i].attr,
+               dir_entries[i].cluster,
+               dir_entries[i].size);
+
+        assert(dir_entries[i].cluster != 0 && "Cluster number should not be zero for valid files");
+        assert(dir_entries[i].size >= 0 && "File size should not be negative");
+    }
+
+    printf("test_getdents passed successfully.\n");
+}
 void test_filesystem()
 {
     test_file_creation_and_writing();
+    test_getdents();
+    printf("All tests passed successfully press any key to continue");
+    io_wait_key_raw();
 }
