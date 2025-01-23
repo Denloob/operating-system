@@ -282,11 +282,17 @@ bool fat16_find_file_based_on_path(fat16_Ref *fat16 , const char *path ,fat16_Di
         } 
     }
     //after for loop filename will have the file and not the dir
-    char DENIS_MADE_ME_CREATE_THIS_ARRAY[FAT16_FULL_FILENAME_SIZE] = "";
-    filename[index] = '\0';
-    filename_to_fat16_filename(filename, DENIS_MADE_ME_CREATE_THIS_ARRAY);
-    return fat16_find_file(fat16, DENIS_MADE_ME_CREATE_THIS_ARRAY, out_file, start_cluster);
-
+    if(index==0)
+    {
+        return true;
+    }
+    else
+    {
+        char DENIS_MADE_ME_CREATE_THIS_ARRAY[FAT16_FULL_FILENAME_SIZE] = "";
+        filename[index] = '\0';
+        filename_to_fat16_filename(filename, DENIS_MADE_ME_CREATE_THIS_ARRAY);
+        return fat16_find_file(fat16, DENIS_MADE_ME_CREATE_THIS_ARRAY, out_file, start_cluster);
+    }
 }
 
 bool get_next_cluster(Drive *drive, fat16_BootSector *bpb, uint16_t cur_cluster, uint16_t *next_cluster, FatCache *cache)
