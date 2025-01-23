@@ -169,10 +169,22 @@ int fclose(FILE *stream)
 
 size_t fwrite(const void *restrict ptr, size_t size, size_t nmemb, FILE *restrict stream)
 {
-    return write(stream->fd, ptr, size * nmemb) / size;
+    ssize_t bytes_written = write(stream->fd, ptr, size * nmemb);
+    if (bytes_written < 0)
+    {
+        return 0;
+    }
+
+    return bytes_written / size;
 }
 
 size_t fread(void *restrict ptr, size_t size, size_t nmemb, FILE *restrict stream)
 {
-    return read(stream->fd, ptr, size * nmemb) / size;
+    ssize_t bytes_read = read(stream->fd, ptr, size * nmemb);
+    if (bytes_read < 0)
+    {
+        return 0;
+    }
+
+    return bytes_read / size;
 }
