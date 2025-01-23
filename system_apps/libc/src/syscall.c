@@ -38,14 +38,14 @@ long syscall(long syscall_number, ...)
     return do_syscall(syscall_number, a0, a1, a2, a3, a4, a5);
 }
 
-ssize_t write(const char *path, const void *buf, size_t count)
+ssize_t write(int fd, const void *buf, size_t count)
 {
-    return syscall(SYS_write, path, buf, count);
+    return syscall(SYS_write, fd, buf, count);
 }
 
-ssize_t read(const char *path, void *buf, size_t count)
+ssize_t read(int fd, void *buf, size_t count)
 {
-    return syscall(SYS_read, path, buf, count);
+    return syscall(SYS_read, fd, buf, count);
 }
 
 int brk(void *addr)
@@ -108,4 +108,9 @@ int chdir(const char *path)
 pid_t waitpid(pid_t pid, int *wstatus, int options)
 {
     return syscall(SYS_waitpid, pid, wstatus, options);
+}
+
+int open(const char *pathname, int flags)
+{
+    return syscall(SYS_open, pathname, flags);
 }

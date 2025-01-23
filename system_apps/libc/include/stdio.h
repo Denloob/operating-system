@@ -21,7 +21,7 @@ int fputc(int c, FILE *stream);
 int putc(int c, FILE *stream);
 int putchar(int c);
 
-FILE *fopen(const char *restrict path);
+FILE *fopen(const char *restrict path, const char *restrict mode);
 int fclose(FILE *stream);
 
 size_t fwrite(const void *restrict ptr, size_t size, size_t nmemb, FILE *restrict stream);

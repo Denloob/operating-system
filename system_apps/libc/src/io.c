@@ -3,9 +3,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <fcntl.h>
 
 struct _IO_FILE {
-    char path[0];
+    int fd;
 };
 
 FILE *stdin;
@@ -61,11 +62,102 @@ int puts(const char *s)
     return 0;
 }
 
-FILE *fopen(const char *restrict path)
-{
-    FILE *fp = malloc(strlen(path) + 1);
-    strcpy(fp->path, path);
+enum {
+    FILE_MODE_READ_ONLY  = 0x1,
+    FILE_MODE_WRITE_ONLY = 0x2,
+    FILE_MODE_APPEND     = 0x4,
+    FILE_MODE_PLUS       = 0x8, // To apply to any of the other 3, bitwise OR it.
+};
 
+__attribute__((const))
+static int state_without_plus(int state)
+{
+    return state & (~FILE_MODE_PLUS);
+}
+
+__attribute__((const))
+static int parse_mode_string_to_flags(const char *mode)
+{
+    int state = 0;
+    for (const char *it = mode; *it; it++)
+    {
+        if (*it == '+')
+        {
+            if (state & FILE_MODE_PLUS)
+            {
+                return -1;
+            }
+
+            state |= FILE_MODE_PLUS;
+
+            continue;
+        }
+
+        if (state_without_plus(state) != 0)
+            return -1;
+
+        switch (*it)
+        {
+            case 'w':
+                state |= FILE_MODE_WRITE_ONLY;
+                break;
+            case 'a':
+                state |= FILE_MODE_APPEND;
+                break;
+            case 'r':
+                state |= FILE_MODE_READ_ONLY;
+                break;
+            default:
+                return -1;
+        }
+    }
+
+    int flags = 0;
+    switch (state_without_plus(state))
+    {
+        case FILE_MODE_READ_ONLY:
+            flags = O_RDONLY;
+            break;
+        case FILE_MODE_WRITE_ONLY:
+            flags = O_WRONLY | O_CREAT | O_TRUNC;
+            break;
+        case FILE_MODE_APPEND:
+            flags = O_WRONLY | O_CREAT | O_APPEND;
+            break;
+        default:
+            assert(false && "Unreachable");
+    }
+
+    if (state & FILE_MODE_PLUS)
+    {
+        flags &= ~(O_RDONLY | O_WRONLY);
+        flags |= O_RDWR;
+    }
+
+    return flags;
+}
+
+FILE *fopen(const char *restrict path, const char *restrict mode)
+{
+    int flags = parse_mode_string_to_flags(mode);
+    if (flags == -1)
+    {
+        return NULL;
+    }
+
+    int fd = open(path, flags);
+    if (fd == -1)
+    {
+        return NULL;
+    }
+
+    FILE *fp = malloc(strlen(path) + 1);
+    if (fp == NULL)
+    {
+        return NULL;
+    }
+
+    fp->fd = fd;
     return fp;
 }
 
@@ -77,10 +169,10 @@ int fclose(FILE *stream)
 
 size_t fwrite(const void *restrict ptr, size_t size, size_t nmemb, FILE *restrict stream)
 {
-    return write(stream->path, ptr, size * nmemb) / size;
+    return write(stream->fd, ptr, size * nmemb) / size;
 }
 
 size_t fread(void *restrict ptr, size_t size, size_t nmemb, FILE *restrict stream)
 {
-    return read(stream->path, ptr, size * nmemb) / size;
+    return read(stream->fd, ptr, size * nmemb) / size;
 }

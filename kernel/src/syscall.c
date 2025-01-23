@@ -1,3 +1,5 @@
+#include "file_descriptor_hashmap.h"
+#include "file_descriptor.h"
 #include "FAT16.h"
 #include "string.h"
 #include "io.h"
@@ -32,6 +34,82 @@
 #define MAX_ARGV_ELEMENT_LEN 512
 // Here the RSP of the syscall caller will be stored.
 static uint64_t g_ring3_rsp;
+
+static void syscall_open(Regs *regs)
+{
+    usermode_mem *filepath_user = (usermode_mem *)regs->rdi;
+    uint64_t flags = regs->rsi;
+
+    regs->rax = -1; // Failed
+
+    // Both calculates the length, and makes sure that filepath_user is, in fact,
+    //  a null terminated string in usermode memory, smaller than FS_MAX_FILEPATH_LEN.
+    uint64_t filepath_len;
+    bool valid = usermode_strlen(filepath_user, FS_MAX_FILEPATH_LEN - 1, &filepath_len);
+    if (!valid)
+    {
+        return;
+    }
+
+    char filepath[FS_MAX_FILEPATH_LEN] = {0};
+    res rs = usermode_copy_from_user(filepath, filepath_user, filepath_len);
+    assert(IS_OK(rs) && "checked before, should be good");
+
+    bool should_truncate_file = flags & SYSCALL_OPEN_FLAGS_TRUNC;
+    if (flags & SYSCALL_OPEN_FLAGS_CREATE)
+    {
+        // TODO: create the file if it doesn't exist
+        //  If the file doesn't exist, set should_truncate_file to false.
+    }
+
+    if (should_truncate_file)
+    {
+        // TODO: we want to delete all the file contents
+    }
+
+    FILE file = {0};
+    bool success = fat16_open(&g_fs_fat16, filepath, &file.file);
+    if (!success)
+    {
+        return;
+    }
+
+    PCB *pcb = scheduler_current_pcb();
+    uint64_t fd_num = pcb->last_fd + 1;
+    FileDescriptor *fd_desc = file_descriptor_hashmap_emplace(&pcb->fd_map, fd_num);
+    if (fd_desc == NULL)
+    {
+        return;
+    }
+
+    if (flags & SYSCALL_OPEN_FLAGS_APPEND)
+    {
+        fseek(&file, 0, SEEK_END);
+    }
+
+    switch (flags % 8) // 8 because flags is in octal
+    {
+        case SYSCALL_OPEN_FLAGS_READ_WRITE:
+            fd_desc->perms = file_descriptor_perm_RW;
+            break;
+        case SYSCALL_OPEN_FLAGS_READ_ONLY:
+            fd_desc->perms = file_descriptor_perm_READ;
+            break;
+        case SYSCALL_OPEN_FLAGS_WRITE_ONLY:
+            fd_desc->perms = file_descriptor_perm_WRITE;
+            break;
+        default:
+            bool success = file_descriptor_hashmap_remove(&pcb->fd_map, fd_num);
+            assert(success);
+            return;
+    }
+
+    fd_desc->file = file;
+    fd_desc->num = fd_num;
+
+    pcb->last_fd = fd_num;
+    regs->rax = fd_num;
+}
 
 static void syscall_exit(Regs *regs)
 {
@@ -230,53 +308,43 @@ static void syscall_brk(Regs *regs)
     regs->rax = pcb->page_break;
 }
 
-static void syscall_read_write(Regs *regs, typeof(fread) fread_fwrite_func)
+// needed_perm is the permission the file descriptor shall have to perform the read/write. For example file_descriptor_perm_READ for the fread function.
+static void syscall_read_write(Regs *regs, typeof(fread) fread_fwrite_func, int needed_perm)
 {
-    regs->rax = 0; // Return: Read/Wrote 0 bytes.
+    regs->rax = -1; // Return: Failed
 
     // Args:
-    usermode_mem *filepath_user = (usermode_mem *)regs->rdi;
+    uint64_t fd_num = regs->rdi;
     usermode_mem *out_buffer = (usermode_mem *)regs->rsi;
     uint64_t buffer_size = regs->rdx;
 
-    // Both calculates the length, and makes sure that filepath_user is, in fact,
-    //  a null terminated string in usermode memory, smaller than FS_MAX_FILEPATH_LEN.
-    uint64_t filepath_len;
-    bool valid = usermode_strlen(filepath_user, FS_MAX_FILEPATH_LEN - 1, &filepath_len);
-    if (!valid)
+    PCB *pcb = scheduler_current_pcb();
+    FileDescriptor *fd_desc = file_descriptor_hashmap_get(&pcb->fd_map, fd_num);
+    if (fd_desc == NULL)
     {
         return;
     }
 
-    if (!usermode_is_mapped((uint64_t)out_buffer, (uint64_t)out_buffer + buffer_size))
+    if ((fd_desc->perms & needed_perm) == 0)
     {
         return;
     }
 
-    char filepath[FS_MAX_FILEPATH_LEN] = {0};
-    res rs = usermode_copy_from_user(filepath, filepath_user, filepath_len);
-    assert(IS_OK(rs) && "checked before, should be good");
+    FILE *file = &fd_desc->file;
 
-    FILE file = {0};
-    bool success = fat16_open(&g_fs_fat16, filepath, &file.file); // TODO: when we support `fd`s, that's how we will get the file handle. For now, this also works
-    if (!success)
-    {
-        return;
-    }
-
-    asm volatile("stac" ::: "memory"); // 
-    regs->rax = fread_fwrite_func(out_buffer, 1, buffer_size, &file);
+    asm volatile("stac" ::: "memory");
+    regs->rax = fread_fwrite_func(out_buffer, 1, buffer_size, file);
     asm volatile("clac" ::: "memory");
 }
 
 static void syscall_read(Regs *regs)
 {
-    syscall_read_write(regs, process_fread);
+    syscall_read_write(regs, process_fread, file_descriptor_perm_READ);
 }
 
 static void syscall_write(Regs *regs)
 {
-    syscall_read_write(regs, process_fwrite);
+    syscall_read_write(regs, process_fwrite, file_descriptor_perm_WRITE);
 }
 
 static void __attribute__((used, sysv_abi)) syscall_handler(Regs *user_regs)
@@ -314,6 +382,9 @@ static void __attribute__((used, sysv_abi)) syscall_handler(Regs *user_regs)
             break;
         case SYSCALL_WRITE:
             syscall_write(user_regs);
+            break;
+        case SYSCALL_OPEN:
+            syscall_open(user_regs);
             break;
         case SYSCALL_BRK:
             syscall_brk(user_regs);

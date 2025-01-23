@@ -79,7 +79,9 @@ struct PCB
     mmu_PageMapEntry *paging;
 
     pcb_ProcessChildrenArray children;
+
     FileDescriptorHashmap fd_map;
+    uint64_t last_fd;
 
     // TODO: signal info
 };

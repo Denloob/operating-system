@@ -5,9 +5,9 @@ extern int __attribute__((sysv_abi, used)) main(int argc, char **argv);
 
 static void __attribute__((used)) init_stdio_streams()
 {
-    stdin  = fopen("tty.dev");
-    stdout = fopen("tty.dev");
-    stderr = fopen("tty.dev");
+    stdin  = fopen("tty.dev", "r");
+    stdout = fopen("tty.dev", "w");
+    stderr = fopen("tty.dev", "w");
 }
 
 void __attribute__((naked)) _start()
