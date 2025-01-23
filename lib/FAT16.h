@@ -101,6 +101,7 @@ typedef struct
     uint8_t attr;
     uint16_t cluster; // First cluster
     uint32_t size;
+    uint8_t mdscore_flags;
 }fat16_dirent;
 /*
  *The function returns the amount of entries read

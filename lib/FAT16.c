@@ -197,9 +197,32 @@ bool fat16_find_file(fat16_Ref *fat16, const char *filename, fat16_DirEntry *out
     return false;
 }
 
-
+void create_root_dir_entry(fat16_DirEntry *entry) 
+{
+    memset(entry, 0, sizeof(fat16_DirEntry));
+    memset(entry->filename, ' ', sizeof(entry->filename));
+    memmove(entry->filename, "ROOT    ", 4); 
+    memset(entry->extension, ' ', sizeof(entry->extension));
+    entry->attributes = 0x10;
+    entry->reserved = 0;
+    entry->creationTimeTenths = 0;
+    entry->creationTime = 0;
+    entry->creationDate = 0;
+    entry->lastAccessDate = 0;
+    entry->firstClusterHigh = 0;
+    entry->firstClusterLow = 0;
+    entry->lastModTime = 0;
+    entry->lastModDate = 0;
+    entry->fileSize = 0;
+}
 bool fat16_find_file_based_on_path(fat16_Ref *fat16 , const char *path ,fat16_DirEntry *out_file)
 {
+    //check if the path leads to root
+    if(all_chars_are_same(path) && path[0] == '/')
+    {
+        create_root_dir_entry(out_file);
+        return true;
+    }
     int add_to_i =0; //check if path starts with /
     
     int start_cluster = 0; //root cluster
@@ -263,6 +286,7 @@ bool fat16_find_file_based_on_path(fat16_Ref *fat16 , const char *path ,fat16_Di
     filename[index] = '\0';
     filename_to_fat16_filename(filename, DENIS_MADE_ME_CREATE_THIS_ARRAY);
     return fat16_find_file(fat16, DENIS_MADE_ME_CREATE_THIS_ARRAY, out_file, start_cluster);
+
 }
 
 bool get_next_cluster(Drive *drive, fat16_BootSector *bpb, uint16_t cur_cluster, uint16_t *next_cluster, FatCache *cache)
@@ -1003,6 +1027,7 @@ int fat16_getdents(uint16_t first_cluster, fat16_dirent *out_entries_buffer, int
                                                 (entry.firstClusterHigh<< 16);
             out_entries_buffer[count].size = entry.fileSize;
 
+            out_entries_buffer[count].mdscore_flags = entry.reserved & fat16_MDSCore_FLAGS_MASK; 
             count++;
         }
     }
