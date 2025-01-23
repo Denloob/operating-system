@@ -14,6 +14,7 @@
 #include "brk.h"
 #include "assert.h"
 #include <stdint.h>
+#include <time.h>
 #include "program.h"
 #include "file.h"
 #include "fs.h"
@@ -123,6 +124,7 @@ static void syscall_chdir(Regs *regs)
     usermode_mem *new_cwd = (usermode_mem *)regs->rdi;
 
     // TODO: Parse the dir and check if it actually exists
+    //if(fat16_find_file_based_on_path(&g_fs_fat16, new_cwd, NULL));
 
     uint64_t path_length;
     bool valid = usermode_strlen(new_cwd, FS_MAX_FILEPATH_LEN - 1, &path_length);
