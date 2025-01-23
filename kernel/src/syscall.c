@@ -349,7 +349,6 @@ static void syscall_getdents(Regs *regs)
     usermode_mem *user_path = (usermode_mem *)regs->rdi;
     usermode_mem *user_out_entries_buffer = (usermode_mem *)regs->rsi;
     int max_entries = (int)regs->rdx;
-    fat16_Ref *fat16 = (fat16_Ref *)regs->r10;
 
     regs->rax = -1;
 
@@ -361,7 +360,7 @@ static void syscall_getdents(Regs *regs)
     assert(IS_OK(copy_result) && "Path copy should be valid");
 
     fat16_DirEntry dir_entry = {0};
-    bool found = fat16_find_file_based_on_path(fat16, path, &dir_entry);
+    bool found = fat16_find_file_based_on_path(&g_fs_fat16, path, &dir_entry);
     if (!found) {return;}
 
     uint16_t first_cluster = dir_entry.firstClusterLow | (dir_entry.firstClusterHigh<< 16);
@@ -372,7 +371,7 @@ static void syscall_getdents(Regs *regs)
         return; // Memory allocation failed
     }
 
-    int count = fat16_getdents(first_cluster, kernel_out_entries_buffer, max_entries, fat16);
+    int count = fat16_getdents(first_cluster, kernel_out_entries_buffer, max_entries, &g_fs_fat16);
 
     if (count > 0) {
         res copy_result = usermode_copy_to_user(user_out_entries_buffer, kernel_out_entries_buffer, count * sizeof(fat16_dirent));

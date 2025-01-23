@@ -9,4 +9,5 @@
 #define SYS_getcwd   79
 #define SYS_chdir    80
 #define SYS_reboot   169
+#define SYS_getdents 217
 #define SYS_waitpid  1001

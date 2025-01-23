@@ -6,10 +6,12 @@
 #include <string.h>
 #include <stdbool.h>
 #include <sys/wait.h>
+#include <dirent.h>
 
 int main()
 {
     int8_t return_code = 0;
+
     while (true)
     {
         if (return_code == 0)

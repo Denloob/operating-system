@@ -114,3 +114,9 @@ int open(const char *pathname, int flags)
 {
     return syscall(SYS_open, pathname, flags);
 }
+
+
+ssize_t getdents(const char *fd, void *dirp, size_t count)
+{
+    return syscall(SYS_getdents, fd , dirp, count);
+}
