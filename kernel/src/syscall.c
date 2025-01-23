@@ -365,11 +365,7 @@ static void syscall_getdents(Regs *regs)
 
     uint16_t first_cluster = dir_entry.firstClusterLow | (dir_entry.firstClusterHigh<< 16);
 
-    size_t buffer_size = sizeof(fat16_dirent) * max_entries;
-    fat16_dirent *kernel_out_entries_buffer = kmalloc(buffer_size);
-    if (kernel_out_entries_buffer == NULL) {
-        return; // Memory allocation failed
-    }
+    fat16_dirent kernel_out_entries_buffer[16]; 
 
     int count = fat16_getdents(first_cluster, kernel_out_entries_buffer, max_entries, &g_fs_fat16);
 
@@ -377,8 +373,6 @@ static void syscall_getdents(Regs *regs)
         res copy_result = usermode_copy_to_user(user_out_entries_buffer, kernel_out_entries_buffer, count * sizeof(fat16_dirent));
         assert(IS_OK(copy_result) && "Failed to copy to user memory");
     }
-
-    kfree(kernel_out_entries_buffer);
 
     regs->rax = count; 
 }
