@@ -8,19 +8,38 @@
 #include <sys/wait.h>
 #include <dirent.h>
 
+void cd(ShellCommand *cmd)
+{
+    if (cmd->length != 2)
+    {
+        puts("cd: Invalid amount of args for cd command");
+        return;
+    }
+
+    int ret = chdir(cmd->shell_command[1]);
+    if (ret == -1)
+    {
+        printf("cd: %s: No such directory\n", cmd->shell_command[1]);
+    }
+}
+
 int main()
 {
     int8_t return_code = 0;
 
+#define CWD_MAX_LEN 512
+    char cwd[CWD_MAX_LEN] = {0};
     while (true)
     {
+        getcwd(cwd, sizeof(cwd));
+
         if (return_code == 0)
         {
-            fputs("shcore $ ", stdout);
+            printf("shcore %s$ ", cwd);
         }
         else
         {
-            printf("shcore [%d]$ ", return_code);
+            printf("shcore %s [%d]$ ", cwd, return_code);
         }
 
         char buf[1024] = {0};
@@ -43,6 +62,13 @@ int main()
 
         if (cmd->length == 0)
         {
+            continue;
+        }
+
+        // Special case for built-in `cd` command
+        if (strcmp(cmd->shell_command[0], "cd") == 0)
+        {
+            cd(cmd);
             continue;
         }
 
