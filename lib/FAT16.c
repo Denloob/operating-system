@@ -972,3 +972,42 @@ uint64_t fat16_write(fat16_File *file, uint8_t *buffer, uint64_t buffer_size, ui
     assert(file && buffer);
     return fat16_write_to_file(file, file->ref->drive, &file->ref->bpb, buffer , buffer_size, file_offset);
 }
+
+
+
+int fat16_getdents(uint16_t first_cluster, fat16_dirent *out_entries_buffer, int max_entries , fat16_Ref *fat16)
+{
+    fat16_DirReader reader;
+    fat16_init_dir_reader(&reader, fat16, first_cluster);
+    fat16_DirEntry entry;
+    int count = 0;
+
+    while (fat16_read_next_root_entry(fat16->drive, &reader, &entry))
+    {
+        if (entry.filename[0] != 0x00 && entry.filename[0] != 0xE5)
+        {
+            if (count >= max_entries) 
+            {
+                break;
+            }
+
+            memset(&out_entries_buffer[count], 0, sizeof(fat16_dirent));
+            for(int i=0; i <FAT16_FILENAME_SIZE ;i++)
+            {
+                out_entries_buffer[count].name[i] = entry.filename[i];
+            }
+            out_entries_buffer[count].name[12] = '\0';
+
+            out_entries_buffer[count].attr = entry.attributes;
+            out_entries_buffer[count].cluster = entry.firstClusterLow| 
+                                                (entry.firstClusterHigh<< 16);
+            out_entries_buffer[count].size = entry.fileSize;
+
+            count++;
+        }
+    }
+
+    return count;
+}
+
+

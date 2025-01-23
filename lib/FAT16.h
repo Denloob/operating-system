@@ -95,6 +95,18 @@ typedef struct
     uint32_t dir_end;
 } fat16_DirReader;
 
+typedef struct 
+{
+    char name[13];
+    uint8_t attr;
+    uint16_t cluster; // First cluster
+    uint32_t size;
+}fat16_dirent;
+/*
+ *The function returns the amount of entries read
+ */
+int fat16_getdents(uint16_t first_cluster, fat16_dirent *out_entries_buffer, int max_entries , fat16_Ref *fat16);
+
 void fat16_init_dir_reader(fat16_DirReader *reader, fat16_Ref *fat16, uint16_t start_cluster); 
 bool fat16_read_next_root_entry(Drive *drive, fat16_DirReader *reader, fat16_DirEntry *entry);
 //----------------
