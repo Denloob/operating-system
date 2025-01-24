@@ -224,6 +224,13 @@ void create_root_dir_entry(fat16_DirEntry *entry)
 }
 bool fat16_find_file_based_on_path(fat16_Ref *fat16 , const char *path ,fat16_DirEntry *out_file , fat16_DirEntry *parent_directory)
 {
+    assert(fat16 && path && out_file);
+    fat16_DirEntry temp_parent;
+    if (parent_directory == NULL)
+    {
+        parent_directory = &temp_parent;
+    }
+
     //check if the path leads to root
     if(all_chars_are_same(path) && path[0] == '/')
     {
