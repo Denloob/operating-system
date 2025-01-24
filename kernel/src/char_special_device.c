@@ -17,15 +17,16 @@ static size_t handle_read(uint8_t *buffer, uint64_t buffer_size, uint64_t file_o
 
 static void create_char_device_file(const char *path, char_special_device_MinorDeviceType minor_number)
 {
+    uint16_t parent_cluster;
     FILE file;
-    bool success = fat16_create_file_with_return(&file.file , &g_fs_fat16, path);
+    bool success = fat16_create_file(&g_fs_fat16, path, &file.file, &parent_cluster);
     assert(success && "fat16_create_file");
 
     file.file.file_entry.reserved = fat16_MDSCoreFlags_DEVICE;
     file.file.file_entry.firstClusterHigh = char_special_device_MAJOR_NUMBER;
     file.file.file_entry.firstClusterLow = minor_number;
 
-    success = fat16_update_entry_in_directory(file.file.ref, &file.file.file_entry , 0);
+    success = fat16_update_entry_in_directory(file.file.ref, &file.file.file_entry, parent_cluster);
     assert(success && "fat16_update_root_entry");
 }
 
@@ -39,9 +40,9 @@ void char_special_device_init()
 
     char_device_register(&desc);
 
-    create_char_device_file("null.dev", char_special_device_MINOR_NULL);
-    create_char_device_file("zero.dev", char_special_device_MINOR_ZERO);
-    create_char_device_file("tty.dev",  char_special_device_MINOR_TTY );
+    create_char_device_file("/dev/null", char_special_device_MINOR_NULL);
+    create_char_device_file("/dev/zero", char_special_device_MINOR_ZERO);
+    create_char_device_file("/dev/tty",  char_special_device_MINOR_TTY );
 }
 
 size_t handle_write(uint8_t *buffer, uint64_t buffer_size, uint64_t file_offset, int minor_number, bool block /* unused */)

@@ -4,7 +4,7 @@
 
 int main()
 {
-#define PATH "tty.dev"
+#define PATH "/dev/tty"
 #define TEXT "Hello, World!\n"
 
     syscall(SYS_write, PATH, TEXT, sizeof(TEXT) - 1);

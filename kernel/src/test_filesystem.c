@@ -9,9 +9,9 @@
 static void test_file_creation_and_writing()
 {
     // Create a new file using fat16_create_file
-    const char *filename = "testfile.txt";
+    const char *filename = "/testfile.txt";
     fat16_File file1;
-    bool success = fat16_create_file_with_return(&file1 , &g_fs_fat16, filename);
+    bool success = fat16_create_file( &g_fs_fat16, filename, &file1,NULL);
     assert(success && "fat16_create_file");
     printf("File '%s' created successfully\n", filename);
 

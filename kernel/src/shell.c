@@ -153,7 +153,7 @@ void cat_command(fat16_Ref *fat16, const char* filename)
 
 void touch_command(fat16_Ref *fat16 ,const char* second_part_command)
 {
-    fat16_create_file(fat16 , second_part_command);
+    fat16_create_file(fat16 , second_part_command, NULL, NULL);
 }
     
 void parse_command(char* command , int max_size , fat16_Ref *fat16)

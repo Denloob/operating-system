@@ -14,18 +14,28 @@ $(IMAGE_NAME).img: $(BOOTLOADER) $(KERNEL) sysapps initfat16 kernel.cfg
 	./util/initfat16/bin/initfat16 $@
 
 	dd if=/dev/zero of=$@ bs=$$((1024 * 1024)) seek=$$(stat --format="%s" $@) count=32 # 32MB
-	mcopy $(KERNEL) a:
+
+	mmd /boot
+	mcopy $(KERNEL) a:/boot
+
+	mmd /boot/logo && mcd /boot/logo
 	mcopy ./assets/cogs.bmp a:
-	mcopy ./system_apps/init/init a:/init
-	mcopy ./system_apps/mkdir/mkdir a:/mkdir
-	mcopy ./system_apps/cat/cat a:/cat
-	mcopy ./system_apps/echo/echo a:/echo
-	mcopy ./system_apps/reboot/reboot a:/reboot
-	mcopy ./system_apps/sh/bin/sh a:/sh
-	mcopy ./system_apps/ls/ls a:/ls
-	mcopy ./assets/cogs-parallel.bmp a:/cogs-par.bmp
+	mcopy ./assets/cogs-parallel.bmp a:
 	mcopy ./assets/amongos.bmp a:
+
+	mmd /boot/conf && mcd /boot/conf
 	mcopy kernel.cfg a:
+
+	mmd /bin && mcd /bin
+	mcopy ./system_apps/init/init     a:
+	mcopy ./system_apps/mkdir/mkdir   a:
+	mcopy ./system_apps/cat/cat       a:
+	mcopy ./system_apps/echo/echo     a:
+	mcopy ./system_apps/reboot/reboot a:
+	mcopy ./system_apps/sh/bin/sh     a:
+	mcopy ./system_apps/ls/ls         a:
+
+	mmd a:/dev
 
 	dd if=/dev/zero of=$@ bs=1 seek=$$(stat --format="%s" $@) count=$$(printf "%d" 0x10000)
 

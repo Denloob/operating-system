@@ -5,7 +5,7 @@
 
 int main()
 {
-    execve_new("sh", NULL);
+    execve_new("/bin/sh", NULL);
 
     return 0;
 }

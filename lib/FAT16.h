@@ -242,10 +242,14 @@ bool fat16_unlink_clusters(fat16_Ref *fat16 , uint16_t back_cluster , uint16_t f
 
 uint32_t fat16_get_file_end_offset(fat16_Ref *fat16, fat16_DirEntry *entry);
 
-
-bool fat16_create_file_with_return(fat16_File *out_file, fat16_Ref *fat16, const char *full_filename);
-
-bool fat16_create_file(fat16_Ref *fat16, const char *full_filename);
+/**
+ * @brief - Create a file in the given path.
+ *
+ * @param out_file[out] - The fat16_File structure of the created file
+ * @param out_parent_cluster - The first cluster of the parent directory. Can
+ *                              be passed in to `fat16_update_entry_in_directory`.
+ */
+bool fat16_create_file(fat16_Ref *fat16, const char *path, fat16_File *out_file, uint16_t *out_parent_cluster);
 
 uint16_t get_file_offseted_cluster(fat16_File *file, uint32_t file_offset);
 /**

@@ -113,7 +113,7 @@ void __attribute__((section(".entry"), sysv_abi)) kernel_main(uint32_t param_mmu
     usermode_init_smp();
 
     io_clear_vga();
-    rs = execve("init", NULL, NULL);
+    rs = execve("/bin/init", NULL, NULL);
     assert(IS_OK(rs) && "Starting the main process failed");
 
     scheduler_start();
@@ -424,7 +424,7 @@ void display_boot_logo(int boot_style, const char *video_path)
 static void parse_boot_config_and_play_logo()
 {
     FILE file = {0};
-    bool success = fat16_open(&g_fs_fat16, "kernel.cfg", &file.file);
+    bool success = fat16_open(&g_fs_fat16, "/boot/conf/kernel.cfg", &file.file);
     assert(success && "fat16_open: kernel.cfg not found");
 
     success = fseek(&file, sizeof("boot_style=") - 1, SEEK_CUR) == 0;
@@ -451,16 +451,16 @@ static void parse_boot_config_and_play_logo()
     switch (boot_video)
     {
         case 'a':
-            boot_video_path = "amongos.bmp";
+            boot_video_path = "/boot/logo/amongos.bmp";
             break;
 
         case 'c':
-            boot_video_path = "cogs.bmp";
+            boot_video_path = "/boot/logo/cogs.bmp";
             break;
 
         case 'p':
         default:
-            boot_video_path = "cogs-par.bmp";
+            boot_video_path = "/boot/logo/cogs-par.bmp";
             break;
     }
     printf("%s\n", boot_video_path);

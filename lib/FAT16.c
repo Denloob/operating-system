@@ -3,6 +3,7 @@
 #include "drive.h"
 #include "math.h"
 #include "memory.h"
+#include "parsing.h"
 #include "string.h"
 #include "assert.h"
 #include "RTC.h"
@@ -717,31 +718,6 @@ uint32_t fat16_get_file_end_offset(fat16_Ref *fat16, fat16_DirEntry *entry)
 }
 
 
-bool fat16_create_file(fat16_Ref *fat16, const char *full_filename)
-{
-    //filename handling
-    char fat16_filename[FAT16_FULL_FILENAME_SIZE];
-    filename_to_fat16_filename(full_filename, fat16_filename);
-    char filename[FAT16_FILENAME_SIZE] = { ' ' };
-    char extension[FAT16_EXTENSION_SIZE] = { ' ' };
-    memmove(filename, fat16_filename, FAT16_FILENAME_SIZE);
-    memmove(extension, fat16_filename + FAT16_FILENAME_SIZE, FAT16_EXTENSION_SIZE);
-
-    fat16_DirEntry new_entry;
-    if (!fat16_create_dir_entry(fat16, filename, extension, 0x20 /* Archive attribute */, &new_entry)) {
-        printf("Failed to create directory entry structure\n");
-        return false;
-    }
-
-    if (!fat16_add_dir_entry_to(fat16, &new_entry,0)) 
-    {
-        printf("Failed to add the directory entry to the root directory\n");
-        return false;
-    }
-
-    return true;
-}
-
 res fat16_create_directory(fat16_Ref *fat16 , const char* directory_name , const char *where_to_create)
 {
     fat16_DirEntry dir_entry;
@@ -794,31 +770,51 @@ res fat16_create_directory(fat16_Ref *fat16 , const char* directory_name , const
     return res_OK;
 }
 
-bool fat16_create_file_with_return(fat16_File *out_file, fat16_Ref *fat16, const char *full_filename)
+bool fat16_create_file(fat16_Ref *fat16, const char *path, fat16_File *out_file, uint16_t *out_parent_cluster)
 {
+    parsing_FilePathParsingResult parsing_result;
+    res rs = parsing_parse_filepath(path, &parsing_result);
+    if (!IS_OK(rs))
+    {
+        return false;
+    }
+
+    fat16_DirEntry unused;
+
+    fat16_DirEntry parent;
+    bool success = fat16_find_file_based_on_path(fat16, parsing_result.parent, &parent, &unused);
+    if (!success)
+    {
+        return false;
+    }
+
+    const uint16_t parent_cluster = (parent.firstClusterHigh << 16) | parent.firstClusterLow;
 
     //filename handling
     char fat16_filename[FAT16_FULL_FILENAME_SIZE];
-    filename_to_fat16_filename(full_filename, fat16_filename);
-    char filename[FAT16_FILENAME_SIZE] = { ' ' };
-    char extension[FAT16_EXTENSION_SIZE] = { ' ' };
-    memmove(filename, fat16_filename, FAT16_FILENAME_SIZE);
-    memmove(extension, fat16_filename + FAT16_FILENAME_SIZE, FAT16_EXTENSION_SIZE);
+    filename_to_fat16_filename(parsing_result.child, fat16_filename);
 
     fat16_DirEntry new_entry;
-    if (!fat16_create_dir_entry(fat16, filename, extension, 0x20 /* Archive attribute */, &new_entry)) {
-        printf("Failed to create directory entry structure\n");
+    if (!fat16_create_dir_entry(fat16, fat16_filename, fat16_filename + FAT16_FILENAME_SIZE, 0x20 /* Archive attribute */, &new_entry)) {
         return false;
     }
 
-    if (!fat16_add_dir_entry_to(fat16, &new_entry,0)) 
+    if (!fat16_add_dir_entry_to(fat16, &new_entry, parent_cluster)) 
     {
-        printf("Failed to add the directory entry to the root directory\n");
         return false;
     }
 
-    out_file->file_entry = new_entry;
-    out_file->ref = fat16;
+    if (out_file != NULL)
+    {
+        out_file->file_entry = new_entry;
+        out_file->ref = fat16;
+    }
+
+    if (out_parent_cluster != NULL)
+    {
+        *out_parent_cluster = parent_cluster;
+    }
+
     return true;
 }
 
