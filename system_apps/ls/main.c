@@ -20,10 +20,17 @@ static void lower_inplace(char *buf)
 
 int main(int argc, char **argv)
 { 
-    const char *path = "/";
+#define CWD_MAX_LEN 512
+    char cwd[CWD_MAX_LEN] = {0};
+    const char *path;
     if (argc > 1)
     {
         path = argv[1];
+    }
+    else
+    {
+        getcwd(cwd, sizeof(cwd));
+        path = cwd;
     }
 
     fat16_dirent dir_entries[16];
