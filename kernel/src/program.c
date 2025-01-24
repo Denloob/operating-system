@@ -88,7 +88,10 @@ res program_setup_from_drive(uint64_t id,  PCB *parent, mmu_PageMapEntry *kernel
     //fs handling
     FILE file = {0};
     bool success = fat16_open(fat16, path_to_file, &file.file);
-    assert(success && "file not found");
+    if (!success)
+    {
+        return res_program_GIVEN_FILE_DOESNT_EXIST;
+    }
 
     //elf handling
     void *entry_point;
