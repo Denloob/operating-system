@@ -1,4 +1,5 @@
 #include "char_special_device.h"
+#include "FAT16.h"
 #include "char_device.h"
 #include "io.h"
 #include "file.h"
@@ -24,7 +25,7 @@ static void create_char_device_file(const char *path, char_special_device_MinorD
     file.file.file_entry.firstClusterHigh = char_special_device_MAJOR_NUMBER;
     file.file.file_entry.firstClusterLow = minor_number;
 
-    success = fat16_update_root_entry(file.file.ref, &file.file.file_entry);
+    success = fat16_update_entry_in_directory(file.file.ref, &file.file.file_entry , 0);
     assert(success && "fat16_update_root_entry");
 }
 

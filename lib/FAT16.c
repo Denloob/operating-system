@@ -8,12 +8,19 @@
 #include "RTC.h"
 #include <stdbool.h>
 #include <stdint.h>
+#include "res.h"
 
 #define SECTOR_SIZE 512
 #define TAKE_DEFAULT_VALUE -1
 #define FAT16_FILENAME_SIZE 8
 #define FAT16_EXTENSION_SIZE 3
 #define FAT16_FULL_FILENAME_SIZE (FAT16_FILENAME_SIZE + FAT16_EXTENSION_SIZE)
+
+#define res_fat16_DIR_ENTRY_IS_NOT_A_FOLDER "The dir entry was expected to be a folder but was a file"
+#define res_fat16_DIR_ENTRY_NOT_FOUND "The provided path was not leading to a real entry"
+#define res_fat16_CANT_CREATE_DIR_ENTRY "couldnt create the dir entry"
+#define res_fat16_CANT_ALLOCATE_CLUSTERS "There was an error allocating clusters"
+#define res_fat16_DIR_IS_FULL "The directory was full and there was no space for a new one"
 
 /**
  * @brief - Convert a filename like `kernel.bin` into fat16-padded name like `kernel  bin`.
@@ -215,7 +222,7 @@ void create_root_dir_entry(fat16_DirEntry *entry)
     entry->lastModDate = 0;
     entry->fileSize = 0;
 }
-bool fat16_find_file_based_on_path(fat16_Ref *fat16 , const char *path ,fat16_DirEntry *out_file)
+bool fat16_find_file_based_on_path(fat16_Ref *fat16 , const char *path ,fat16_DirEntry *out_file , fat16_DirEntry *parent_directory)
 {
     //check if the path leads to root
     if(all_chars_are_same(path) && path[0] == '/')
@@ -229,6 +236,7 @@ bool fat16_find_file_based_on_path(fat16_Ref *fat16 , const char *path ,fat16_Di
     
     int index=0; //index of filename building
     char filename[FAT16_FULL_FILENAME_SIZE + 1 + 1]; // Not null terminated!! We reserved one byte for `.` in filenames of length 11 and 1 for a null byte right before the final parsing. This is pretty much a hack.
+
     memset(filename, ' ', sizeof(filename));
 
     int path_length = strlen(path);
@@ -261,13 +269,14 @@ bool fat16_find_file_based_on_path(fat16_Ref *fat16 , const char *path ,fat16_Di
             }
 
             //search dir
+            *parent_directory = *out_file;
             if (!fat16_find_file(fat16, filename, out_file, start_cluster))
             {
                 return false;
             }
             start_cluster = out_file->firstClusterLow;
 
-            memset(filename, ' ', sizeof(filename));
+            memset(filename, ' ', sizeof(filename)); //delete content of filename
             index = 0;
         }
         else
@@ -288,6 +297,7 @@ bool fat16_find_file_based_on_path(fat16_Ref *fat16 , const char *path ,fat16_Di
     }
     else
     {
+        *parent_directory = *out_file;
         char DENIS_MADE_ME_CREATE_THIS_ARRAY[FAT16_FULL_FILENAME_SIZE] = "";
         filename[index] = '\0';
         filename_to_fat16_filename(filename, DENIS_MADE_ME_CREATE_THIS_ARRAY);
@@ -481,13 +491,17 @@ bool fat16_open(fat16_Ref *fat16, const char *path, fat16_File *out_file)
     //char fat16_filename[FAT16_FULL_FILENAME_SIZE];
     //filename_to_fat16_filename(path, fat16_filename);
 
-    fat16_DirEntry dir_entry;
-    if (!fat16_find_file_based_on_path(fat16, path, &dir_entry)) 
+    fat16_DirEntry file_dir_entry;
+
+    fat16_DirEntry parent_directory_dir_entry;
+    if (!fat16_find_file_based_on_path(fat16, path, &file_dir_entry , &parent_directory_dir_entry)) 
     {
         return false;
     }
-    out_file->file_entry = dir_entry;
-    fat16_get_file_chain(fat16, &dir_entry, out_file->chain);
+    out_file->file_entry = file_dir_entry;
+
+    out_file->parent_directory_first_cluster = (parent_directory_dir_entry.firstClusterHigh << 16) | parent_directory_dir_entry.firstClusterLow; 
+    fat16_get_file_chain(fat16, &file_dir_entry, out_file->chain);
     return true;
 }
 
@@ -575,11 +589,11 @@ bool fat16_create_dir_entry(fat16_Ref *fat16, const char *filename, const char *
     return true;
 }
 
-bool fat16_update_root_entry(fat16_Ref *fat16, fat16_DirEntry *dir_entry)
+bool fat16_update_entry_in_directory(fat16_Ref *fat16, fat16_DirEntry *dir_entry , uint16_t start_cluster)
 {
     const uint16_t size_of_dir_entry = 32;
     fat16_DirReader reader;
-    fat16_init_dir_reader(&reader, fat16 ,0);
+    fat16_init_dir_reader(&reader, fat16 ,start_cluster);
 
     fat16_DirEntry entry;
     while (fat16_read_next_root_entry(fat16->drive, &reader, &entry)) 
@@ -721,14 +735,20 @@ bool fat16_create_file(fat16_Ref *fat16, const char *full_filename)
     return true;
 }
 
-bool fat16_create_directory(fat16_Ref *fat16 , const char* directory_name , const char *where_to_create)
+res fat16_create_directory(fat16_Ref *fat16 , const char* directory_name , const char *where_to_create)
 {
-    //meaning the directory is not the root 
     fat16_DirEntry dir_entry;
-    if (!fat16_find_file_based_on_path(fat16, where_to_create, &dir_entry)) 
+    bool success1 = fat16_find_file_based_on_path(fat16, where_to_create, &dir_entry , NULL);
+    if(!success1)
     {
-        return false;
+        return res_fat16_DIR_ENTRY_NOT_FOUND;
     }
+
+    if(dir_entry.attributes != 0x10)
+    {
+        return res_fat16_DIR_ENTRY_IS_NOT_A_FOLDER;
+    }
+    
     uint16_t first_cluster = (dir_entry.firstClusterHigh << 16) | dir_entry.firstClusterLow;
 
     char dirname[FAT16_FULL_FILENAME_SIZE];
@@ -742,7 +762,7 @@ bool fat16_create_directory(fat16_Ref *fat16 , const char* directory_name , cons
                                           &new_entry);
     if (!success)
     {
-        return false;
+        return res_fat16_CANT_CREATE_DIR_ENTRY;
     }
 
     //allocate directory cluster
@@ -751,7 +771,7 @@ bool fat16_create_directory(fat16_Ref *fat16 , const char* directory_name , cons
     success = fat16_allocate_clusters(fat16, CLUSTERS_NEEDED, allocated_clusters);
     if (!success)
     {
-        return false; 
+        return res_fat16_CANT_ALLOCATE_CLUSTERS; 
     }
 
     new_entry.firstClusterLow = allocated_clusters[0] & 0xFFFF;
@@ -761,10 +781,10 @@ bool fat16_create_directory(fat16_Ref *fat16 , const char* directory_name , cons
     if (!success)
     {
         // TODO: deallocate clusters in `allocated_clusters`
-        return false;
+        return res_fat16_CANT_CREATE_DIR_ENTRY;
     }
 
-    return true;
+    return res_OK;
 }
 
 bool fat16_create_file_with_return(fat16_File *out_file, fat16_Ref *fat16, const char *full_filename)
@@ -856,7 +876,7 @@ void print_root_filenames(fat16_Ref *fat16)
     }
 }
 
-uint64_t fat16_write_to_file(fat16_File *file,Drive *drive,fat16_BootSector *bpb,uint8_t *buffer_to_write,uint64_t buffer_size,uint64_t file_offset)
+uint64_t fat16_write_to_file(fat16_File *file,Drive *drive,fat16_BootSector *bpb,uint8_t *buffer_to_write,uint64_t buffer_size,uint64_t file_offset ,res *string_result)
 {
     assert(file->file_entry.reserved == fat16_MDSCoreFlags_FILE && "Cannot write with fat16 to a non-regular mdscore file");
 
@@ -998,15 +1018,15 @@ uint64_t fat16_write_to_file(fat16_File *file,Drive *drive,fat16_BootSector *bpb
         entry->fileSize = new_filesize;
     }
 
-    fat16_update_root_entry(file->ref, entry);
+    fat16_update_entry_in_directory(file->ref, entry , file->parent_directory_first_cluster);
 
     return bytes_written;
 }
 
-uint64_t fat16_write(fat16_File *file, uint8_t *buffer, uint64_t buffer_size, uint64_t file_offset)
+uint64_t fat16_write_to_file_at_directory(fat16_File *file, uint8_t *buffer, uint64_t buffer_size, uint64_t file_offset ,res *string_result)
 {
     assert(file && buffer);
-    return fat16_write_to_file(file, file->ref->drive, &file->ref->bpb, buffer , buffer_size, file_offset);
+    return fat16_write_to_file(file, file->ref->drive, &file->ref->bpb, buffer , buffer_size, file_offset , string_result);
 }
 
 

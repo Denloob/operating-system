@@ -153,7 +153,7 @@ static void syscall_chdir(Regs *regs)
     assert(IS_OK(rs) && "checked before, should be good");
 
     fat16_DirEntry dir;
-    if (!fat16_find_file_based_on_path(&g_fs_fat16, filepath, &dir))
+    if (!fat16_find_file_based_on_path(&g_fs_fat16, filepath, &dir , NULL))
     {
         return;
     }
@@ -376,7 +376,7 @@ static void syscall_getdents(Regs *regs)
     assert(IS_OK(copy_result) && "Path copy should be valid");
 
     fat16_DirEntry dir_entry = {0};
-    bool found = fat16_find_file_based_on_path(&g_fs_fat16, path, &dir_entry);
+    bool found = fat16_find_file_based_on_path(&g_fs_fat16, path, &dir_entry , NULL);
     if (!found) {return;}
 
     uint16_t first_cluster = dir_entry.firstClusterLow | (dir_entry.firstClusterHigh<< 16);

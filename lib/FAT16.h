@@ -4,6 +4,7 @@
 #include <stddef.h>
 #include <stdbool.h>
 #include "drive.h"
+#include "res.h"
 
 #define SECTOR_SIZE 512
 #define FAT16_CLUSTER_FREE 0x0000
@@ -122,7 +123,7 @@ bool fat16_read_root_directory(Drive *drive, fat16_BootSector *bpb, fat16_DirEnt
 //new ver of fat16_find_file
 bool fat16_find_file(fat16_Ref *fat16, const char *filename, fat16_DirEntry *out_file , int start_cluster);
 
-bool fat16_find_file_based_on_path(fat16_Ref *fat16 , const char *path ,fat16_DirEntry *out_file);
+bool fat16_find_file_based_on_path(fat16_Ref *fat16 , const char *path ,fat16_DirEntry *out_file , fat16_DirEntry *parent_directory);
 
 bool fat16_get_file_chain(fat16_Ref *fat16 , fat16_DirEntry *fileEntry, uint16_t *out_array);
 
@@ -130,6 +131,7 @@ typedef struct
 {
     fat16_Ref *ref;
     fat16_DirEntry file_entry;
+    uint16_t parent_directory_first_cluster;
     uint16_t chain[MAX_CHAIN_LEN];
 } fat16_File;
 
@@ -209,7 +211,7 @@ bool fat16_create_dir_entry(fat16_Ref *fat16 , const char *filename , const char
  *
  * @return Whether the function succeeded
  */
-bool fat16_create_directory(fat16_Ref *fat16 , const char* directory_name , const char *where_to_create);
+res fat16_create_directory(fat16_Ref *fat16 , const char* directory_name , const char *where_to_create);
 
 /**
  *@brief finds a free clutser in the FAT and returns its number
@@ -255,7 +257,7 @@ uint16_t get_file_offseted_cluster(fat16_File *file, uint32_t file_offset);
  */
 uint16_t get_next_cluster_from_chain(const uint16_t *chain, uint16_t current_cluster);
 
-uint64_t fat16_write(fat16_File *file, uint8_t *out_buffer, uint64_t buffer_size, uint64_t file_offset);
+uint64_t fat16_write_to_file_at_directory(fat16_File *file, uint8_t *out_buffer, uint64_t buffer_size, uint64_t file_offset ,res *string_result);
 
 __attribute__((always_inline)) inline
 fat16_MDSCoreFlags fat16_get_mdscore_flags(fat16_File *file)
@@ -266,5 +268,5 @@ fat16_MDSCoreFlags fat16_get_mdscore_flags(fat16_File *file)
 /**
  * @brief - Update the given dir entry in the root dir.
  */
-bool fat16_update_root_entry(fat16_Ref *fat16, fat16_DirEntry *dir_entry);
+bool fat16_update_entry_in_directory(fat16_Ref *fat16, fat16_DirEntry *dir_entry , uint16_t start_cluster);
 

@@ -1,6 +1,7 @@
 #include "file.h"
 #include "assert.h"
 #include "char_device.h"
+#include "res.h"
 
 static size_t internal_fread(void *ptr, size_t size, size_t count, FILE *stream, bool block)
 {
@@ -32,10 +33,11 @@ size_t process_fread(void *ptr, size_t size, size_t count, FILE *stream)
 static size_t internal_fwrite(void *ptr, size_t size, size_t count, FILE *stream, bool block)
 {
     size_t bytes_written = 0;
+    res result;
     switch (fat16_get_mdscore_flags(&stream->file))
     {
         case fat16_MDSCoreFlags_FILE:
-            bytes_written = fat16_write(&stream->file, ptr , size * count, stream->offset);
+            bytes_written = fat16_write_to_file_at_directory(&stream->file, ptr , size * count, stream->offset ,&result);
             break;
         case fat16_MDSCoreFlags_DEVICE:
             bytes_written = char_device_write(&stream->file, ptr, size * count, stream->offset, block);
