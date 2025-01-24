@@ -4,6 +4,20 @@
 #include <sys/syscall.h>
 #include <dirent.h>
 
+#define TOLOWER(c) (c | ('a' - 'A'))
+
+static void lower_inplace(char *buf)
+{
+    while (*buf != '\0')
+    {
+        if (*buf >= 'A' && *buf <= 'Z')
+        {
+            *buf = TOLOWER(*buf);
+        }
+        buf++;
+    }
+}
+
 int main(int argc, char **argv)
 { 
     const char *path = "/";
@@ -16,6 +30,8 @@ int main(int argc, char **argv)
     long x = getdents(path, dir_entries, 16);
     for (int i = 0; i < x; i++)
     {
+        lower_inplace(dir_entries[i].name);
+
         printf("Entry %d: Name: %s, Attr: %d, Cluster: %d, Size: %d , MDS-FLAGS: %d\n",
                i,
                dir_entries[i].name,
