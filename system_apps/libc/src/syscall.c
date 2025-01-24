@@ -115,6 +115,10 @@ int open(const char *pathname, int flags)
     return syscall(SYS_open, pathname, flags);
 }
 
+int mkdir(const char *pathname)
+{
+    return syscall(SYS_mkdir, pathname);
+}
 
 ssize_t getdents(const char *fd, void *dirp, size_t count)
 {

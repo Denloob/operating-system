@@ -5,6 +5,7 @@
 #include "io.h"
 #include "smartptr.h"
 #include "kernel_memory_info.h"
+#include "parsing.h"
 #include "math.h"
 #include "kmalloc.h"
 #include "mmap.h"
@@ -111,6 +112,35 @@ static void syscall_open(Regs *regs)
     pcb->last_fd = fd_num;
     regs->rax = fd_num;
 }
+
+static void syscall_mkdir(Regs *regs)
+{
+    usermode_mem *filepath_user = (usermode_mem *)regs->rdi;
+
+    regs->rax = -1; // Failed
+
+    uint64_t filepath_len;
+    bool valid = usermode_strlen(filepath_user, FS_MAX_FILEPATH_LEN - 1, &filepath_len);
+    if (!valid)
+    {
+        return;
+    }
+
+    char filepath[FS_MAX_FILEPATH_LEN] = {0};
+    res rs = usermode_copy_from_user(filepath, filepath_user, filepath_len);
+    assert(IS_OK(rs) && "checked before, should be good");
+
+    parsing_FilePathParsingResult parsing_result;
+    rs = parsing_parse_filepath(filepath, &parsing_result);
+    if (!IS_OK(rs))
+    {
+        return;
+    }
+
+    bool success = fat16_create_directory(&g_fs_fat16, parsing_result.child, parsing_result.parent);
+    regs->rax = success ? 0 : -1;
+}
+
 
 static void syscall_exit(Regs *regs)
 {
@@ -456,6 +486,9 @@ static void __attribute__((used, sysv_abi)) syscall_handler(Regs *user_regs)
             break;
         case SYSCALL_CHDIR:
             syscall_chdir(user_regs);
+            break;
+        case SYSCALL_MKDIR:
+            syscall_mkdir(user_regs);
             break;
         case SYSCALL_WAITPID:
             syscall_waitpid(user_regs);
