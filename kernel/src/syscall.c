@@ -210,7 +210,7 @@ static void syscall_getcwd(Regs *regs)
     size_t cwd_length = strlen(pcb->cwd);
     assert(cwd_length < FS_MAX_FILEPATH_LEN);
 
-    size_t bytes_to_copy = MIN(size, cwd_length);
+    size_t bytes_to_copy = MIN(size, cwd_length + 1); // +1 for null byte.
     res rs = usermode_copy_to_user(buf, pcb->cwd, bytes_to_copy);
     if (!IS_OK(rs))
     {
