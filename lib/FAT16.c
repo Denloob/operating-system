@@ -133,7 +133,7 @@ void fat16_init_dir_reader(fat16_DirReader *reader, fat16_Ref *fat16, uint16_t s
 
 bool fat16_read_next_root_entry(Drive *drive, fat16_DirReader *reader, fat16_DirEntry *entry)
 {
-    if (reader->current_sector >= reader->dir_end) return false;
+    if (reader->current_sector != reader->dir_start) return false;
 
     uint8_t sector_buf[SECTOR_SIZE];
     if (!fat16_read_sectors(drive, reader->current_sector, sector_buf, 1))
@@ -1040,11 +1040,11 @@ int fat16_getdents(uint16_t first_cluster, fat16_dirent *out_entries_buffer, int
     fat16_init_dir_reader(&reader, fat16, first_cluster);
     fat16_DirEntry entry;
     int count = 0;
-    const int max_entries_in_a_directory = 16;
-    int count_for_max_entries = 1;
+    //const int max_entries_in_a_directory = 16;
+    //int count_for_max_entries = 1;
     while (fat16_read_next_root_entry(fat16->drive, &reader, &entry))
     {
-        if(count_for_max_entries>=max_entries_in_a_directory){break;}
+       // if(count_for_max_entries>=max_entries_in_a_directory){break;}
         if (entry.filename[0] != 0x00 && entry.filename[0] != 0xE5)
         {
             if (count >= max_entries) 
@@ -1067,7 +1067,7 @@ int fat16_getdents(uint16_t first_cluster, fat16_dirent *out_entries_buffer, int
             out_entries_buffer[count].mdscore_flags = entry.reserved & fat16_MDSCore_FLAGS_MASK; 
             count++;
         }
-        count_for_max_entries++;
+        //count_for_max_entries++;
     }
 
     return count;
