@@ -14,6 +14,37 @@ size_t strlen(const char *s)
     return len;
 }
 
+size_t strnlen(const char *s, size_t maxlen)
+{
+    size_t len = 0;
+    while (maxlen-- && *s++)
+    {
+        len++;
+    }
+
+    return len;
+}
+
+char *strncat(char *s1, const char *s2, size_t n)
+{
+  char *s = s1;
+
+  /* Find the end of S1.  */
+  s1 += strlen(s1);
+
+  size_t ss = strnlen(s2, n);
+
+  s1[ss] = '\0';
+  memmove(s1, s2, ss);
+
+  return s;
+}
+
+char *strcat(char *dest, const char *src)
+{
+  strcpy(dest + strlen(dest), src);
+  return dest;
+}
 
 char *strchrnul(const char *str, char search_str)
 {
