@@ -1,7 +1,9 @@
 #include "parser.h"
 #include "smartptr.h"
 #include <assert.h>
+#include <stddef.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
 #include <stdbool.h>
@@ -27,7 +29,13 @@ int main()
 {
     int8_t return_code = 0;
 
-#define CWD_MAX_LEN 512
+#define MAX_PATH_LENGTH 512
+
+#define INITIAL_PATH_SIZE MAX_PATH_LENGTH
+    char *path = calloc(1, INITIAL_PATH_SIZE);
+    strcpy(path, "/bin");
+
+#define CWD_MAX_LEN MAX_PATH_LENGTH
     char cwd[CWD_MAX_LEN] = {0};
     while (true)
     {
@@ -72,7 +80,66 @@ int main()
             continue;
         }
 
-        int fail = execve_new(cmd->shell_command[0], &cmd->shell_command[0]);
+        int fail = -1;
+        bool is_absolute_path = cmd->shell_command[0][0] == '/';
+        if (is_absolute_path)
+        {
+            fail = execve_new(cmd->shell_command[0], &cmd->shell_command[0]);
+        }
+        else
+        {
+            char *original_command = cmd->shell_command[0];
+            defer({ free(original_command); });
+            cmd->shell_command[0] = malloc(MAX_PATH_LENGTH);
+            if (cmd->shell_command[0] == NULL)
+            {
+                puts("Ran out of memory trying to run the command");
+                continue; // defer will cleanup `cmd` and original_command. It's ok to free NULL.
+            }
+
+            size_t path_idx = 0;
+            do
+            {
+                if (path[path_idx] == '\0')
+                {
+                    break;
+                }
+
+                char *path_end = strchrnul(&path[path_idx], ':');
+
+                size_t path_end_idx = path_end - path;
+                size_t path_len = path_end_idx - path_idx;
+                size_t path_begin = path_idx;
+
+                if (path[path_end_idx] == '\0')
+                {
+                    path_idx = path_end_idx;
+                }
+                else
+                {
+                    path_idx = path_end_idx + 1;
+                }
+
+                if (path_len == 0)
+                {
+                    continue; // Skip
+                }
+
+                if (path_len + 1 >= MAX_PATH_LENGTH)
+                {
+                    puts("Path too long, aborting");
+                    break;
+                }
+
+                memmove(cmd->shell_command[0], &path[path_begin], path_len);
+                cmd->shell_command[0][path_len] = '/';
+                cmd->shell_command[0][path_len + 1] = '\0';
+                strncat(cmd->shell_command[0], original_command, MAX_PATH_LENGTH);
+                fail = execve_new(cmd->shell_command[0], &cmd->shell_command[0]);
+            }
+            while (fail == -1);
+        }
+
         if (fail)
         {
             printf("Unknown command: '%s'\n", cmd->shell_command[0]);
