@@ -73,7 +73,27 @@ res program_setup_from_drive(uint64_t id,  PCB *parent, mmu_PageMapEntry *kernel
     {
         return res_program_OUT_OF_MEMORY;
     }
-    
+
+    bool should_defer_cleanup_pcb = false; // WARN: set to true if and only if program_pcb will not be ever used and can be safely cleaned up
+
+    (void)should_defer_cleanup_pcb; // Used, clang doesn't know that though
+    defer({
+        if (!should_defer_cleanup_pcb)
+        {
+            return;
+        }
+
+        PCB *pcb = scheduler_current_pcb();
+        if (pcb != NULL)
+        {
+            size_t child_idx = pcb_ProcessChildrenArray_find(&pcb->children, program_pcb->id);
+            if (child_idx != pcb->children.length)
+            {
+                pcb_ProcessChildrenArray_remove(&pcb->children, child_idx);
+            }
+        }
+        PCB_cleanup(program_pcb);
+    });
 
     //switch PML
     mmu_load_virt_pml4(program_pcb->paging);
@@ -90,6 +110,7 @@ res program_setup_from_drive(uint64_t id,  PCB *parent, mmu_PageMapEntry *kernel
     bool success = fat16_open(fat16, path_to_file, &file.file);
     if (!success)
     {
+        should_defer_cleanup_pcb = true;
         return res_program_GIVEN_FILE_DOESNT_EXIST;
     }
 
@@ -98,6 +119,7 @@ res program_setup_from_drive(uint64_t id,  PCB *parent, mmu_PageMapEntry *kernel
     res rs = elf_load(&file, &entry_point); 
     if (!IS_OK(rs))
     {
+        should_defer_cleanup_pcb = true;
         return rs;
     }
 
@@ -116,6 +138,7 @@ res program_setup_from_drive(uint64_t id,  PCB *parent, mmu_PageMapEntry *kernel
     rs = mmap(stack_end, STACK_SIZE, MMAP_PROT_READ | MMAP_PROT_WRITE);
     if (!IS_OK(rs))
     {
+        should_defer_cleanup_pcb = true;
         return rs;
     }
 
@@ -125,6 +148,7 @@ res program_setup_from_drive(uint64_t id,  PCB *parent, mmu_PageMapEntry *kernel
     rs = mprotect(stack_end, STACK_SIZE, MMAP_PROT_READ | MMAP_PROT_WRITE | MMAP_PROT_RING_3);
     if (!IS_OK(rs))
     {
+        should_defer_cleanup_pcb = true;
         return rs;
     }
 
