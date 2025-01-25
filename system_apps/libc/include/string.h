@@ -5,6 +5,7 @@
 size_t strlen(const char *s);
 
 char* strchr(const char* str, char search_str);
+char* strchrnul(const char* str, char search_str);
 char* strncpy(char *dest, const char *src, size_t n);
 char* strcpy(char *dest, const char *src);
 
