@@ -37,6 +37,74 @@
 // Here the RSP of the syscall caller will be stored.
 static uint64_t g_ring3_rsp;
 
+/**
+ * @brief Read path from the usermode mem into the buffer, accounting for relative
+ *          paths using the `cwd` in the PCB.
+ *
+ * @param usermode_path - The NULL terminated path requested form the usermode.
+ * @param filepath_buffer[out] - Null terminated absolute path as requested by the user, of max size FS_MAX_FILEPATH_LEN.
+ *
+ * @return If true returned, ok to continue. Else, should abort (path is invalid)
+ */
+static bool read_path(usermode_mem *usermode_path, char filepath_buffer[static FS_MAX_FILEPATH_LEN])
+{
+    // Both calculates the length, and makes sure that usermode_path is, in fact,
+    //  a null terminated string in usermode memory, smaller than FS_MAX_FILEPATH_LEN.
+    uint64_t filepath_len;
+    bool valid = usermode_strlen(usermode_path, FS_MAX_FILEPATH_LEN - 1, &filepath_len);
+    if (!valid || filepath_len == 0)
+    {
+        return false;
+    }
+
+    char first_char;
+    res rs = usermode_copy_from_user(&first_char, usermode_path, 1);
+    assert(IS_OK(rs) && "checked before, should be good");
+
+    char *filepath_it = filepath_buffer;
+
+    PCB *pcb = scheduler_current_pcb();
+
+    bool is_relative_path = first_char != '/';
+    if (is_relative_path)
+    {
+        size_t cwd_len = strlen(pcb->cwd);
+        assert(cwd_len <= sizeof(pcb->cwd));
+
+        size_t total_length = cwd_len + filepath_len;
+
+        bool need_to_insert_path_separator = pcb->cwd[cwd_len - 1] != '/';
+        if (need_to_insert_path_separator)
+        {
+            total_length += 1;
+        }
+
+        if (total_length > FS_MAX_FILEPATH_LEN - 1) // -1 for the null byte
+        {
+            return false;
+        }
+
+        memmove(filepath_it, pcb->cwd, cwd_len);
+        filepath_it += cwd_len;
+        if (need_to_insert_path_separator)
+        {
+            *filepath_it = '/';
+            filepath_it++;
+        }
+    }
+
+    assert(filepath_it < &filepath_buffer[FS_MAX_FILEPATH_LEN] && filepath_it >= filepath_buffer && "How did the iterator get outside of the buffer?");
+    assert(filepath_it + filepath_len < &filepath_buffer[FS_MAX_FILEPATH_LEN] && "We checked before the path would fit"); // Note that it's not a bug that we don't allow the buf to reach the end. It's reserved for '\0'
+
+    rs = usermode_copy_from_user(filepath_it, usermode_path, filepath_len);
+    assert(IS_OK(rs) && "checked before, should be good");
+    filepath_it += filepath_len;
+
+    *filepath_it = '\0';
+
+    return true;
+}
+
 static void syscall_open(Regs *regs)
 {
     usermode_mem *filepath_user = (usermode_mem *)regs->rdi;
@@ -44,19 +112,12 @@ static void syscall_open(Regs *regs)
 
     regs->rax = -1; // Failed
 
-    // Both calculates the length, and makes sure that filepath_user is, in fact,
-    //  a null terminated string in usermode memory, smaller than FS_MAX_FILEPATH_LEN.
-    uint64_t filepath_len;
-    bool valid = usermode_strlen(filepath_user, FS_MAX_FILEPATH_LEN - 1, &filepath_len);
-    if (!valid)
+    char filepath[FS_MAX_FILEPATH_LEN] = {0};
+    bool success = read_path(filepath_user, filepath);
+    if (!success)
     {
         return;
     }
-
-    char filepath[FS_MAX_FILEPATH_LEN] = {0};
-    res rs = usermode_copy_from_user(filepath, filepath_user, filepath_len);
-    assert(IS_OK(rs) && "checked before, should be good");
-
 
     FILE file = {0};
 
@@ -123,25 +184,21 @@ static void syscall_mkdir(Regs *regs)
 
     regs->rax = -1; // Failed
 
-    uint64_t filepath_len;
-    bool valid = usermode_strlen(filepath_user, FS_MAX_FILEPATH_LEN - 1, &filepath_len);
-    if (!valid)
+    char filepath[FS_MAX_FILEPATH_LEN] = {0};
+    bool success = read_path(filepath_user, filepath);
+    if (!success)
     {
         return;
     }
 
-    char filepath[FS_MAX_FILEPATH_LEN] = {0};
-    res rs = usermode_copy_from_user(filepath, filepath_user, filepath_len);
-    assert(IS_OK(rs) && "checked before, should be good");
-
     parsing_FilePathParsingResult parsing_result;
-    rs = parsing_parse_filepath(filepath, &parsing_result);
+    res rs = parsing_parse_filepath(filepath, &parsing_result);
     if (!IS_OK(rs))
     {
         return;
     }
 
-    bool success = fat16_create_directory(&g_fs_fat16, parsing_result.child, parsing_result.parent);
+    success = fat16_create_directory(&g_fs_fat16, parsing_result.child, parsing_result.parent);
     regs->rax = success ? 0 : -1;
 }
 
@@ -159,32 +216,12 @@ static void syscall_chdir(Regs *regs)
 
     regs->rax = false; // Return: failed
 
-    uint64_t path_length;
-    bool valid = usermode_strlen(new_cwd, FS_MAX_FILEPATH_LEN - 1, &path_length);
-    if (!valid)
-    {
-        return;
-    }
-
-    assert(path_length < FS_MAX_FILEPATH_LEN);
-
-    if (path_length == 0)
-    {
-        return;
-    }
-
-    char first_char;
-    res rs = usermode_copy_from_user(&first_char, new_cwd, 1);
-    assert(IS_OK(rs) && "checked before, should be good");
-
-    if (first_char != '/')
-    {
-        assert(false && "Relative chdir is unsupported"); // TODO: implement relative paths
-    }
-
     char filepath[FS_MAX_FILEPATH_LEN] = {0};
-    rs = usermode_copy_from_user(filepath, new_cwd, path_length);
-    assert(IS_OK(rs) && "checked before, should be good");
+    bool success = read_path(new_cwd, filepath);
+    if (!success)
+    {
+        return;
+    }
 
     fat16_DirEntry dir;
     if (!fat16_find_file_based_on_path(&g_fs_fat16, filepath, &dir , NULL))
@@ -199,8 +236,7 @@ static void syscall_chdir(Regs *regs)
     }
 
     PCB *pcb = scheduler_current_pcb();
-    memmove(pcb->cwd, filepath, path_length);
-    pcb->cwd[path_length] = '\0';
+    strcpy(pcb->cwd, filepath);
 
     regs->rax = true; // Success
 }
@@ -266,22 +302,20 @@ static void syscall_reboot(Regs *regs)
 
 static void syscall_execute_program(Regs *regs)
 {
+    res rs;
+
     regs->rax = false; // Return: failed.
 
     //Args:
     usermode_mem *path_to_file = (usermode_mem *)regs->rdi;
     usermode_mem *usermode_argv = (usermode_mem *)regs->rsi;
 
-    uint64_t path_length;
-    bool valid = usermode_strlen(path_to_file, FS_MAX_FILEPATH_LEN - 1, &path_length);
-    if (!valid)
+    char filepath[FS_MAX_FILEPATH_LEN] = {0};
+    bool success = read_path(path_to_file, filepath);
+    if (!success)
     {
         return;
     }
-
-    char filepath[FS_MAX_FILEPATH_LEN] = {0};
-    res rs = usermode_copy_from_user(filepath, path_to_file, path_length);
-    assert(IS_OK(rs) && "checked before, should be good");
 
     uint64_t argv_length = 0;
     (void)argv_length; // It's used, but clang doesn't know that.
@@ -299,7 +333,7 @@ static void syscall_execute_program(Regs *regs)
     if (usermode_argv != NULL)
     {
         uint64_t usermode_argv_length;
-        valid = usermode_len(usermode_argv, sizeof(char *), MAX_ARGV_LEN - 1, &usermode_argv_length);
+        bool valid = usermode_len(usermode_argv, sizeof(char *), MAX_ARGV_LEN - 1, &usermode_argv_length);
         if (!valid)
         {
             return;
@@ -402,15 +436,15 @@ static void syscall_getdents(Regs *regs)
 
     regs->rax = -1;
 
-    char path[FS_MAX_FILEPATH_LEN] = {0};
-    uint64_t path_len;
-    bool valid_path = usermode_strlen(user_path, FS_MAX_FILEPATH_LEN - 1, &path_len);
-    if (!valid_path) {return;}
-    res copy_result = usermode_copy_from_user(path, user_path, path_len);
-    assert(IS_OK(copy_result) && "Path copy should be valid");
+    char filepath[FS_MAX_FILEPATH_LEN] = {0};
+    bool success = read_path(user_path, filepath);
+    if (!success)
+    {
+        return;
+    }
 
     fat16_DirEntry dir_entry = {0};
-    bool found = fat16_find_file_based_on_path(&g_fs_fat16, path, &dir_entry , NULL);
+    bool found = fat16_find_file_based_on_path(&g_fs_fat16, filepath, &dir_entry , NULL);
     if (!found) {return;}
 
     uint16_t first_cluster = dir_entry.firstClusterLow | (dir_entry.firstClusterHigh<< 16);
