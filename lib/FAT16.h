@@ -218,6 +218,8 @@ res fat16_create_directory(fat16_Ref *fat16 , const char* directory_name , const
  */
 bool fat16_allocate_clusters(fat16_Ref *fat16, uint8_t amount_of_clusters, uint16_t *out_array);
 
+bool fat16_does_file_exist(fat16_Ref *fat16, const char *path);
+
 /*
  *@brief the function gets 2 clusters and links them in the FAT
  *

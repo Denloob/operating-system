@@ -1073,4 +1073,8 @@ int fat16_getdents(uint16_t first_cluster, fat16_dirent *out_entries_buffer, int
     return count;
 }
 
-
+bool fat16_does_file_exist(fat16_Ref *fat16, const char *path)
+{
+    fat16_DirEntry temp;
+    return fat16_find_file_based_on_path(fat16, path, &temp, NULL);
+}
