@@ -58,7 +58,15 @@ char *strcpy(char *dest, const char *src)
     return dest;
 }
 
-#define TOLOWER(c) (c | ('a' - 'A'))
+int tolower(int c)
+{
+    if (c >= 'A' && c <= 'Z')
+    {
+        return c | ('a' - 'A');
+    }
+
+    return c;
+}
 
 int strcasecmp(const char *s1, const char *s2)
 {
@@ -67,7 +75,7 @@ int strcasecmp(const char *s1, const char *s2)
     if (s1 == s2)
         return 0;
 
-    while (( result = TOLOWER(*s1) - TOLOWER(*s2++)) == 0)
+    while (( result = tolower(*s1) - tolower(*s2++)) == 0)
     {
         if (*s1++ == '\0')
             break;
@@ -83,7 +91,7 @@ int strncasecmp(const char *s1, const char *s2, size_t n)
     if (s1 == s2 || n == 0)
         return 0;
 
-    while (( result = TOLOWER(*s1) - TOLOWER(*s2++)) == 0)
+    while (( result = tolower(*s1) - tolower(*s2++)) == 0)
     {
         if (*s1++ == '\0' || --n == 0)
             break;
