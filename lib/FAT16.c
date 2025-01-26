@@ -658,6 +658,69 @@ bool fat16_allocate_clusters(fat16_Ref *fat16, uint8_t amount_of_clusters, uint1
     return true;
 }
 
+void fat16_deallocate_clusters_of_file(fat16_File *file)
+{
+    assert(fat16_get_mdscore_flags(file) == fat16_MDSCoreFlags_FILE);
+    FatCache cache = {0};
+    uint16_t cur_cluster = (file->file_entry.firstClusterHigh << 16) | file->file_entry.firstClusterLow;
+    while (cur_cluster < FAT16_CLUSTER_EOF)
+    {
+        const uint32_t fat_offset = cur_cluster * 2;
+        const uint32_t fat_sector = fat_offset / SECTOR_SIZE;
+        const uint32_t fat_entry_offset = fat_offset % SECTOR_SIZE;
+        if (!cache.valid || cache.cached_sector != fat_sector)
+        {
+            if (cache.valid)
+            {
+                fat16_write_FAT_at(file->ref->drive, &file->ref->bpb, cache.buf, cache.cached_sector);
+            }
+            cache.valid = true;
+            cache.cached_sector = fat_sector;
+            fat16_read_FAT_at(file->ref->drive, &file->ref->bpb, cache.buf, fat_sector);
+        }
+
+        cur_cluster = *(uint16_t *)&cache.buf[fat_entry_offset];
+        *(uint16_t *)&cache.buf[fat_entry_offset] = FAT16_CLUSTER_FREE;
+    }
+
+    if (cache.valid)
+    {
+        fat16_write_FAT_at(file->ref->drive, &file->ref->bpb, cache.buf, cache.cached_sector);
+    }
+
+    file->file_entry.firstClusterLow = 0;
+    file->file_entry.firstClusterHigh = 0;
+    fat16_update_entry_in_directory(file->ref, &file->file_entry , file->parent_directory_first_cluster);
+}
+
+void fat16_deallocate_clusters(fat16_Ref *fat16, const uint16_t *array, uint8_t length)
+{
+    FatCache cache = {0};
+    for (int i = 0; i < length; i++)
+    {
+        const uint32_t fat_offset = array[i] * 2;
+        const uint32_t fat_sector = fat_offset / SECTOR_SIZE;
+        const uint32_t fat_entry_offset = fat_offset % SECTOR_SIZE;
+        if (!cache.valid || cache.cached_sector != fat_sector)
+        {
+            if (cache.valid)
+            {
+                fat16_write_FAT_at(fat16->drive, &fat16->bpb, cache.buf, cache.cached_sector);
+            }
+            cache.valid = true;
+            cache.cached_sector = fat_sector;
+            fat16_read_FAT_at(fat16->drive, &fat16->bpb, cache.buf, fat_sector);
+        }
+
+        *(uint16_t *)&cache.buf[fat_entry_offset] = FAT16_CLUSTER_FREE;
+    }
+
+    if (cache.valid)
+    {
+        fat16_write_FAT_at(fat16->drive, &fat16->bpb, cache.buf, cache.cached_sector);
+    }
+}
+
 bool fat16_link_clusters(fat16_Ref *fat16, uint16_t back_cluster, uint16_t front_cluster)
 {
     const uint32_t back_fat_offset = fat16->bpb.reservedSectors * SECTOR_SIZE + back_cluster * 2;
@@ -763,7 +826,7 @@ res fat16_create_directory(fat16_Ref *fat16 , const char* directory_name , const
     success = fat16_add_dir_entry_to(fat16, &new_entry , first_cluster);
     if (!success)
     {
-        // TODO: deallocate clusters in `allocated_clusters`
+        fat16_deallocate_clusters(fat16, allocated_clusters, CLUSTERS_NEEDED);
         return res_fat16_CANT_CREATE_DIR_ENTRY;
     }
 
@@ -912,7 +975,7 @@ uint64_t fat16_write_to_file(fat16_File *file,Drive *drive,fat16_BootSector *bpb
         {
             if (!fat16_link_clusters(file->ref, allocated_clusters[i-1], allocated_clusters[i]))
             {
-                // TODO: deallocate allocated clusters
+                fat16_deallocate_clusters(file->ref, &allocated_clusters[i], CLUSTERS_NEEDED - i);
                 return 0;
             }
         }
@@ -1001,7 +1064,7 @@ uint64_t fat16_write_to_file(fat16_File *file,Drive *drive,fat16_BootSector *bpb
         {
             if (!fat16_link_clusters(file->ref, allocated_clusters[i - 1], allocated_clusters[i])) 
             {
-                // TODO: deallocate the allocated clusters
+                fat16_deallocate_clusters(file->ref, &allocated_clusters[i], CLUSTERS_NEEDED - i);
                 linking_failed = true;
                 break;
             }

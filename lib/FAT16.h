@@ -220,6 +220,9 @@ bool fat16_allocate_clusters(fat16_Ref *fat16, uint8_t amount_of_clusters, uint1
 
 bool fat16_does_file_exist(fat16_Ref *fat16, const char *path);
 
+void fat16_deallocate_clusters_of_file(fat16_File *file);
+void fat16_deallocate_clusters(fat16_Ref *fat16, const uint16_t *cluster_array, uint8_t length);
+
 /*
  *@brief the function gets 2 clusters and links them in the FAT
  *
