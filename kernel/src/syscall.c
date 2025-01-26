@@ -57,23 +57,27 @@ static void syscall_open(Regs *regs)
     res rs = usermode_copy_from_user(filepath, filepath_user, filepath_len);
     assert(IS_OK(rs) && "checked before, should be good");
 
-    bool should_truncate_file = flags & SYSCALL_OPEN_FLAGS_TRUNC;
-    if (flags & SYSCALL_OPEN_FLAGS_CREATE)
-    {
-        // TODO: create the file if it doesn't exist
-        //  If the file doesn't exist, set should_truncate_file to false.
-    }
-
-    if (should_truncate_file)
-    {
-        // TODO: we want to delete all the file contents
-    }
 
     FILE file = {0};
-    bool success = fat16_open(&g_fs_fat16, filepath, &file.file);
-    if (!success)
+
+    bool should_create_file = flags & SYSCALL_OPEN_FLAGS_CREATE;
+    if (should_create_file && !fat16_does_file_exist(&g_fs_fat16, filepath))
     {
-        return;
+        fat16_create_file(&g_fs_fat16, filepath, &file.file, NULL);
+    }
+    else
+    {
+        bool success = fat16_open(&g_fs_fat16, filepath, &file.file);
+        if (!success)
+        {
+            return;
+        }
+
+        bool should_truncate_file = flags & SYSCALL_OPEN_FLAGS_TRUNC;
+        if (should_truncate_file && fat16_get_mdscore_flags(&file.file) == fat16_MDSCoreFlags_FILE)
+        {
+            fat16_deallocate_clusters_of_file(&file.file);
+        }
     }
 
     PCB *pcb = scheduler_current_pcb();
