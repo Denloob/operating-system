@@ -36,6 +36,13 @@ void filename_to_fat16_filename(const char *filename, char out_buf[static FAT16_
 
     memset(out_buf, ' ', FAT16_FULL_FILENAME_SIZE);
 
+    // Special treatment for `.` and `..` names which are used verbatim
+    if (strcmp(filename, ".") == 0 || strcmp(filename, "..") == 0)
+    {
+        memmove(out_buf, filename, strlen(filename));
+        return;
+    }
+
     char *dot = memrchr(filename, '.', filename_length);
 
     if (dot == NULL) // If no dot is found, treat it as a name without an extension
