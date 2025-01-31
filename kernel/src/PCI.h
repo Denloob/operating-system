@@ -147,3 +147,16 @@ void pci_scan_for_ide();
  * @return res_OK or one of the errors above.
  */
 res pci_find_device(uint16_t vendor_id, uint16_t device_id, pci_DeviceAddress *out);
+
+/**
+ * @brief - Get the header type of the PCI device at the given address.
+ */
+uint8_t pci_get_header_type(pci_DeviceAddress address);
+
+/**
+ * @brief - Get the IRQ number of the given PCI device
+ *          NOTE: applicable only for type 0 header type
+ *
+ * @see - pci_get_header_type
+ */
+uint8_t pci_get_irq_number(pci_DeviceAddress address);

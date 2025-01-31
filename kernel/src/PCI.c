@@ -44,6 +44,18 @@ uint32_t pci_config_read(pci_DeviceAddress address, uint8_t offset)
     return pci_config_data();
 }
 
+uint8_t pci_get_header_type(pci_DeviceAddress address)
+{
+    return (pci_config_read(address, 0xc) >> 16) & 0xff;
+}
+
+uint8_t pci_get_irq_number(pci_DeviceAddress address)
+{
+    // NOTE: applicable only to type 0 header type.
+    // @see pci_get_header_type
+    return pci_config_read(address, 0x3c) & 0xff;
+}
+
 uint16_t pci_get_vendor_id(pci_DeviceAddress address) 
 {
     return pci_config_read(address, 0x00) & 0xFFFF;
