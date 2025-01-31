@@ -8,8 +8,9 @@ typedef enum {
     pic_IRQ__CASCADE, // Never raised, for internal use only
     pic_IRQ_COM2,
     pic_IRQ_COM1,
-    pic_IRQ_LPT2_OR_SPURIOUS, // When IRQ is aborted, a spurious (last IRQ in the PIC1 or PIC2) is sent
+    pic_IRQ_LPT2,
     pic_IRQ_FLOPPY_DISK,
+    pic_IRQ_LPT1_OR_SPURIOUS, // When IRQ is aborted, a spurious (last IRQ in the PIC1 or PIC2) is sent 
     pic_IRQ_CMOS_CLOCK,
     pic_IRQ_FREE9,
     pic_IRQ_FREE10,
