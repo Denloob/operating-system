@@ -2,6 +2,9 @@
 
 #include <stdint.h>
 
+#define PIC_IDT_OFFSET_1 0x20
+#define PIC_IDT_OFFSET_2 0x70
+
 typedef enum {
     pic_IRQ_TIMER,
     pic_IRQ_KEYBOARD,
@@ -20,6 +23,15 @@ typedef enum {
     pic_IRQ_PRIMARY_ATA,
     pic_IRQ_SECONDARY_ATA_OR_SPURIOUS,
 } pic_IRQ ;
+
+__attribute__((const, always_inline))
+static inline int pic_irq_number_to_idt(int irq)
+{
+    return irq < pic_IRQ_CMOS_CLOCK
+                ? (PIC_IDT_OFFSET_1 + irq)
+                : (PIC_IDT_OFFSET_2 + irq - pic_IRQ_CMOS_CLOCK);
+}
+
 
 /**
  * @brief - Send an end-of-interrupt to the PIC.

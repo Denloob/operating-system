@@ -262,15 +262,15 @@ void init_kernel_memory(uint64_t mmu_map_base_address, range_Range *memory_map, 
 
 static void init_pic_keyboard_and_timer()
 {
-    PIC_remap(0x20, 0x70);
+    PIC_remap(PIC_IDT_OFFSET_1, PIC_IDT_OFFSET_2);
     pic_mask_all();
 
     pic_clear_mask(pic_IRQ_KEYBOARD);
-    idt_register(0x20 + pic_IRQ_KEYBOARD, IDT_gate_type_INTERRUPT, io_isr_keyboard_event);
+    idt_register(pic_irq_number_to_idt(pic_IRQ_KEYBOARD), IDT_gate_type_INTERRUPT, io_isr_keyboard_event);
     io_input_keyboard_key = io_keyboard_wait_key;
 
     pic_clear_mask(pic_IRQ_TIMER);
-    idt_register(0x20 + pic_IRQ_TIMER, IDT_gate_type_INTERRUPT, pit_isr_clock);
+    idt_register(pic_irq_number_to_idt(pic_IRQ_TIMER), IDT_gate_type_INTERRUPT, pit_isr_clock);
     pit_init();
 
     assert(IS_OK(io_keyboard_reset_and_self_test()) && "Keyboard self test failed. Reboot and try again.");
