@@ -63,6 +63,8 @@ void pic_mask_all()
 {
     out_byte(PIC1_DATA, 0xff);
     out_byte(PIC2_DATA, 0xff);
+
+    pic_clear_mask(pic_IRQ__CASCADE);
 }
 
 void pic_set_mask(pic_IRQ interrupt_request)
