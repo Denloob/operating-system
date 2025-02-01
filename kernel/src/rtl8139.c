@@ -112,7 +112,7 @@ static void rtl8139_software_reset()
 #define RECV_BUFFER_CANARY2 0x068b9a4fda74e441
 
 #define RECV_BUFFER_SIZE_RAW (8192) // The raw size of the rx buffer, excluding all the additional stuff like in RECV_BUFFER_SIZE. Should be used only for the ring buffer calculations.
-#define RECV_BUFFER_SIZE (8192 + 16 + 2048) // Smallest buffer size supported by rtl8139 + 2048 "overflow"
+#define RECV_BUFFER_SIZE (RECV_BUFFER_SIZE_RAW + 16 + 2048) // Smallest buffer size supported by rtl8139 + 2048 "overflow"
 
 // Structure describing all the buffers for the transmit/receive packets
 //  needed by the RTL.
