@@ -121,13 +121,12 @@ static void rtl8139_software_reset()
 typedef struct {
     struct {
         char buffer[RECV_BUFFER_SIZE];
+        uint64_t canary1;
+        uint64_t canary2;
 
         // The last location from which we read from the recv buffer. Should be CAPR+0x10
         uint16_t ptr;
     } rx;
-
-    uint64_t canary1;
-    uint64_t canary2;
 } rtl_PacketBuffers;
 
 #define PACKET_BUFFER_VIRTUAL_ADDR 0xffff813900000000
@@ -135,15 +134,15 @@ static rtl_PacketBuffers *g_packet_buffers;
 
 static void write_recv_buffer_canary()
 {
-    g_packet_buffers->canary1 = RECV_BUFFER_CANARY1;
-    g_packet_buffers->canary2 = RECV_BUFFER_CANARY2;
+    g_packet_buffers->rx.canary1 = RECV_BUFFER_CANARY1;
+    g_packet_buffers->rx.canary2 = RECV_BUFFER_CANARY2;
 }
 
 __attribute__((unused))
 static void validate_recv_buffer_canary()
 {
-    assert(g_packet_buffers->canary1 == RECV_BUFFER_CANARY1);
-    assert(g_packet_buffers->canary2 == RECV_BUFFER_CANARY2);
+    assert(g_packet_buffers->rx.canary1 == RECV_BUFFER_CANARY1);
+    assert(g_packet_buffers->rx.canary2 == RECV_BUFFER_CANARY2);
 }
 
 static bool rtl8139_allocate_packet_buffers_phys(uint64_t *out_phys_address, uint64_t size)
