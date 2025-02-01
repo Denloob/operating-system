@@ -160,3 +160,4 @@ uint8_t pci_get_header_type(pci_DeviceAddress address);
  * @see - pci_get_header_type
  */
 uint8_t pci_get_irq_number(pci_DeviceAddress address);
+void pci_set_irq_number(pci_DeviceAddress address, uint8_t irq);

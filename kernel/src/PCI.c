@@ -1,6 +1,7 @@
 #include "PCI.h"
 #include "assert.h"
 #include "io.h"
+#include "pic.h"
 #include "res.h"
 
 #define PORT_CONFIG_ADDRESS 0xCF8
@@ -49,11 +50,23 @@ uint8_t pci_get_header_type(pci_DeviceAddress address)
     return (pci_config_read(address, 0xc) >> 16) & 0xff;
 }
 
+#define INTERRUPT_LINE_OFFSET 0x3c
+
 uint8_t pci_get_irq_number(pci_DeviceAddress address)
 {
     // NOTE: applicable only to type 0 header type.
     // @see pci_get_header_type
-    return pci_config_read(address, 0x3c) & 0xff;
+    return pci_config_read(address, INTERRUPT_LINE_OFFSET) & 0xff;
+}
+
+void pci_set_irq_number(pci_DeviceAddress address, uint8_t irq)
+{
+    assert(irq <= pic_IRQ_SECONDARY_ATA_OR_SPURIOUS && "IRQ number is out of range");
+    // NOTE: applicable only to type 0 header type.
+    // @see pci_get_header_type
+    uint32_t old_value = pci_config_read(address, INTERRUPT_LINE_OFFSET);
+    uint32_t new_value = (old_value & ~0xff) | irq;
+    pci_config_write(address, INTERRUPT_LINE_OFFSET, new_value);
 }
 
 uint16_t pci_get_vendor_id(pci_DeviceAddress address) 
