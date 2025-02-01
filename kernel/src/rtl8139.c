@@ -1,13 +1,18 @@
 #include <stdint.h>
 #include <limits.h>
 #include "rtl8139.h"
+#include "IDT.h"
 #include "PCI.h"
 #include "assert.h"
 #include "io.h"
+#include "isr.h"
 #include "kmalloc.h"
+#include "math.h"
 #include "memory.h"
 #include "mmap.h"
 #include "mmu.h"
+#include "pic.h"
+#include "smartptr.h"
 
 #define rtl8139_IO_BASE_BAR_INDEX 0
 
@@ -33,6 +38,9 @@ enum {
     rtl8139_REG_RCR      = 0x44,        /* 4 bytes */
 
     rtl8139_REG_CONFIG_1 = 0x52,        /* 1 byte  */
+
+    rtl8139_REG_CAPR     = 0x38, /* Current Address of Packet Read (end of last packet read by us);             2 bytes */
+    rtl8139_REG_CBA      = 0x3a, /* aka CBR, Current Buffer Address (end of last received packet by rtl8139);   2 bytes */
 
     // Receive Configuration Register bits
     rtl8139_RCR_ACCEPT_ALL              = (1 << 0),
@@ -78,6 +86,8 @@ static res rtl8139_find_rtl(rtl8139_Device *out)
         return res_rtl8139_UNEXPECTED_DEVICE_BEHAVIOR;
     }
 
+    out->irq = pci_get_irq_number(out->address);
+
     return res_OK;
 }
 
@@ -101,6 +111,7 @@ static void rtl8139_software_reset()
 #define RECV_BUFFER_CANARY1 0xbd2410f129cb24a1
 #define RECV_BUFFER_CANARY2 0x068b9a4fda74e441
 
+#define RECV_BUFFER_SIZE_RAW (8192) // The raw size of the rx buffer, excluding all the additional stuff like in RECV_BUFFER_SIZE. Should be used only for the ring buffer calculations.
 #define RECV_BUFFER_SIZE (8192 + 16 + 1500) // Smallest buffer size supported by rtl8139 + 1500 "overflow"
 
 // Structure describing all the buffers for the transmit/receive packets
@@ -108,7 +119,13 @@ static void rtl8139_software_reset()
 // We put them all in one struct so we can allocate their physical memory
 //  contiguously easily without losing data on alignment.
 typedef struct {
-    char recv_buffer[RECV_BUFFER_SIZE];
+    struct {
+        char buffer[RECV_BUFFER_SIZE];
+
+        // The last location from which we read from the recv buffer. Should be CAPR+0x10
+        uint16_t ptr;
+    } rx;
+
     uint64_t canary1;
     uint64_t canary2;
 } rtl_PacketBuffers;
@@ -176,6 +193,87 @@ static void rtl8139_enable_transmit_and_receive()
     rtl_write(byte, rtl8139_REG_CMD, rtl8139_CMD_RECEIVER_ENABLE | rtl8139_CMD_TRANSMITTER_ENABLE);
 }
 
+#define INTERRUPT_MASK rtl8139_IMR_RECEIVE_OK | rtl8139_IMR_RECEIVE_ERR | rtl8139_IMR_TRANSMIT_OK | rtl8139_IMR_TRANSMIT_ERR
+
+typedef struct {
+    uint32_t receive_ok : 1;
+    uint32_t err_frame_alignment : 1;
+    uint32_t err_crc : 1;
+    uint32_t long_packet : 1;
+    uint32_t runt_packet : 1;
+    uint32_t err_invalid_symbol : 1;
+    uint32_t reserved : 7;
+    uint32_t is_broadcast : 1;
+    uint32_t is_physical_mac_match : 1;
+    uint32_t is_multicast : 1;
+    uint32_t packet_size : 16;
+} ReceiveHeader;
+
+void rtl8139_recv_packer(uint16_t status)
+{
+    assert(status & rtl8139_IMR_RECEIVE_OK);
+    validate_recv_buffer_canary();
+
+    const char *rx_buf = g_packet_buffers->rx.buffer;
+    const ReceiveHeader *header = (ReceiveHeader *)&rx_buf[  g_packet_buffers->rx.ptr                    ];
+    const char *packet =                           &rx_buf[  g_packet_buffers->rx.ptr + sizeof(*header)  ];
+
+    // TODO: write packet to kernel packet queue
+    (void)packet;
+
+    g_packet_buffers->rx.ptr = math_ALIGN_UP(g_packet_buffers->rx.ptr + header->packet_size + sizeof(*header), sizeof(uint32_t));
+    g_packet_buffers->rx.ptr %= RECV_BUFFER_SIZE_RAW;
+
+    rtl_write(word, rtl8139_REG_CAPR, g_packet_buffers->rx.ptr - 0x10); // -0x10 for rtl8139 to be happy (CAPR is always 0x10 less than actual CAPR)
+}
+
+void rtl8139_interrupt_handler_impl()
+{
+    uint16_t status = rtl_read(word, rtl8139_REG_ISR);
+
+    // We need to write the cause of the interrupt back to the reg.
+    // Instead of having logic for each one, we just write the whole mask, as at
+    // least one of the bits there is the cause
+    rtl_write(word, rtl8139_REG_ISR, INTERRUPT_MASK);
+
+    if (status & rtl8139_IMR_RECEIVE_OK)
+    {
+        rtl8139_recv_packer(status);
+    }
+    // TODO: implement for the following
+    else if (status & rtl8139_IMR_RECEIVE_ERR)
+    {
+    }
+    else if (status & rtl8139_IMR_TRANSMIT_OK)
+    {
+    }
+    else if (status & rtl8139_IMR_TRANSMIT_ERR)
+    {
+    }
+
+    defer({ pic_send_EOI(g_rtl.irq); });
+}
+
+void rtl8139_interrupt_handler()
+{
+    isr_IMPL_INTERRUPT(rtl8139_interrupt_handler_impl);
+}
+
+void rtl8139_register_interrupt_handler(uint8_t irq)
+{
+    assert(irq == pic_IRQ_FREE11 && "That's the only currently supported IRQ for the RTL8139");
+    if (g_rtl.irq != irq)
+    {
+        pci_set_irq_number(g_rtl.address, irq);
+        g_rtl.irq = irq;
+    }
+
+    assert(pci_get_irq_number(g_rtl.address) == irq);
+
+    pic_clear_mask(irq);
+    idt_register(pic_irq_number_to_idt(irq), IDT_gate_type_INTERRUPT, rtl8139_interrupt_handler);
+}
+
 res rtl8139_init()
 {
     res rs = rtl8139_find_rtl(&g_rtl);
@@ -194,8 +292,7 @@ res rtl8139_init()
         return res_rtl8139_PACKETS_BUFFER_NO_MEMORY;
     }
 
-    rtl8139_set_interrupt_mask(rtl8139_IMR_RECEIVE_OK | rtl8139_IMR_RECEIVE_ERR |
-                               rtl8139_IMR_TRANSMIT_OK | rtl8139_IMR_TRANSMIT_ERR);
+    rtl8139_set_interrupt_mask(INTERRUPT_MASK);
 
     rtl8139_set_receive_config(rtl8139_RCR_ACCEPT_PHYSICAL_MATCH |
                                rtl8139_RCR_ACCEPT_BROADCAST | rtl8139_RCR_WRAP);

@@ -109,6 +109,7 @@ void __attribute__((section(".entry"), sysv_abi)) kernel_main(uint32_t param_mmu
 
     res rs = rtl8139_init();
     assert(IS_OK(rs) && "RTL8139 was not found");
+    rtl8139_register_interrupt_handler(pic_IRQ_FREE11);
 
     usermode_init_smp();
 
