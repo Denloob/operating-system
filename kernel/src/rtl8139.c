@@ -4,6 +4,7 @@
 #include "IDT.h"
 #include "PCI.h"
 #include "assert.h"
+#include "ethernet.h"
 #include "io.h"
 #include "isr.h"
 #include "kmalloc.h"
@@ -217,8 +218,7 @@ void rtl8139_recv_packer(uint16_t status)
     const ReceiveHeader *header = (ReceiveHeader *)&rx_buf[  g_packet_buffers->rx.ptr                    ];
     const char *packet =                           &rx_buf[  g_packet_buffers->rx.ptr + sizeof(*header)  ];
 
-    // TODO: write packet to kernel packet queue
-    (void)packet;
+    ethernet_handle_packet((EthernetPacket *)packet, header->packet_size - ETHER_PACKET_SIZE);
 
     g_packet_buffers->rx.ptr = math_ALIGN_UP(g_packet_buffers->rx.ptr + header->packet_size + sizeof(*header), sizeof(uint32_t));
     g_packet_buffers->rx.ptr %= RECV_BUFFER_SIZE_RAW;
