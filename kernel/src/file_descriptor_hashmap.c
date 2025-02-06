@@ -1,18 +1,9 @@
 #include "file_descriptor_hashmap.h"
 #include "file_descriptor.h"
+#include "hashmap_utils.h"
 #include "kmalloc.h"
 #include "memory.h"
 #include "assert.h"
-
-__attribute__((const))
-static uint64_t hash(uint64_t val)
-{
-    // Based on https://github.com/h2database/h2database/blob/cc0e45355d78c3ee6711f6bb73eba4f224c4ae18/h2/src/test/org/h2/test/store/CalculateHashConstantLong.java#L75
-    val = (val ^ (val >> 30)) * 0xbf58476d1ce4e5b9;
-    val = (val ^ (val >> 27)) * 0x94d049bb133111eb;
-    val = val ^ (val >> 31);
-    return val;
-}
 
 bool file_descriptor_hashmap_init(FileDescriptorHashmap *map)
 {
@@ -87,7 +78,7 @@ FileDescriptor *file_descriptor_hashmap_emplace(FileDescriptorHashmap *map, uint
             iteration_counter = 0;
             hash_state = fd;
         }
-        hash_state = hash(hash_state);
+        hash_state = hash_u64(hash_state);
         index = hash_state % map->capacity;
     }
     while (map->buf[index].is_used);
@@ -105,7 +96,7 @@ FileDescriptor *file_descriptor_hashmap_get(FileDescriptorHashmap *map, uint64_t
     size_t index;
     do
     {
-        hash_state = hash(hash_state);
+        hash_state = hash_u64(hash_state);
 
         index = hash_state % map->capacity;
 
@@ -128,7 +119,7 @@ bool file_descriptor_hashmap_remove(FileDescriptorHashmap *map, uint64_t fd)
     size_t index;
     do
     {
-        hash_state = hash(hash_state);
+        hash_state = hash_u64(hash_state);
 
         index = hash_state % map->capacity;
 
