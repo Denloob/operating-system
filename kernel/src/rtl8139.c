@@ -43,6 +43,16 @@ enum {
     rtl8139_REG_CAPR     = 0x38, /* Current Address of Packet Read (end of last packet read by us);             2 bytes */
     rtl8139_REG_CBA      = 0x3a, /* aka CBR, Current Buffer Address (end of last received packet by rtl8139);   2 bytes */
 
+    rtl8139_REG_TSD0     = 0x10,        /* 4 bytes */
+    rtl8139_REG_TSD1     = 0x14,
+    rtl8139_REG_TSD2     = 0x18,
+    rtl8139_REG_TSD3     = 0x1c,
+
+    rtl8139_REG_TSAD0    = 0x20,        /* 4 bytes */
+    rtl8139_REG_TSAD1    = 0x24,
+    rtl8139_REG_TSAD2    = 0x28,
+    rtl8139_REG_TSAD3    = 0x2c,
+
     // Receive Configuration Register bits
     rtl8139_RCR_ACCEPT_ALL              = (1 << 0),
     rtl8139_RCR_ACCEPT_PHYSICAL_MATCH   = (1 << 1),
@@ -115,6 +125,8 @@ static void rtl8139_software_reset()
 #define RECV_BUFFER_SIZE_RAW (8192) // The raw size of the rx buffer, excluding all the additional stuff like in RECV_BUFFER_SIZE. Should be used only for the ring buffer calculations.
 #define RECV_BUFFER_SIZE (RECV_BUFFER_SIZE_RAW + 16 + 2048) // Smallest buffer size supported by rtl8139 + 2048 "overflow"
 
+#define TRANSMIT_BUFFER_SIZE 0x700 // Max size specified in the datasheet
+
 // Structure describing all the buffers for the transmit/receive packets
 //  needed by the RTL.
 // We put them all in one struct so we can allocate their physical memory
@@ -128,10 +140,25 @@ typedef struct {
         // The last location from which we read from the recv buffer. Should be CAPR+0x10
         uint16_t ptr;
     } rx;
+
+    char transmit_buffers[4][TRANSMIT_BUFFER_SIZE];
+    int cur_buffer_idx;
 } rtl_PacketBuffers;
 
 #define PACKET_BUFFER_VIRTUAL_ADDR 0xffff813900000000
+static uint32_t g_packet_buffers_phys_addr;
 static rtl_PacketBuffers *g_packet_buffers;
+
+__attribute__((pure))
+static uint32_t virtual_packet_buffer_addr_to_phys(void *ptr)
+{
+    assert(ptr >= (void *)g_packet_buffers && ptr <= (void *)((char *)g_packet_buffers + sizeof(*g_packet_buffers)));
+
+    uint64_t phys_addr = (uint64_t)ptr - (PACKET_BUFFER_VIRTUAL_ADDR - g_packet_buffers_phys_addr);
+    assert(phys_addr < UINT32_MAX);
+
+    return (uint32_t)phys_addr;
+}
 
 static void write_recv_buffer_canary()
 {
@@ -164,6 +191,8 @@ static res rtl8139_init_recv_buffer()
     {
         return res_rtl8139_PACKETS_BUFFER_NO_MEMORY;
     }
+
+    g_packet_buffers_phys_addr = physical_buffer_addresses_addr;
 
     mmu_map_range(physical_buffer_addresses_addr,
                   physical_buffer_addresses_addr + buffer_addresses_size,
@@ -224,6 +253,58 @@ void rtl8139_recv_packer(uint16_t status)
     g_packet_buffers->rx.ptr %= RECV_BUFFER_SIZE_RAW;
 
     rtl_write(word, rtl8139_REG_CAPR, g_packet_buffers->rx.ptr - 0x10); // -0x10 for rtl8139 to be happy (CAPR is always 0x10 less than actual CAPR)
+}
+
+__attribute__((const))
+static int buffer_idx_to_tsad(int buffer_idx)
+{
+    assert(buffer_idx >= 0);
+
+    const int tsad_size = 4;
+    const int tsad = rtl8139_REG_TSAD0 + (buffer_idx * tsad_size);
+
+    assert(tsad >= rtl8139_REG_TSAD0 && tsad <= rtl8139_REG_TSAD3);
+    return tsad;
+}
+
+__attribute__((const))
+static int buffer_idx_to_tsd(int buffer_idx)
+{
+    assert(buffer_idx >= 0);
+
+    const int tsd_size = 4;
+    const int tsd = rtl8139_REG_TSD0 + (buffer_idx * tsd_size);
+
+    assert(tsd >= rtl8139_REG_TSD0 && tsd <= rtl8139_REG_TSD3);
+    return tsd;
+}
+
+bool rtl8139_try_transmit_packet(EthernetPacket *packet, int size)
+{
+    size += ETHER_PACKET_SIZE;
+    assert(size < sizeof(*g_packet_buffers->transmit_buffers));
+
+    int idx = g_packet_buffers->cur_buffer_idx;
+    int transmit_descriptor = buffer_idx_to_tsd(idx);
+    uint32_t transmit_value = rtl_read(dword, transmit_descriptor);
+#define TRANSMIT_DESC_OK (1 << 15)
+    if (transmit_value & TRANSMIT_DESC_OK)
+    {
+        return false;
+    }
+
+    char *tx = g_packet_buffers->transmit_buffers[idx];
+    memmove(tx, packet, size);
+
+    int transmit_address = buffer_idx_to_tsad(idx);
+    rtl_write(dword, transmit_address, virtual_packet_buffer_addr_to_phys(tx));
+
+    rtl_write(dword, transmit_descriptor, size);
+
+    g_packet_buffers->cur_buffer_idx++;
+    g_packet_buffers->cur_buffer_idx %= (sizeof(g_packet_buffers->transmit_buffers) / sizeof(*g_packet_buffers->transmit_buffers));
+
+    return true;
 }
 
 void rtl8139_interrupt_handler_impl()

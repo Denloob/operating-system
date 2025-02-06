@@ -2,6 +2,7 @@
 
 #include "PCI.h"
 #include "compiler_macros.h"
+#include "ethernet.h"
 
 #define rtl8139_VENDOR_ID 0x10ec
 #define rtl8139_DEVICE_ID 0x8139
@@ -26,3 +27,17 @@ res rtl8139_init() WUR;
  * @param irq - The interrupt request number that the rtl8139 should use.
  */
 void rtl8139_register_interrupt_handler(uint8_t irq);
+
+/**
+ * @brief - Try to transmit an Ethernet packet.
+ *
+ * @param packet - The Ethernet packet to transmit.
+ * @param size   - The size of data in the packet to transmit.
+ *                   NOTE: This means that we will read a total of `size + ETHER_PACKET_SIZE`
+ *                      from `(char *)packet`!
+ *
+ * @return - true if the packet was transmitted. When false, this means that the
+*              packet "queue" transmission is full, hence you should try again
+*              some time later.
+ */
+bool rtl8139_try_transmit_packet(EthernetPacket *packet, int size);
