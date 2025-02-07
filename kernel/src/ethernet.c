@@ -5,7 +5,7 @@
 
 void ethernet_handle_packet(EthernetPacket *packet, int data_length)
 {
-    switch (ntohs(packet->type))
+    switch (ntohs(packet->ethertype))
     {
         case ethernet_TYPE_ARP:
             arp_handle(packet, data_length);
