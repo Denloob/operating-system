@@ -27,6 +27,11 @@ void ipv4_handle(EthernetPacket *packet, int data_length);
 // @return - true on success, false otherwise (false = out of memory)
 bool ipv4_register_protocol(NetCallbackRegistryKey protocol_id_key, NetCallback callback, void *state);
 
+// @return - true if we have an IP and it was written, false otherwise.
+bool ipv4_get_own_ip(uint8_t out_ip[static IPv4_IP_ADDR_SIZE]);
+
+void ipv4_set_own_ip(const uint8_t ip[static IPv4_IP_ADDR_SIZE]);
+
 __attribute__((pure))
 static inline NetCallbackRegistryKey ipv4_create_protocol_key_udp(uint8_t ip[IPv4_IP_ADDR_SIZE], uint16_t port)
 {
