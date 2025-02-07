@@ -36,3 +36,7 @@ enum {
 };
 
 void arp_handle(EthernetPacket *packet, int data_length);
+
+// Resolves the given ip and writes the result into out_mac. Will block until
+//  gets a response.
+void arp_resolve_ip_to_mac(const uint8_t ip[static IPv4_IP_ADDR_SIZE], uint8_t out_mac[static ETHER_MAC_SIZE]);
