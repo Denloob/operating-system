@@ -21,6 +21,9 @@ static bool ipv4_packet_to_key(EthernetPacket *packet, int data_length, NetCallb
     switch (ip_packet->protocol)
     {
         // TODO: based on the protocol, extract the relevant data and set the key.
+        case IPv4_PROTOCOL_ICMP:
+            *out = ipv4_create_protocol_key_icmp(ip_packet->source_ip);
+            return true;
         default:
             /* Unsupported protocol, drop */
             return false;
