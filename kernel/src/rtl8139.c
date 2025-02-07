@@ -381,3 +381,13 @@ res rtl8139_init()
 
     return res_OK;
 }
+
+
+void rtl8139_get_mac_address(uint8_t mac[6]) 
+{
+    assert(mac != NULL);
+    for (int i = 0; i < 6; i++) 
+    {
+        mac[i] = rtl_read(byte, rtl8139_REG_MAC0_5 + i);
+    }
+}

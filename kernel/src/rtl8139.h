@@ -41,3 +41,6 @@ void rtl8139_register_interrupt_handler(uint8_t irq);
 *              some time later.
  */
 bool rtl8139_try_transmit_packet(EthernetPacket *packet, int size);
+
+
+void rtl8139_get_mac_address(uint8_t mac[6]);
