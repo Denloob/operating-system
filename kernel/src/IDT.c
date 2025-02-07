@@ -18,4 +18,3 @@ void idt_register(int interrupt, IDT_gate_type gate_type, void *callback)
         .segment = GDT_SEGMENT_CODE,
     };
 }
-

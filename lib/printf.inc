@@ -97,7 +97,7 @@ void printf(const char *fmt, ...)
             fmt++;
             ch = *fmt;
         }
-        
+
         bool is_long = false;
         bool is_long_long = false;
 

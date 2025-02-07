@@ -18,7 +18,7 @@
 res kbrk(void *addr) WUR;
 
 /**
- * @brief Move the page break. 
+ * @brief Move the page break.
  *
  * @param increment - The increment by which to move the page break.
  *          If increment is positive, allocates that many bytes.

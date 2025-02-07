@@ -8,7 +8,7 @@
 #define GDT_SEG_LONG      (1 << 0x1) // Long mode
 #define GDT_SEG_SIZE_32      (1 << 0x2) // Size (0 for 16-bit, 1 for 32)
 #define GDT_SEG_GRAN      (1 << 0x3) // Granularity (0 for 1B - 1MB, 1 for 4KB - 4GB)
- 
+
 // Access Byte
 #define GDT_SEG_ACCESSED       0x01
 #define GDT_SEG_EXPAND_DOWN    0x04

@@ -35,9 +35,9 @@ int compare_strings(char *option, char *command)
     }
     if (*option == '\0')
     {
-        return 1; 
+        return 1;
     }
-    return 0; 
+    return 0;
 }
 
 void echo_command(char *command)
@@ -104,7 +104,7 @@ void ls_command(fat16_Ref *fat16, const char* flag)
     fat16_init_dir_reader(&reader, fat16 , 0);
     fat16_DirEntry entry;
 
-    while (fat16_read_next_root_entry(fat16->drive, &reader, &entry)) 
+    while (fat16_read_next_root_entry(fat16->drive, &reader, &entry))
     {
         if (entry.filename[0] != 0x00 && entry.filename[0] != 0xE5)
         {
@@ -155,7 +155,7 @@ void touch_command(fat16_Ref *fat16 ,const char* second_part_command)
 {
     fat16_create_file(fat16 , second_part_command, NULL, NULL);
 }
-    
+
 void parse_command(char* command , int max_size , fat16_Ref *fat16)
 {
     const char *space_pos = strchr(command , ' ');
@@ -201,7 +201,7 @@ void parse_command(char* command , int max_size , fat16_Ref *fat16)
     }
     else if (compare_strings("touch", command))
     {
-        if (!second_part)  
+        if (!second_part)
         {
             puts("touch expects a second argument: filename");
         }

@@ -11,4 +11,3 @@ static inline uint64_t hash_u64(uint64_t val)
     val = val ^ (val >> 31);
     return val;
 }
-

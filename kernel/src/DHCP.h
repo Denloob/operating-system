@@ -1,6 +1,6 @@
 #include <stdint.h>
 
-typedef struct 
+typedef struct
 {
     uint8_t op;         // Message type: 1 = request, 2 = reply
     uint8_t htype;      // Hardware type (Ethernet = 1)

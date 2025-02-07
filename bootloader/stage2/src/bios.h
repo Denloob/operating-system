@@ -34,7 +34,7 @@ bool __attribute__((cdecl))
 bios_drive_read(uint8_t drive, drive_CHS *chs, uint8_t *buffer,
                 uint8_t sector_count);
 
-enum { 
+enum {
     bios_memory_TYPE_USABLE = 1,
     bios_memory_TYPE_RESERVED,
     bios_memory_TYPE_ACPI_RECLAIMABLE,

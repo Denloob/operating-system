@@ -88,7 +88,7 @@ typedef struct
     Drive *drive;
 } fat16_Ref;
 //new algo functions
-typedef struct 
+typedef struct
 {
     uint32_t current_sector;
     uint32_t entry_offset;
@@ -96,7 +96,7 @@ typedef struct
     uint32_t dir_end;
 } fat16_DirReader;
 
-typedef struct 
+typedef struct
 {
     char name[13];
     uint8_t attr;
@@ -109,7 +109,7 @@ typedef struct
  */
 int fat16_getdents(uint16_t first_cluster, fat16_dirent *out_entries_buffer, int max_entries , fat16_Ref *fat16);
 
-void fat16_init_dir_reader(fat16_DirReader *reader, fat16_Ref *fat16, uint16_t start_cluster); 
+void fat16_init_dir_reader(fat16_DirReader *reader, fat16_Ref *fat16, uint16_t start_cluster);
 bool fat16_read_next_root_entry(Drive *drive, fat16_DirReader *reader, fat16_DirEntry *entry);
 //----------------
 
@@ -196,12 +196,12 @@ bool fat16_add_dir_entry_to(fat16_Ref *fat16, fat16_DirEntry *new_entry , uint16
 #define fat16_DIRENTRY_ATTR_IS_DIRECTORY 0x10
 
 /**
- * *@brief the function creates a dir entry 
+ * *@brief the function creates a dir entry
  *
- *@*fat16 - the fat ref (bpb , drive) 
+ *@*fat16 - the fat ref (bpb , drive)
  *@*filename - the file name for the entry
  @extension - the file extension (exe , com , txt , doc ,   bmp , gif , jpg ...)
- *@attributes - the attributes of the file (0x01 - read only / 0x02 - hidden / 0x04 - system / 0x08 -volume label / 0x10 - directory / 0x20  - archive / 0x0F - long file name) can be 2 things or more for example 0x12 is a hidden directory 
+ *@attributes - the attributes of the file (0x01 - read only / 0x02 - hidden / 0x04 - system / 0x08 -volume label / 0x10 - directory / 0x20  - archive / 0x0F - long file name) can be 2 things or more for example 0x12 is a hidden directory
 *@out_file - the variables where the refrence to the file will be stored
  */
 bool fat16_create_dir_entry(fat16_Ref *fat16 , const char *filename , const char *extension , uint8_t attributes , fat16_DirEntry *created_entry);
@@ -230,7 +230,7 @@ void fat16_deallocate_clusters(fat16_Ref *fat16, const uint16_t *cluster_array, 
  *@param back_cluster - the cluster that the function will link a cluster to for exmaple in the chain 4->5 the cluster will be 4
  *@param front_cluster - the cluster that will be linked in the exampe above 5
  *
- * @return - true or false 
+ * @return - true or false
  */
 bool fat16_link_clusters(fat16_Ref *fat16, uint16_t back_cluster, uint16_t front_cluster);
 
@@ -278,4 +278,3 @@ fat16_MDSCoreFlags fat16_get_mdscore_flags(fat16_File *file)
  * @brief - Update the given dir entry in the root dir.
  */
 bool fat16_update_entry_in_directory(fat16_Ref *fat16, fat16_DirEntry *dir_entry , uint16_t start_cluster);
-

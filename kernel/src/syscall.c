@@ -243,7 +243,7 @@ static void syscall_chdir(Regs *regs)
 
 static void syscall_getcwd(Regs *regs)
 {
-    usermode_mem *buf = (usermode_mem *)regs->rdi; 
+    usermode_mem *buf = (usermode_mem *)regs->rdi;
     size_t size = regs->rsi;
 
     PCB *pcb = scheduler_current_pcb();
@@ -428,7 +428,7 @@ static void syscall_read(Regs *regs)
 
 
 
-static void syscall_getdents(Regs *regs) 
+static void syscall_getdents(Regs *regs)
 {
     usermode_mem *user_path = (usermode_mem *)regs->rdi;
     usermode_mem *user_out_entries_buffer = (usermode_mem *)regs->rsi;
@@ -449,7 +449,7 @@ static void syscall_getdents(Regs *regs)
 
     uint16_t first_cluster = dir_entry.firstClusterLow | (dir_entry.firstClusterHigh<< 16);
 
-    fat16_dirent kernel_out_entries_buffer[16]; 
+    fat16_dirent kernel_out_entries_buffer[16];
 
     int count = fat16_getdents(first_cluster, kernel_out_entries_buffer, max_entries, &g_fs_fat16);
 
@@ -458,7 +458,7 @@ static void syscall_getdents(Regs *regs)
         assert(IS_OK(copy_result) && "Failed to copy to user memory");
     }
 
-    regs->rax = count; 
+    regs->rax = count;
 }
 
 

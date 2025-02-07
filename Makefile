@@ -44,7 +44,7 @@ initfat16:
 	$(MAKE) -C ./util/initfat16
 
 .PHONY: $(BOOTLOADER)
-$(BOOTLOADER): 
+$(BOOTLOADER):
 	$(MAKE) -C bootloader
 
 .PHONY: $(KERNEL)

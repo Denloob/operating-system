@@ -11,4 +11,3 @@ void sleep_ms(const uint64_t delay_ms)
         asm ("hlt"); // hlt until next interrupt (most likely from the PIT)
     }
 }
-

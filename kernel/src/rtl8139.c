@@ -390,7 +390,7 @@ void rtl8139_get_mac_address(uint8_t out_mac[static ETHER_MAC_SIZE])
 
     if (!mac_initialized)
     {
-        for (int i = 0; i < ETHER_MAC_SIZE; i++) 
+        for (int i = 0; i < ETHER_MAC_SIZE; i++)
         {
             mac[i] = rtl_read(byte, rtl8139_REG_MAC0_5 + i);
         }

@@ -75,7 +75,7 @@ void scheduler_io_remove(PCB *pcb);
  * @brief Refresh the IO list by going over each element and checking if the IO
  *          operation is complete. If it is, the PCB is rescheduled to the process
  *          queue.
- * 
+ *
  * @return pointer to the first PCB rescheduled, if any. NULL otherwise.
  */
 PCB *scheduler_io_refresh();

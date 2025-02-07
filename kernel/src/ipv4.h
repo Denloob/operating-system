@@ -16,7 +16,7 @@ typedef struct {
     uint8_t     ttl;
     uint8_t     protocol;
     uint16_t    checksum;
-    
+
     uint8_t     source_ip[IPv4_IP_ADDR_SIZE];
     uint8_t     dest_ip[IPv4_IP_ADDR_SIZE];
     uint8_t     option_and_data[];

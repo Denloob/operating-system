@@ -10,7 +10,7 @@ typedef struct {
     bool must_be_dir;
 } parsing_FilePathParsingResult;
 
-static inline 
+static inline
 res parsing_parse_filepath(const char *path, parsing_FilePathParsingResult *out)
 {
     assert(false && "Unimplemented");

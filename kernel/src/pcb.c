@@ -26,7 +26,7 @@ PCB* PCB_init(uint64_t id, PCB *parent, uint64_t entry_point, mmu_PageMapEntry *
         kfree(created_pcb);
         return NULL;
     }
-    
+
     if (!pcb_ProcessChildrenArray_init(&created_pcb->children))
     {
         file_descriptor_hashmap_cleanup(&created_pcb->fd_map);
@@ -43,14 +43,14 @@ PCB* PCB_init(uint64_t id, PCB *parent, uint64_t entry_point, mmu_PageMapEntry *
     {
         created_pcb->cwd[0] = '/'; // NULL terminated because of kcalloc.
     }
-    
+
     created_pcb->state = PCB_STATE_READY;
     created_pcb->id = id;
     created_pcb->rip = entry_point;
     created_pcb->parent = parent;
     created_pcb->page_break = UINT64_MAX;
 
-    created_pcb->regs.rflags = 0x202; 
+    created_pcb->regs.rflags = 0x202;
 
     created_pcb->paging = mmu_map_allocate();
     assert(created_pcb->paging != NULL);

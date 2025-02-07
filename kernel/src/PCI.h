@@ -5,7 +5,7 @@
 #include <stdbool.h>
 
 
-/* 
+/*
  * What is PCI?
  *
  * PCI is a standard that defines how devices communicate with the CPU.
@@ -14,9 +14,9 @@
  * Each PCI device has a configuration space, which includes information like vendor ID,
  * device ID, class codes, and base address registers (BARs)
  *
- * vendor id - A 16-bit identifier that indicates which company created the PCI device 
+ * vendor id - A 16-bit identifier that indicates which company created the PCI device
  *
- * Device ID - A 16-bit identifier for the spesifc device model 
+ * Device ID - A 16-bit identifier for the spesifc device model
  *
  * for example a vector id of 0x8086 and device id of 0x100E will indicate a intel etthernet controller device
  *
@@ -49,9 +49,9 @@ typedef struct {
 
 /*
  * @brief - Reads a 32-bit value from the PCI configuration space at the given bus, device, function, and offset.
- * 
+ *
  * @offset - The offset into the PCI configuration space (must be aligned to 4 bytes).
- * 
+ *
  * @return - The 32-bit value from the configuration space.
  */
 uint32_t pci_config_read(pci_DeviceAddress address, uint8_t offset);
@@ -71,16 +71,16 @@ void pci_set_bus_master(pci_DeviceAddress address);
 
 /*
  * @brief - Retrieves the Vendor ID from the PCI configuration space for the given device.
- * 
+ *
  * @Vendor ID -  A 16-bit data (explained at top).
- * 
+ *
  * @return -The 16-bit vendor ID.
  */
 uint16_t pci_get_vendor_id(pci_DeviceAddress address);
 
 /*
  * @brief - Retrieves the Device ID from the PCI configuration space for the given device.
- * 
+ *
  * @Device ID - A 16-bit data
  *
  * @return - The 16-bit device ID.
@@ -90,51 +90,51 @@ uint16_t pci_get_device_id(pci_DeviceAddress address);
 /**
  * @brief Like pci_get_device_id and pci_get_vendor_id but retrieves both in one
  *          PCI operation.
- * 
+ *
  * @return `(device_id << 16) | (vendor_id)`. Both ids are 16 bits.
  */
 uint32_t pci_get_device_and_vendor_id(pci_DeviceAddress address);
 
 /*
  * @brief - Retrieves the Class Code from the PCI configuration space for the given device.
- * 
+ *
  * @Class Code -  A 8-bit data
- * 
+ *
  * @returns - The 8-bit class code.
  */
 uint8_t pci_get_class_code(pci_DeviceAddress address);
 
 /*
  * @brief - Retrieves the Subclass Code from the PCI configuration space for the given device.
- * 
+ *
  * @Subclass Code - A 8-bit .
- * 
+ *
  * @return - The 8-bit subclass code.
  */
 uint8_t pci_get_subclass_code(pci_DeviceAddress address);
 
 /*
  * @brief - Reads a Base Address Register (BAR) from the PCI configuration space.
- * 
+ *
  * Bars - These registers define the I/O or memory addresses used to interact with the device.
- * 
+ *
  * @bar_index -The index of the BAR to read (0-5).
- * 
+ *
  * @return - The 32-bit BAR value, which can be either a memory-mapped or I/O port address.
  */
 uint32_t pci_get_bar(pci_DeviceAddress address, uint8_t bar_index);
 
 /*
- * @brief: 
- * 
- *  Scans the PCI bus for IDE controllers. 
- * 
+ * @brief:
+ *
+ *  Scans the PCI bus for IDE controllers.
+ *
  * IDE (Integrated Drive Electronics) is a standard for interfacing storage devices like hard drives.
  * An IDE controller connects to the system through the PCI bus and controls data transfers between
  * the CPU and the storage device.
  *
  * This function identifies PCI devices with a Class Code of 0x01 and a Subclass Code of 0x01 (IDE).
- * 
+ *
  * It prints the bus, device, and function number for each IDE controller found, as well as its BARs.
  */
 void pci_scan_for_ide();

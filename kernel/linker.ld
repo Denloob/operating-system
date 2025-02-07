@@ -10,7 +10,7 @@ SECTIONS
     .data        : ALIGN(0x1000) { __data_start = .;      *(.data)    ; __data_end = .;   }
     .bss         : ALIGN(0x1000) { __bss_start = .;       *(.bss)}
     __bss_end = .;
-    
+
 
     __end = .;
 }

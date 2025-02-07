@@ -127,7 +127,7 @@ uint64_t merge_adjacent(range_Range *range_arr, uint64_t length)
     range_Range *end = begin + length;
 
     range_Range *prev = begin;
-    range_Range *cur = begin + 1; 
+    range_Range *cur = begin + 1;
     while (cur < end)
     {
         uint64_t prev_end = prev->begin + prev->size;

@@ -49,4 +49,3 @@ void char_device_register(char_device_Descriptor *desc);
  *              number wasn't actually registered.
  */
 bool char_device_unregister(int major_number);
-

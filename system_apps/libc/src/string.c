@@ -48,11 +48,11 @@ char *strcat(char *dest, const char *src)
 
 char *strchrnul(const char *str, char search_str)
 {
-    while (*str) 
+    while (*str)
     {
         if (*str == search_str)
         {
-            return (char *)str;   
+            return (char *)str;
         }
         str++;
     }
@@ -210,7 +210,7 @@ void *memrchr(const void *s_in, int c_in, size_t n)
 
 int strcmp(const char *s1, const char *s2)
 {
-    while (*s1 && (*s1 == *s2)) 
+    while (*s1 && (*s1 == *s2))
     {
         s1++;
         s2++;

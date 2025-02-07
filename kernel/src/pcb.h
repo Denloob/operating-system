@@ -88,5 +88,3 @@ struct PCB
 
 void PCB_cleanup(PCB *pcb);
 PCB* PCB_init(uint64_t id, PCB *parent, uint64_t entry_point, mmu_PageMapEntry *kernel_pml);
-
-

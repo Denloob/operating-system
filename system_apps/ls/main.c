@@ -19,7 +19,7 @@ static void lower_inplace(char *buf)
 }
 
 int main(int argc, char **argv)
-{ 
+{
 #define CWD_MAX_LEN 512
     char cwd[CWD_MAX_LEN] = {0};
     const char *path;

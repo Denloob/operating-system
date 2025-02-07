@@ -36,13 +36,13 @@
 #include <stdbool.h>
 
 
-#define INPUT_BUFFER_SIZE 256 
+#define INPUT_BUFFER_SIZE 256
 
-#define BAR0 0x1F0   // Primary IDE Channel base 
+#define BAR0 0x1F0   // Primary IDE Channel base
 #define BAR1 0x3F6   // Primary IDE Channel control
-#define BAR2 0x170   // Secondary IDE Channel base 
-#define BAR3 0x376   // Secondary IDE Channel control 
-#define BAR4 0x000   // Bus Master IDE 
+#define BAR2 0x170   // Secondary IDE Channel base
+#define BAR3 0x376   // Secondary IDE Channel control
+#define BAR4 0x000   // Bus Master IDE
 
 extern char __bss_start;
 extern char __bss_end;
@@ -205,7 +205,7 @@ static void init_gdt_and_tss()
     };
 
     gdt_system_segment system_segment = {
-        .limit_low = sizeof(TSS) - 1, 
+        .limit_low = sizeof(TSS) - 1,
 
         .type = GDT_SYS_SEG_64BIT_TSS,
         .present = 1,
@@ -281,7 +281,7 @@ static void init_pic_keyboard_and_timer()
 int ide_init() {
     ide_initialize(BAR0, BAR1, BAR2, BAR3, BAR4);
     int primary_drive_number = -1;
-    for (int i = 0; i < 4; i++) 
+    for (int i = 0; i < 4; i++)
     {
         if (!ide_devices[i].Reserved)
             continue;
@@ -309,7 +309,7 @@ void init_drive_devices()
     //PCI scan test
     puts("Starting PCI scan");
     pci_scan_for_ide();
-    
+
     //IDE scan
     puts("Starting IDE scan");
     const int drive_id = ide_init();
@@ -328,7 +328,7 @@ void print_time()
     uint8_t month, day;
     RTC_get_date(&year, &month, &day);
 
-    //the printf is using zero padding 
+    //the printf is using zero padding
     printf("Current Time: %d:%02d:%02d\n", hours, minutes, seconds);
     printf("Current Date: %d-%d-%d\n", day, month, year);
 }

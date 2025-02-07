@@ -329,11 +329,11 @@ bios_memory_get_mem_map:
 
     sub cl, 20
     mov es:[si+.state.is_extended], cl                  ; .state_ptr->is_extended = (bios-bytes-written - 20)
-    
+
     mov es:[si+.state.entry_id], ebx                    ; .state_ptr->entry_id = (next-entry-id)
 
     test ebx, ebx                                        ; if (entry_id == 0) {
-    setz es:[si+.state.done]                            ;    state_ptr->done = true; 
+    setz es:[si+.state.done]                            ;    state_ptr->done = true;
                                                         ; }
 
     push 1                                              ; return_value = true;

@@ -170,7 +170,7 @@ res usermode_copy_to_user(usermode_mem *to, const void *from, size_t len)
     bool overflow = __builtin_add_overflow((uint64_t)to, len, &to_end);
     if (overflow || !usermode_is_mapped((uint64_t)to, to_end))
     {
-        return res_usermode_NOT_USERMODE_ADDRESS; 
+        return res_usermode_NOT_USERMODE_ADDRESS;
     }
 
     stac();
@@ -188,7 +188,7 @@ res usermode_copy_from_user(void *to, const usermode_mem *from, size_t len)
     bool overflow = __builtin_add_overflow((uint64_t)from, len, &from_end);
     if (overflow || !usermode_is_mapped((uint64_t)from, from_end))
     {
-        return res_usermode_NOT_USERMODE_ADDRESS; 
+        return res_usermode_NOT_USERMODE_ADDRESS;
     }
 
     stac();

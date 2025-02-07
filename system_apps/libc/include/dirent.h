@@ -1,7 +1,7 @@
 #include <stdint.h>
 #include <sys/types.h>
 
-typedef struct 
+typedef struct
 {
     char name[13];
     uint8_t attr;

@@ -14,7 +14,7 @@ typedef struct __attribute__((packed))
 
 #define ETHER_PACKET_SIZE (sizeof(EthernetPacket) + 4) // +4 for fcs
 
-enum 
+enum
 {
     ethernet_TYPE_IPv4 = 0x0800,
     ethernet_TYPE_ARP  = 0x0806,

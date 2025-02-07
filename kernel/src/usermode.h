@@ -85,7 +85,7 @@ bool usermode_strlen(const usermode_mem *str, uint64_t max_length, uint64_t *out
  *          where each element is of size `element_size`.
  *          For more details, see usermode_strlen. This function is identical to
  *          usermode_strlen, except that elements of the "string" aren't 1 byte long.
- * @see - usermode_strlen 
+ * @see - usermode_strlen
  *
  * @return - true if stopped because of a null element, false otherwise.
  */

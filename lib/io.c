@@ -271,9 +271,9 @@ void get_string(char *buffer, size_t max_size)
     }
 }
 
-void io_delay() 
+void io_delay()
 {
-    in_byte(0x80); 
+    in_byte(0x80);
 }
 
 #include "printf.inc"

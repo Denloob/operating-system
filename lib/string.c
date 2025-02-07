@@ -16,15 +16,15 @@ int strlen(const char *s)
 
 char *strchr(const char *str, char search_str)
 {
-    while (*str) 
+    while (*str)
     {
         if (*str == search_str)
         {
-            return (char *)str;   
+            return (char *)str;
         }
         str++;
     }
-    if (search_str == '\0') 
+    if (search_str == '\0')
     {
         return (char *)str;
     }
@@ -103,7 +103,7 @@ int strncasecmp(const char *s1, const char *s2, size_t n)
 
 int strcmp(const char *str1, const char *str2)
 {
-    while (*str1 && (*str1 == *str2)) 
+    while (*str1 && (*str1 == *str2))
     {
         str1++;
         str2++;
@@ -111,16 +111,16 @@ int strcmp(const char *str1, const char *str2)
     return *(unsigned char *)str1 - *(unsigned char *)str2;
 }
 
-int all_chars_are_same(const char *str) 
+int all_chars_are_same(const char *str)
 {
-    size_t length = strlen(str); 
-    char first_char = str[0];   
-    for (size_t i = 1; i < length; i++) 
+    size_t length = strlen(str);
+    char first_char = str[0];
+    for (size_t i = 1; i < length; i++)
     {
-        if (str[i] != first_char) 
+        if (str[i] != first_char)
         {
-            return 0; 
+            return 0;
         }
     }
-    return 1; 
+    return 1;
 }

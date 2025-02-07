@@ -110,28 +110,28 @@ bool fat16_write_sectors(Drive *drive, uint32_t sector, const uint8_t *buffer, u
     {
         if (!drive_write(drive, sector + i, buffer + (i * SECTOR_SIZE), 1))
         {
-            return false; 
+            return false;
         }
     }
     return true;
 }
 
 
-void fat16_init_dir_reader(fat16_DirReader *reader, fat16_Ref *fat16, uint16_t start_cluster) 
+void fat16_init_dir_reader(fat16_DirReader *reader, fat16_Ref *fat16, uint16_t start_cluster)
 {
-    if (start_cluster == 0) 
+    if (start_cluster == 0)
     {
         // Root dir
         reader->current_sector = fat16->bpb.reservedSectors + fat16->bpb.FATSize * fat16->bpb.numFATs;
         reader->dir_start = reader->current_sector;
         reader->dir_end = reader->dir_start + (fat16->bpb.rootEntryCount * sizeof(fat16_DirEntry) + SECTOR_SIZE - 1) / SECTOR_SIZE;
         reader->entry_offset = 0;
-    } else 
+    } else
     {
-        //A dir 
+        //A dir
         reader->current_sector = fat16_cluster_to_sector(fat16, start_cluster);
         reader->dir_start = reader->current_sector;
-        reader->dir_end = reader->dir_start + SECTOR_SIZE; 
+        reader->dir_end = reader->dir_start + SECTOR_SIZE;
         reader->entry_offset = 0;
     }
 }
@@ -200,9 +200,9 @@ bool fat16_find_file(fat16_Ref *fat16, const char *filename, fat16_DirEntry *out
     fat16_init_dir_reader(&reader, fat16 , start_cluster);
 
     fat16_DirEntry entry;
-    while (fat16_read_next_root_entry(fat16->drive, &reader, &entry)) 
+    while (fat16_read_next_root_entry(fat16->drive, &reader, &entry))
     {
-        if (strncasecmp(filename, (const char *)entry.filename, FAT16_FULL_FILENAME_SIZE) == 0) 
+        if (strncasecmp(filename, (const char *)entry.filename, FAT16_FULL_FILENAME_SIZE) == 0)
         {
             *out_file = entry;
             return true;
@@ -212,11 +212,11 @@ bool fat16_find_file(fat16_Ref *fat16, const char *filename, fat16_DirEntry *out
     return false;
 }
 
-void create_root_dir_entry(fat16_DirEntry *entry) 
+void create_root_dir_entry(fat16_DirEntry *entry)
 {
     memset(entry, 0, sizeof(fat16_DirEntry));
     memset(entry->filename, ' ', sizeof(entry->filename));
-    memmove(entry->filename, "ROOT    ", 4); 
+    memmove(entry->filename, "ROOT    ", 4);
     memset(entry->extension, ' ', sizeof(entry->extension));
     entry->attributes = 0x10;
     entry->reserved = 0;
@@ -246,9 +246,9 @@ bool fat16_find_file_based_on_path(fat16_Ref *fat16 , const char *path ,fat16_Di
         return true;
     }
     int add_to_i =0; //check if path starts with /
-    
+
     int start_cluster = 0; //root cluster
-    
+
     int index=0; //index of filename building
     char filename[FAT16_FULL_FILENAME_SIZE + 1 + 1]; // Not null terminated!! We reserved one byte for `.` in filenames of length 11 and 1 for a null byte right before the final parsing. This is pretty much a hack.
 
@@ -303,7 +303,7 @@ bool fat16_find_file_based_on_path(fat16_Ref *fat16 , const char *path ,fat16_Di
 
             filename[index] = path[i];
             index++;
-        } 
+        }
     }
     //after for loop filename will have the file and not the dir
     if(index==0)
@@ -404,7 +404,7 @@ uint16_t get_file_offseted_cluster(fat16_File *file, uint32_t file_offset)
 
     for (uint16_t i = 0; i < skip_cluster_amount; i++)
     {
-        if (first_chain_size > 0) 
+        if (first_chain_size > 0)
         {
             first_chain_size--;
             cur_cluster++;
@@ -442,8 +442,8 @@ uint64_t fat16_read_file(fat16_File *file, Drive *drive, fat16_BootSector *bpb,
         (bpb->reservedSectors + bpb->FATSize * bpb->numFATs) +
         (bpb->rootEntryCount * sizeof(fat16_DirEntry) + SECTOR_SIZE - 1) / SECTOR_SIZE;
 
-    uint16_t cur_cluster = get_file_offseted_cluster(file, file_offset); 
-    
+    uint16_t cur_cluster = get_file_offseted_cluster(file, file_offset);
+
     file_offset = file_offset % SECTOR_SIZE;
 
     uint64_t space_in_buffer_left = buffer_size;
@@ -470,7 +470,7 @@ uint64_t fat16_read_file(fat16_File *file, Drive *drive, fat16_BootSector *bpb,
         bool success = bytes_read_cur == read_size;
         bytes_read += bytes_read_cur;
         out_buffer += bytes_read_cur;
-#else  
+#else
         bool success = bytes_read = drive_read(drive, address, out_buffer, read_size);
         out_buffer += bpb->sectorsPerCluster * bpb->bytesPerSector;
 #endif
@@ -509,13 +509,13 @@ bool fat16_open(fat16_Ref *fat16, const char *path, fat16_File *out_file)
     fat16_DirEntry file_dir_entry;
 
     fat16_DirEntry parent_directory_dir_entry;
-    if (!fat16_find_file_based_on_path(fat16, path, &file_dir_entry , &parent_directory_dir_entry)) 
+    if (!fat16_find_file_based_on_path(fat16, path, &file_dir_entry , &parent_directory_dir_entry))
     {
         return false;
     }
     out_file->file_entry = file_dir_entry;
 
-    out_file->parent_directory_first_cluster = (parent_directory_dir_entry.firstClusterHigh << 16) | parent_directory_dir_entry.firstClusterLow; 
+    out_file->parent_directory_first_cluster = (parent_directory_dir_entry.firstClusterHigh << 16) | parent_directory_dir_entry.firstClusterLow;
     fat16_get_file_chain(fat16, &file_dir_entry, out_file->chain);
     return true;
 }
@@ -550,15 +550,15 @@ bool fat16_write_FAT_at(Drive *drive, fat16_BootSector *bpb, const uint8_t FAT[s
 
 
 
-bool fat16_add_dir_entry_to(fat16_Ref *fat16, fat16_DirEntry *new_entry , uint16_t first_cluster) 
+bool fat16_add_dir_entry_to(fat16_Ref *fat16, fat16_DirEntry *new_entry , uint16_t first_cluster)
 {
     fat16_DirReader reader;
     fat16_init_dir_reader(&reader, fat16 , first_cluster);
 
     fat16_DirEntry entry;
-    while (fat16_read_next_root_entry(fat16->drive, &reader, &entry)) 
+    while (fat16_read_next_root_entry(fat16->drive, &reader, &entry))
     {
-        if (entry.filename[0] != 0x00 && entry.filename[0] != 0xE5) 
+        if (entry.filename[0] != 0x00 && entry.filename[0] != 0xE5)
             continue;
 
         uint64_t entry_address = reader.current_sector * SECTOR_SIZE + reader.entry_offset - sizeof(fat16_DirEntry);
@@ -595,10 +595,10 @@ bool fat16_create_dir_entry(fat16_Ref *fat16, const char *filename, const char *
     entry.lastAccessDate = entry.creationDate;
     entry.lastModTime = entry.creationTime;
     entry.lastModDate = entry.creationDate;
-    entry.firstClusterHigh = 0; 
+    entry.firstClusterHigh = 0;
     entry.firstClusterLow = 0;
-    entry.fileSize = 0; 
-    
+    entry.fileSize = 0;
+
     *created_entry = entry;
 
     return true;
@@ -611,13 +611,13 @@ bool fat16_update_entry_in_directory(fat16_Ref *fat16, fat16_DirEntry *dir_entry
     fat16_init_dir_reader(&reader, fat16 ,start_cluster);
 
     fat16_DirEntry entry;
-    while (fat16_read_next_root_entry(fat16->drive, &reader, &entry)) 
+    while (fat16_read_next_root_entry(fat16->drive, &reader, &entry))
     {
-        if (entry.filename[0] == 0x00 || entry.filename[0] == 0xE5) 
+        if (entry.filename[0] == 0x00 || entry.filename[0] == 0xE5)
         {
             continue;
         }
-        if (memcmp(entry.filename, dir_entry->filename, FAT16_FULL_FILENAME_SIZE) == 0) 
+        if (memcmp(entry.filename, dir_entry->filename, FAT16_FULL_FILENAME_SIZE) == 0)
         {
             reader.entry_offset -= size_of_dir_entry;
             uint64_t entry_address = reader.current_sector * SECTOR_SIZE + reader.entry_offset;
@@ -738,7 +738,7 @@ bool fat16_link_clusters(fat16_Ref *fat16, uint16_t back_cluster, uint16_t front
     uint8_t eof_bytes[2] = { 0xF8, 0xFF };
 
 
-    if (!drive_write(fat16->drive, back_fat_offset, front_cluster_bytes, sizeof(front_cluster_bytes))) 
+    if (!drive_write(fat16->drive, back_fat_offset, front_cluster_bytes, sizeof(front_cluster_bytes)))
     {
         return false; // Failed to write
     }
@@ -757,7 +757,7 @@ bool fat16_unlink_clusters(fat16_Ref *fat16 , uint16_t back_cluster , uint16_t f
 
     uint8_t back_cluster_bytes[2] = {0xF8 , 0xFF}; //EOF
 
-    if (!drive_write(fat16->drive, front_fat_offset, front_cluster_bytes, sizeof(front_cluster_bytes))) 
+    if (!drive_write(fat16->drive, front_fat_offset, front_cluster_bytes, sizeof(front_cluster_bytes)))
     {
         return false; // Failed to write
     }
@@ -768,7 +768,7 @@ bool fat16_unlink_clusters(fat16_Ref *fat16 , uint16_t back_cluster , uint16_t f
 }
 
 
-uint32_t fat16_get_file_end_offset(fat16_Ref *fat16, fat16_DirEntry *entry) 
+uint32_t fat16_get_file_end_offset(fat16_Ref *fat16, fat16_DirEntry *entry)
 {
     uint16_t file_chain[MAX_CHAIN_LEN];
 
@@ -801,7 +801,7 @@ res fat16_create_directory(fat16_Ref *fat16 , const char* directory_name , const
     {
         return res_fat16_DIR_ENTRY_IS_NOT_A_FOLDER;
     }
-    
+
     uint16_t first_cluster = (dir_entry.firstClusterHigh << 16) | dir_entry.firstClusterLow;
 
     char dirname[FAT16_FULL_FILENAME_SIZE];
@@ -824,7 +824,7 @@ res fat16_create_directory(fat16_Ref *fat16 , const char* directory_name , const
     success = fat16_allocate_clusters(fat16, CLUSTERS_NEEDED, allocated_clusters);
     if (!success)
     {
-        return res_fat16_CANT_ALLOCATE_CLUSTERS; 
+        return res_fat16_CANT_ALLOCATE_CLUSTERS;
     }
 
     new_entry.firstClusterLow = allocated_clusters[0] & 0xFFFF;
@@ -869,7 +869,7 @@ bool fat16_create_file(fat16_Ref *fat16, const char *path, fat16_File *out_file,
         return false;
     }
 
-    if (!fat16_add_dir_entry_to(fat16, &new_entry, parent_cluster)) 
+    if (!fat16_add_dir_entry_to(fat16, &new_entry, parent_cluster))
     {
         return false;
     }
@@ -919,26 +919,26 @@ void print_root_filenames(fat16_Ref *fat16)
     fat16_DirEntry entry;
 
     printf("Files in the root directory:\n");
-    while (fat16_read_next_root_entry(fat16->drive, &reader, &entry)) 
+    while (fat16_read_next_root_entry(fat16->drive, &reader, &entry))
     {
         // Check if the entry is valid (not empty or deleted)
         if (entry.filename[0] != 0x00 && entry.filename[0] != 0xE5)
         {
             // Print the filename
-            for (int i = 0; i < 8; i++) 
+            for (int i = 0; i < 8; i++)
             {
-                if (entry.filename[i] == ' ') 
+                if (entry.filename[i] == ' ')
                     break; // Stop printing at space
                 putc(entry.filename[i]);
             }
 
             // Print extension if present
-            if (entry.extension[0] != ' ') 
+            if (entry.extension[0] != ' ')
             {
                 putc('.');
-                for (int i = 0; i < 3; i++) 
+                for (int i = 0; i < 3; i++)
                 {
-                    if (entry.extension[i] == ' ') 
+                    if (entry.extension[i] == ' ')
                         break; // Stop printing at space
                     putc(entry.extension[i]);
                 }
@@ -963,7 +963,7 @@ uint64_t fat16_write_to_file(fat16_File *file,Drive *drive,fat16_BootSector *bpb
     }
 
     uint16_t cur_cluster;
-    uint64_t offset_within_cluster; 
+    uint64_t offset_within_cluster;
     fat16_DirEntry *entry = &file->file_entry;
     if (entry->firstClusterHigh == 0 && entry->firstClusterLow == 0) // If the file is empty (there's no cluster at all allocated for it)
     {
@@ -973,7 +973,7 @@ uint64_t fat16_write_to_file(fat16_File *file,Drive *drive,fat16_BootSector *bpb
 
         if (!fat16_allocate_clusters(file->ref, clusters_needed, allocated_clusters))
         {
-            return 0; 
+            return 0;
         }
 
         entry->firstClusterLow = allocated_clusters[0] & 0xFFFF;
@@ -993,15 +993,15 @@ uint64_t fat16_write_to_file(fat16_File *file,Drive *drive,fat16_BootSector *bpb
     else
     {
         cur_cluster = get_file_offseted_cluster(file, file_offset);
-        if (cur_cluster == FAT16_CLUSTER_EOF) 
+        if (cur_cluster == FAT16_CLUSTER_EOF)
         {
-            return 0; 
+            return 0;
         }
     }
 
     offset_within_cluster = file_offset % SECTOR_SIZE;
 
-    const uint32_t rootDirectoryEnd = 
+    const uint32_t rootDirectoryEnd =
         (bpb->reservedSectors + bpb->FATSize * bpb->numFATs) +
         (bpb->rootEntryCount * sizeof(fat16_DirEntry) + SECTOR_SIZE - 1) / SECTOR_SIZE;
 
@@ -1015,12 +1015,12 @@ uint64_t fat16_write_to_file(fat16_File *file,Drive *drive,fat16_BootSector *bpb
         // Determine how much to write to the current cluster
         uint64_t cluster_space = SECTOR_SIZE - offset_within_cluster;
         uint64_t write_size = MIN(space_left, cluster_space);
-    
+
 
 #ifdef DRIVE_SUPPORTS_VERBOSE
         uint64_t bytes_written_cur = drive_write_verbose(drive, address, buffer_to_write, write_size);
         bool success = bytes_written_cur == write_size;
-#else  
+#else
         bool success = drive_write(drive, address, buffer_to_write, write_size);
         uint64_t bytes_written_cur = write_size;
 #endif
@@ -1033,7 +1033,7 @@ uint64_t fat16_write_to_file(fat16_File *file,Drive *drive,fat16_BootSector *bpb
 
         buffer_to_write += bytes_written_cur; //move the array pointer
         space_left -= bytes_written_cur;
-        offset_within_cluster = 0; //the offset for cluster is used only for the first cluster 
+        offset_within_cluster = 0; //the offset for cluster is used only for the first cluster
 
         // Check if we need to allocate a new cluster
         if (space_left <= 0)
@@ -1067,9 +1067,9 @@ uint64_t fat16_write_to_file(fat16_File *file,Drive *drive,fat16_BootSector *bpb
 
         cur_cluster = allocated_clusters[0];
 
-        for (int i = 1; i < clusters_needed; i++) 
+        for (int i = 1; i < clusters_needed; i++)
         {
-            if (!fat16_link_clusters(file->ref, allocated_clusters[i - 1], allocated_clusters[i])) 
+            if (!fat16_link_clusters(file->ref, allocated_clusters[i - 1], allocated_clusters[i]))
             {
                 fat16_deallocate_clusters(file->ref, &allocated_clusters[i], CLUSTERS_NEEDED - i);
                 linking_failed = true;
@@ -1117,7 +1117,7 @@ int fat16_getdents(uint16_t first_cluster, fat16_dirent *out_entries_buffer, int
        // if(count_for_max_entries>=max_entries_in_a_directory){break;}
         if (entry.filename[0] != 0x00 && entry.filename[0] != 0xE5)
         {
-            if (count >= max_entries) 
+            if (count >= max_entries)
             {
                 break;
             }
@@ -1130,11 +1130,11 @@ int fat16_getdents(uint16_t first_cluster, fat16_dirent *out_entries_buffer, int
             out_entries_buffer[count].name[12] = '\0';
 
             out_entries_buffer[count].attr = entry.attributes;
-            out_entries_buffer[count].cluster = entry.firstClusterLow| 
+            out_entries_buffer[count].cluster = entry.firstClusterLow|
                                                 (entry.firstClusterHigh<< 16);
             out_entries_buffer[count].size = entry.fileSize;
 
-            out_entries_buffer[count].mdscore_flags = entry.reserved & fat16_MDSCore_FLAGS_MASK; 
+            out_entries_buffer[count].mdscore_flags = entry.reserved & fat16_MDSCore_FLAGS_MASK;
             count++;
         }
         //count_for_max_entries++;

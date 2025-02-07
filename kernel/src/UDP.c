@@ -17,10 +17,10 @@ void udp_send_packet(uint8_t *dest_ip, uint16_t src_port, uint16_t dest_port, ui
     // Ethernet Header
     EthernetPacket *eth = (EthernetPacket *)packet;
     memset(eth->dest_mac, 0xFF, 6);
-    
+
     uint8_t mac[6];
     rtl8139_get_mac_address(mac);
-    
+
     memmove(eth->source_mac, mac, 6);
     eth->ethertype = htons(ethernet_TYPE_IPv4);
 

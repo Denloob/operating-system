@@ -6,7 +6,7 @@
 #define SECTOR_SIZE_BYTES 512
 #define SECTOR_SIZE_QUADS (512 / 4)
 
-void ide_write(uint8_t channel, uint8_t reg, uint8_t data) 
+void ide_write(uint8_t channel, uint8_t reg, uint8_t data)
 {
    if (reg > 0x07 && reg < 0x0C)
       ide_write(channel, ATA_REG_CONTROL, 0x80 | channels[channel].nIEN);
@@ -107,7 +107,7 @@ uint8_t ide_print_error(uint32_t drive, uint8_t err)
 
 
 
-void ide_initialize(uint32_t BAR0, uint32_t BAR1, uint32_t BAR2, uint32_t BAR3, uint32_t BAR4) 
+void ide_initialize(uint32_t BAR0, uint32_t BAR1, uint32_t BAR2, uint32_t BAR3, uint32_t BAR4)
 {
 
    int j, k, count = 0;
@@ -125,7 +125,7 @@ void ide_initialize(uint32_t BAR0, uint32_t BAR1, uint32_t BAR2, uint32_t BAR3, 
    ide_write(ATA_PRIMARY  , ATA_REG_CONTROL, 2);
    ide_write(ATA_SECONDARY, ATA_REG_CONTROL, 2);
 
-   
+
    // 3- Detect ATA-ATAPI Devices:
    for (int i = 0; i < 2; i++)
       for (j = 0; j < 2; j++) {
@@ -242,7 +242,7 @@ bool ide_read_sector(uint32_t drive, uint32_t sector, uint8_t *buffer) {
 }
 
 
-bool ide_write_sector(uint32_t drive, uint32_t sector, const uint8_t *buffer) 
+bool ide_write_sector(uint32_t drive, uint32_t sector, const uint8_t *buffer)
 {
     //issue the write command
     ide_write(ide_devices[drive].Channel, ATA_REG_HDDEVSEL, 0xE0 | (ide_devices[drive].Drive << 4));
@@ -253,7 +253,7 @@ bool ide_write_sector(uint32_t drive, uint32_t sector, const uint8_t *buffer)
     ide_write(ide_devices[drive].Channel, ATA_REG_COMMAND, ATA_CMD_WRITE_PIO);
 
     uint8_t drive_state = ide_polling(ide_devices[drive].Channel, true);
-    if (drive_state & ATA_SR_ERR) 
+    if (drive_state & ATA_SR_ERR)
         return false;
     // Write buffer to the IDE device
     ide_write_buffer(ide_devices[drive].Channel, ATA_REG_DATA, (const uint32_t *)buffer, SECTOR_SIZE_QUADS);

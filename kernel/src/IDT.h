@@ -22,7 +22,7 @@ typedef enum
     IDT_gate_type_TRAP_GATE = 0xF,
 } IDT_gate_type;
 
-typedef struct 
+typedef struct
 {
     uint16_t limit; // Specifies the maximum size of the IDT (IDT_LENGTH * Entry size)
     uint64_t base;  // The base address of the idt

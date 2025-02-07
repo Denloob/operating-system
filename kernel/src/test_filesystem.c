@@ -22,7 +22,7 @@ static void test_file_creation_and_writing()
     file.file = file1;
     file.offset = 0;
     // Write data to the file using fwrite
-   
+
     uint64_t bytes_written = fwrite(buffer_to_write, 1, buffer_size, &file);
     assert(bytes_written == buffer_size && "fwrite didn't write the expected number of bytes");//STOPS HERE
 
@@ -47,7 +47,7 @@ static void test_file_creation_and_writing()
     uint8_t long_buffer[0x1000] = {0};
     const int check_index = 513;
     const int check_value = 42;
-    long_buffer[check_index] = check_value; 
+    long_buffer[check_index] = check_value;
 
     fseek(&file, 0, SEEK_SET);
     bytes_written = fwrite(long_buffer, 1, sizeof(long_buffer), &file);
