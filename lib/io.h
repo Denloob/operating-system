@@ -10,6 +10,31 @@ void putc(char ch);
 #define putchar putc
 void puts(const char *str);
 
+static inline uint64_t get_cpu_flags()
+{
+    uint64_t flags;
+    asm (
+        "pushf\n"
+        "pop %0\n"
+        : "=r"(flags)
+        :
+        : "memory"
+    );
+
+    return flags;
+}
+
+static inline void set_cpu_flags(uint64_t flags)
+{
+    asm (
+        "push %0\n"
+        "popf\n"
+        :
+        : "r"(flags)
+        : "memory", "cc"
+    );
+}
+
 static inline void sti()
 {
     asm volatile ("sti" : : : "memory");
