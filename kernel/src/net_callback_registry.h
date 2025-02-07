@@ -2,7 +2,7 @@
 
 #include "compiler_macros.h"
 #include "ethernet.h"
-#include "ipv4.h"
+#include "ipv4_constants.h"
 #include <stdbool.h>
 #include <stddef.h>
 

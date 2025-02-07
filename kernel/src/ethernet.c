@@ -1,14 +1,16 @@
 #include "ethernet.h"
+#include "arp.h"
+#include "ipv4.h"
 
 void ethernet_handle_packet(EthernetPacket *packet, int data_length)
 {
     switch (packet->type)
     {
         case ethernet_TYPE_ARP:
-            // TODO:
+            arp_handle(packet, data_length);
             break;
         case ethernet_TYPE_IPv4:
-            // TODO:
+            ipv4_handle(packet, data_length);
             break;
         default:
             /* Drop */

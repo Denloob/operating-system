@@ -34,3 +34,5 @@ enum {
     arp_OPERATION_REQUEST   = 1,
     arp_OPERATION_REPLY     = 2,
 };
+
+void arp_handle(EthernetPacket *packet, int data_length);
