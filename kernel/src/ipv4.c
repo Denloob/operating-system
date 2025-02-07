@@ -1,5 +1,7 @@
 #include "ipv4.h"
+#include "ipv4_constants.h"
 #include "net_callback_registry.h"
+#include "UDP.h"
 #include "assert.h"
 
 static NetCallbackRegistry g_registry;
@@ -23,6 +25,10 @@ static bool ipv4_packet_to_key(EthernetPacket *packet, int data_length, NetCallb
         // TODO: based on the protocol, extract the relevant data and set the key.
         case IPv4_PROTOCOL_ICMP:
             *out = ipv4_create_protocol_key_icmp(ip_packet->source_ip);
+            return true;
+        case IPv4_PROTOCOL_UDP:
+            UDPHeader *udp = (UDPHeader *)ip_packet->option_and_data;
+            *out = ipv4_create_protocol_key_udp(ip_packet->source_ip, udp->dest_port);
             return true;
         default:
             /* Unsupported protocol, drop */
