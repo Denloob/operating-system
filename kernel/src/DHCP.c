@@ -1,4 +1,5 @@
 #include "DHCP.h"
+#include "assert.h"
 #include "memory.h"
 #include "string.h"
 #include "io.h"
@@ -32,4 +33,9 @@ void dhcp_handle_offer(dhcp_packet_t *packet)
         server_ip & 0xFF);
 
     dhcp_send_request(offered_ip, server_ip, packet->xid);
+}
+
+void dhcp_send_request(uint32_t offered_ip, uint32_t server_ip, uint32_t xid)
+{
+    assert(false && "Not implemented");
 }
