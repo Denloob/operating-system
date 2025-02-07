@@ -383,11 +383,20 @@ res rtl8139_init()
 }
 
 
-void rtl8139_get_mac_address(uint8_t mac[6]) 
+void rtl8139_get_mac_address(uint8_t out_mac[static ETHER_MAC_SIZE])
 {
-    assert(mac != NULL);
-    for (int i = 0; i < 6; i++) 
+    static uint8_t mac[ETHER_MAC_SIZE];
+    static bool mac_initialized = false;
+
+    if (!mac_initialized)
     {
-        mac[i] = rtl_read(byte, rtl8139_REG_MAC0_5 + i);
+        for (int i = 0; i < ETHER_MAC_SIZE; i++) 
+        {
+            mac[i] = rtl_read(byte, rtl8139_REG_MAC0_5 + i);
+        }
+
+        mac_initialized = true;
     }
+
+    memmove(out_mac, mac, sizeof(mac));
 }
