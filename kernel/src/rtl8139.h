@@ -35,6 +35,8 @@ void rtl8139_register_interrupt_handler(uint8_t irq);
  * @param size   - The size of data in the packet to transmit.
  *                   NOTE: This means that we will read a total of `size + ETHER_PACKET_SIZE`
  *                      from `(char *)packet`!
+ * @WARN: This function does not guarantee transmission!
+ * @see rtl8139_transmit_packet
  *
  * @return - true if the packet was transmitted. When false, this means that the
 *              packet "queue" transmission is full, hence you should try again
@@ -42,5 +44,10 @@ void rtl8139_register_interrupt_handler(uint8_t irq);
  */
 bool rtl8139_try_transmit_packet(EthernetPacket *packet, int size);
 
+/**
+ * @brief A blocking version of rtl8139_try_transmit_packet
+ * @see rtl8139_try_transmit_packet
+ */
+void rtl8139_transmit_packet(EthernetPacket *packet, int size);
 
 void rtl8139_get_mac_address(uint8_t out_mac[static ETHER_MAC_SIZE]);

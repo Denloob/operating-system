@@ -307,6 +307,13 @@ bool rtl8139_try_transmit_packet(EthernetPacket *packet, int size)
     return true;
 }
 
+void rtl8139_transmit_packet(EthernetPacket *packet, int size)
+{
+    while (!rtl8139_try_transmit_packet(packet, size))
+    {
+    }
+}
+
 void rtl8139_interrupt_handler_impl()
 {
     uint16_t status = rtl_read(word, rtl8139_REG_ISR);
