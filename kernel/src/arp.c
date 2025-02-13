@@ -245,9 +245,7 @@ static void arp_send_reply(const arp_IPv4EtherPacket *request)
     memmove(arp->target_ip, request->sender_ip, sizeof(arp->target_ip));
     memmove(arp->target_mac, request->sender_mac, sizeof(arp->target_mac));
 
-    while (!rtl8139_try_transmit_packet(ether, sizeof(buf) - ETHER_PACKET_SIZE))
-    {
-    }
+    rtl8139_transmit_packet(ether, sizeof(buf) - ETHER_PACKET_SIZE);
 }
 
 static void arp_send_request(const uint8_t ip[static IPv4_IP_ADDR_SIZE])
@@ -276,9 +274,7 @@ static void arp_send_request(const uint8_t ip[static IPv4_IP_ADDR_SIZE])
     memmove(arp->target_ip, ip, sizeof(arp->target_ip));
     memset(arp->target_mac, 0, sizeof(arp->target_mac));
 
-    while (!rtl8139_try_transmit_packet(ether, sizeof(buf) - ETHER_PACKET_SIZE))
-    {
-    }
+    rtl8139_transmit_packet(ether, sizeof(buf) - ETHER_PACKET_SIZE);
 }
 
 static void arp_resolve_via_request(const uint8_t ip[static IPv4_IP_ADDR_SIZE], uint8_t out_mac[static ETHER_MAC_SIZE])
