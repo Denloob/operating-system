@@ -19,6 +19,31 @@ typedef struct
     uint8_t options[312]; // DHCP options (variable length)
 } __attribute__((packed)) dhcp_packet_t;
 
-void dhcp_handle_offer(dhcp_packet_t *packet);
+typedef struct 
+{
+    uint32_t ip;
+    uint32_t server_ip;
+    uint32_t xid;
+} DHCPOffer;
+
+typedef struct 
+{
+    uint8_t ip[4];
+} DHCPAck;
+
+
+void dhcp_server_discovery();
+
+void dhcp_handle_offer_and_send_request(dhcp_packet_t *packet);
+
+
+void dhcp_recv_offer(DHCPOffer *offer , dhcp_packet_t *packet); 
 
 void dhcp_send_request(uint32_t offered_ip, uint32_t server_ip, uint32_t xid);
+
+
+void dhcp_accept_offer(DHCPOffer *offer);
+
+
+void dhcp_recv_ack(DHCPAck *ack , dhcp_packet_t *packet);
+
