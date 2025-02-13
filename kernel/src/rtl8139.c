@@ -307,6 +307,14 @@ bool rtl8139_try_transmit_packet(EthernetPacket *packet, int size)
     return true;
 }
 
+bool rtl8139_can_transmit_packet()
+{
+    int idx = g_packet_buffers->cur_buffer_idx;
+    int transmit_descriptor = buffer_idx_to_tsd(idx);
+    uint32_t transmit_value = rtl_read(dword, transmit_descriptor);
+    return (transmit_value & TRANSMIT_DESC_OK) == 0;
+}
+
 void rtl8139_transmit_packet(EthernetPacket *packet, int size)
 {
     while (!rtl8139_try_transmit_packet(packet, size))
