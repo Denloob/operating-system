@@ -75,6 +75,21 @@ void PCB_cleanup(PCB *pcb)
 
     // TODO: free the pages
 
+    for (size_t i = 0; i < pcb->children.length; i++)
+    {
+        if (!pcb->children.arr[i].is_used)
+        {
+            continue;
+        }
+
+        PCB *child_pcb = pcb->children.arr[i].pcb;
+        child_pcb->parent = NULL;
+        if (child_pcb->state == PCB_STATE_ZOMBIE)
+        {
+            PCB_cleanup(child_pcb);
+        }
+    }
+
     file_descriptor_hashmap_cleanup(&pcb->fd_map);
     pcb_ProcessChildrenArray_cleanup(&pcb->children);
     kfree(pcb);

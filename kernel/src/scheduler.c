@@ -214,14 +214,6 @@ void scheduler_process_dequeue_current_and_context_switch()
     g_current_process->state = PCB_STATE_ZOMBIE;
     if (g_current_process->parent == NULL)
     {
-        for (size_t i = 0; i < g_current_process->children.length; i++)
-        {
-            if (g_current_process->children.arr[i].is_used)
-            {
-                g_current_process->children.arr[i].pcb->parent = NULL;
-            }
-        }
-
         PCB_cleanup(g_current_process);
     }
 
