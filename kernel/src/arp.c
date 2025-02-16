@@ -329,7 +329,12 @@ void arp_handle(EthernetPacket *packet, int data_length)
     {
         case arp_OPERATION_REPLY:
         {
-            mutex_lock(&g_arp_cache.mutex);
+            bool success = mutex_trylock(&g_arp_cache.mutex);
+            if (!success)
+            {
+                return; /* DROP */
+            }
+
             defer({ mutex_unlock(&g_arp_cache.mutex); });
 
             uint8_t *mac = arp_cache_emplace(arp->sender_ip);
