@@ -60,13 +60,13 @@ size_t request_size_to_chunk_size(size_t request_size)
 }
 
 
-__attribute__((const))
+__attribute__((pure))
 malloc_chunk *next_chunk(malloc_chunk *chunk)
 {
      return ((void *)(chunk) + chunk_size(chunk));
 }
 
-__attribute__((const))
+__attribute__((pure))
 bool is_prev_free(malloc_chunk *chunk)
 {
     return (chunk->chunk_size & MALLOC_CHUNK_PREV_IN_USE) == 0;
@@ -76,7 +76,7 @@ bool is_prev_free(malloc_chunk *chunk)
  * @brief - Get the previous chunk.
  *          Call this function only is prev is free!
  */
-__attribute__((const))
+__attribute__((pure))
 malloc_chunk *prev_chunk(malloc_chunk *chunk)
 {
     assert(is_prev_free(chunk) && "Cannot get prev chunk unless it's free");
@@ -182,7 +182,7 @@ struct malloc_state
 /**
  * @brief Checks if the given chunk (which is not `top`) is free.
  */
-__attribute__((const))
+__attribute__((pure))
 bool is_chunk_free(malloc_chunk *chunk)
 {
     malloc_chunk *next = next_chunk(chunk);
@@ -330,7 +330,7 @@ WUR static res malloc_grow_heap(size_t wanted_size)
  * @param chunk_size - The size of the chunk to test for
  * @return - if it would fit
  */
-__attribute__((const))
+__attribute__((pure))
 bool is_heap_big_enough_for_chunk(size_t chunk_size)
 {
     const size_t top_size = chunk_size(main_arena.top);

@@ -75,7 +75,7 @@ static int state_without_plus(int state)
     return state & (~FILE_MODE_PLUS);
 }
 
-__attribute__((const))
+__attribute__((pure))
 static int parse_mode_string_to_flags(const char *mode)
 {
     int state = 0;
