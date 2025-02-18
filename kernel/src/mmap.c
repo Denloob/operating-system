@@ -1,4 +1,5 @@
 #include "kernel_memory_info.h"
+#include "io.h"
 #include "memory.h"
 #include "mmap.h"
 #include "range.h"
@@ -33,7 +34,7 @@ void mmap_init(range_Range *mmap_base, uint64_t length)
 }
 
 // WARNING: this invalidates all g_phys_memory_map.base iterators and moves indexes
-void phys_memory_add(const range_Range *range)
+void mmap_phys_memory_add(const range_Range *range)
 {
     uint64_t *const len = &g_phys_memory_map.length;
     range_Range *const base = g_phys_memory_map.base;
@@ -147,7 +148,7 @@ void munmap(void *in_addr, size_t size)
             continue;
         }
 
-        phys_memory_add(&cur);
+        mmap_phys_memory_add(&cur);
 
         cur.begin = physical_page_addr;
         cur.size = PAGE_SIZE;
@@ -155,7 +156,7 @@ void munmap(void *in_addr, size_t size)
 
     if (cur.size != 0)
     {
-        phys_memory_add(&cur);
+        mmap_phys_memory_add(&cur);
     }
 }
 

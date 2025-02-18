@@ -72,3 +72,6 @@ res mprotect(void *addr, size_t size, mmap_Protection prot);
  *              there's no free contiguous memory range of the requested size.
  */
 bool mmap_allocate_contiguous(uint64_t want_size, uint64_t *out_result);
+
+// NOTE: you really shouldn't use this function unless you are manually unmapping the mmu tables
+void mmap_phys_memory_add(const range_Range *range);
