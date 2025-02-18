@@ -40,7 +40,9 @@ void *mmu_map_allocate()
         if (!bitmap_test(mmu_tables_bitmap, i))
         {
             bitmap_set(mmu_tables_bitmap, i);
-            return (void *)(g_mmu_map_base_address + i * TABLE_SIZE_BYTES);
+            void *addr = (void *)(g_mmu_map_base_address + i * TABLE_SIZE_BYTES);
+            memset(addr, 0, TABLE_SIZE_BYTES);
+            return addr;
         }
     }
 
