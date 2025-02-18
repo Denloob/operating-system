@@ -1,4 +1,5 @@
 #include "pcb.h"
+#include "mmap.h"
 #include "file_descriptor_hashmap.h"
 #include "mmu.h"
 #include "mmu_config.h"
@@ -8,11 +9,9 @@
 #include "res.h"
 #include <stdint.h>
 
-
-
+const static int kernel_start_index = 256;
 PCB* PCB_init(uint64_t id, PCB *parent, uint64_t entry_point, mmu_PageMapEntry *kernel_pml)
 {
-    const int kernel_start_index = 256;
     const int kernel_end_index = 512;
 
     PCB* created_pcb = kcalloc(1, sizeof(struct PCB));
@@ -73,7 +72,38 @@ void PCB_cleanup(PCB *pcb)
         return;
     }
 
-    // TODO: free the pages
+    mmu_PageMapEntry *paging = pcb->paging;
+
+    for (int level4 = 0; level4 < kernel_start_index; level4++)
+    {
+        if (paging[level4].present == 0) continue;
+        mmu_PageMapEntry *l3 = (void *)mmu_page_table_entry_address_get_virt(&paging[level4]);
+        for (int level3 = 0; level3 < TABLE_LENGTH; level3++)
+        {
+            if (l3[level3].present == 0) continue;
+            mmu_PageMapEntry *l2 = (void *)mmu_page_table_entry_address_get_virt(&l3[level3]);
+            for (int level2 = 0; level2 < TABLE_LENGTH; level2++)
+            {
+                if (l2[level2].present == 0) continue;
+                mmu_PageTableEntry *l1 = (void *)mmu_page_table_entry_address_get_virt(&l2[level2]);
+
+                for (int level1 = 0; level1 < TABLE_LENGTH; level1++)
+                {
+                    if (l1[level1].present == 0) continue;
+                    mmap_phys_memory_add(&(range_Range){
+                        .begin = mmu_page_table_entry_address_get(&l1[level1]),
+                        .size = PAGE_SIZE,
+                    });
+                }
+
+                mmu_map_deallocate(l1);
+            }
+            mmu_map_deallocate(l2);
+        }
+        mmu_map_deallocate(l3);
+    }
+
+    mmu_map_deallocate(paging);
 
     for (size_t i = 0; i < pcb->children.length; i++)
     {
