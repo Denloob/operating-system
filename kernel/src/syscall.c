@@ -470,6 +470,7 @@ static void syscall_write(Regs *regs)
 
 static void __attribute__((used, sysv_abi)) syscall_handler(Regs *user_regs)
 {
+    sti();
     user_regs->rsp = g_ring3_rsp; // Doesn't affect the process, just a nice thing for us.
 
     // NOTE: caller_regs->r11 and caller_regs->rcx contain $RFLAGS and $rip respectively
@@ -537,6 +538,7 @@ static void __attribute__((used, sysv_abi)) syscall_handler(Regs *user_regs)
     }
 
     assert(original_rip == user_regs->rcx && original_rflags == user_regs->r11 && "The syscall is not expected to modify process $rip or $RFLAGS");
+    cli();
 }
 
 static void __attribute__((naked)) syscall_handler_trampoline()
@@ -626,7 +628,7 @@ static void set_syscall_flags_mask()
 {
     #define INTERRUPT_FLAG 0x200
     #define RESUME_FLAG    0x10000
-    write_to_64bit_msr(MSR_SFMASK, ~(INTERRUPT_FLAG | RESUME_FLAG)); // Mask out the specified flags
+    write_to_64bit_msr(MSR_SFMASK, (INTERRUPT_FLAG | RESUME_FLAG)); // Mask out the specified flags
 }
 
 void syscall_initialize()
