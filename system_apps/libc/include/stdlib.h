@@ -26,3 +26,7 @@ void *malloc(size_t size) __attribute_malloc(free) _WUR;
 
 void *calloc(size_t amount, size_t size) __attribute_malloc(free) _WUR;
 void *realloc(void *ptr, size_t size) _WUR;
+
+int rand(void);
+void srand(unsigned int seed);
+int rand_r(unsigned int *seed_ptr);
