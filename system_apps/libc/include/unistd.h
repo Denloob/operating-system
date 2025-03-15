@@ -27,3 +27,9 @@ int reboot(int op); // @see <sys/reboot.h>
 
 char *getcwd(char *buf, size_t size);
 int chdir(const char *path);
+
+#define SEEK_SET    0   /* Seek from beginning of file.  */
+#define SEEK_CUR    1   /* Seek from current position.   */
+#define SEEK_END    2   /* Seek from end of file.        */
+
+ssize_t lseek(int fd, ssize_t offset, int whence);

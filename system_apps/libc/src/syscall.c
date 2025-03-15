@@ -124,3 +124,8 @@ ssize_t getdents(const char *fd, void *dirp, size_t count)
 {
     return syscall(SYS_getdents, fd , dirp, count);
 }
+
+ssize_t lseek(int fd, ssize_t offset, int whence)
+{
+    return syscall(SYS_lseek, fd, offset, whence);
+}

@@ -167,6 +167,29 @@ int fclose(FILE *stream)
     return 0;
 }
 
+int fseek(FILE *stream, long offset, int whence)
+{
+    int64_t pos = lseek(stream->fd, offset, whence);
+    if (pos < 0)
+        return -1;
+    return 0;
+}
+
+long ftell(FILE *stream)
+{
+    int64_t pos = lseek(stream->fd, 0, SEEK_CUR);
+    if (pos < 0)
+        return -1;
+
+    return pos;
+}
+
+void rewind(FILE *stream)
+{
+    int res = fseek(stream, 0, SEEK_SET);
+    (void)res; // Unused
+}
+
 size_t fwrite(const void *restrict ptr, size_t size, size_t nmemb, FILE *restrict stream)
 {
     ssize_t bytes_written = write(stream->fd, ptr, size * nmemb);

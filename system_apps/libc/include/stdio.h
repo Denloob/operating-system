@@ -24,6 +24,10 @@ int putchar(int c);
 FILE *fopen(const char *restrict path, const char *restrict mode);
 int fclose(FILE *stream);
 
+int fseek(FILE *stream, long offset, int whence);
+long ftell(FILE *stream);
+void rewind(FILE *stream);
+
 size_t fwrite(const void *restrict ptr, size_t size, size_t nmemb, FILE *restrict stream);
 size_t fread(void *restrict ptr, size_t size, size_t nmemb, FILE *restrict stream);
 
