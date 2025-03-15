@@ -33,6 +33,7 @@
 #include "usermode.h"
 #include "vga.h"
 #include "execve.h"
+#include "vga_char_device.h"
 #include <stdbool.h>
 
 
@@ -106,6 +107,7 @@ void __attribute__((section(".entry"), sysv_abi)) kernel_main(uint32_t param_mmu
     parse_boot_config_and_play_logo();
 
     char_special_device_init();
+    vga_char_device_init();
 
     res rs = rtl8139_init();
     assert(IS_OK(rs) && "RTL8139 was not found");
