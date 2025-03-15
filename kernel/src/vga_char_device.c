@@ -9,6 +9,9 @@
 #include <stddef.h>
 #include "memory.h"
 
+#define VGA_SCREEN_SIZE (VGA_GRAPHICS_WIDTH * VGA_GRAPHICS_HEIGHT)
+#define COLOR_PALETTE_SIZE 256
+
 static size_t handle_write(uint8_t *buffer, uint64_t buffer_size, uint64_t file_offset, int minor_number, bool __attribute__((unused)) block)
 {
     if (buffer_size == 0)
@@ -25,13 +28,13 @@ static size_t handle_write(uint8_t *buffer, uint64_t buffer_size, uint64_t file_
                 return -2;
             }
 
-            const uint64_t screen_size = VGA_GRAPHICS_WIDTH * VGA_GRAPHICS_HEIGHT;
-            if (file_offset >= screen_size)
+            if (file_offset >= VGA_SCREEN_SIZE)
             {
+                assert(false && "fseek shouldn't ever allow this to happen");
                 return -1;
             }
 
-            const uint64_t available = screen_size - file_offset;
+            const uint64_t available = VGA_SCREEN_SIZE - file_offset;
 
             const uint64_t size = MIN(buffer_size, available);
             memmove((void *)(VGA_GRAPHICS_ADDRESS + file_offset), buffer, size);
@@ -44,8 +47,9 @@ static size_t handle_write(uint8_t *buffer, uint64_t buffer_size, uint64_t file_
                 return -2;
             }
 
-            if (file_offset > UINT8_MAX)
+            if (file_offset >= COLOR_PALETTE_SIZE)
             {
+                assert(false && "fseek shouldn't ever allow this to happen");
                 return -1;
             }
 
@@ -58,6 +62,7 @@ static size_t handle_write(uint8_t *buffer, uint64_t buffer_size, uint64_t file_
         {
             if (file_offset != 0 || buffer_size != 1)
             {
+                assert(file_offset == 0 && "fseek shouldn't ever allow this to happen");
                 return -1;
             }
 
@@ -107,7 +112,7 @@ static size_t handle_read(uint8_t *buffer, uint64_t buffer_size, uint64_t file_o
     }
 }
 
-static void create_vga_device_file(const char *path, vga_char_device_MinorDeviceType minor_number)
+static void create_vga_device_file(const char *path, vga_char_device_MinorDeviceType minor_number, size_t file_size)
 {
     uint16_t parent_cluster;
     FILE file;
@@ -117,6 +122,7 @@ static void create_vga_device_file(const char *path, vga_char_device_MinorDevice
     file.file.file_entry.reserved = fat16_MDSCoreFlags_DEVICE;
     file.file.file_entry.firstClusterHigh = vga_char_device_MAJOR_NUMBER;
     file.file.file_entry.firstClusterLow = minor_number;
+    file.file.file_entry.fileSize = file_size;
 
     success = fat16_update_entry_in_directory(file.file.ref, &file.file.file_entry, parent_cluster);
     assert(success && "fat16_update_root_entry");
@@ -135,7 +141,7 @@ void vga_char_device_init()
     res rs = fat16_create_directory(&g_fs_fat16, "vga", "/dev");
     assert(IS_OK(rs) && "fat16_create_directory");
 
-    create_vga_device_file("/dev/vga/screen", vga_char_device_MINOR_SCREEN);
-    create_vga_device_file("/dev/vga/palette", vga_char_device_MINOR_COLOR_PALETTE);
-    create_vga_device_file("/dev/vga/config", vga_char_device_MINOR_CONFIG);
+    create_vga_device_file("/dev/vga/screen", vga_char_device_MINOR_SCREEN, VGA_SCREEN_SIZE);
+    create_vga_device_file("/dev/vga/palette", vga_char_device_MINOR_COLOR_PALETTE, COLOR_PALETTE_SIZE);
+    create_vga_device_file("/dev/vga/config", vga_char_device_MINOR_CONFIG, 1);
 }

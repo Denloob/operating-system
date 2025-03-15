@@ -5,6 +5,8 @@ typedef enum {
     SYSCALL_WRITE   = 1,
     SYSCALL_OPEN    = 2,
 
+    SYSCALL_LSEEK   = 8,
+
     SYSCALL_BRK     = 12,
 
     SYSCALL_EXECUTE = 59,

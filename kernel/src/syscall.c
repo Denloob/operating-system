@@ -105,6 +105,32 @@ static bool read_path(usermode_mem *usermode_path, char filepath_buffer[static F
     return true;
 }
 
+static void syscall_lseek(Regs *regs)
+{
+    regs->rax = -1; // Return: Failed
+
+    // Args:
+    int fd_num = regs->rdi;
+    int64_t offset = regs->rsi;
+    int whence = regs->rdx;
+
+    PCB *pcb = scheduler_current_pcb();
+    FileDescriptor *fd_desc = file_descriptor_hashmap_get(&pcb->fd_map, fd_num);
+    if (fd_desc == NULL)
+    {
+        return;
+    }
+
+    FILE *file = &fd_desc->file;
+    int ret = fseek(file, offset, whence);
+    if (ret == -1)
+    {
+        return;
+    }
+
+    regs->rax = ftell(file);
+}
+
 static void syscall_open(Regs *regs)
 {
     usermode_mem *filepath_user = (usermode_mem *)regs->rdi;
@@ -531,6 +557,9 @@ static void __attribute__((used, sysv_abi)) syscall_handler(Regs *user_regs)
             break;
         case SYSCALL_WAITPID:
             syscall_waitpid(user_regs);
+            break;
+        case SYSCALL_LSEEK:
+            syscall_lseek(user_regs);
             break;
         case SYSCALL_GETDENTS:
             syscall_getdents(user_regs);

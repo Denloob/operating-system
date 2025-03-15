@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <unistd.h>
 #include <stdbool.h>
 #include <stdio.h>
 
@@ -13,5 +14,5 @@ void assert_fail(const char *assertion, const char *file, const char *line,
     fputs(": Assertion failed: ", stdout);
     puts(assertion);
 
-    while (true) { /* hang */ } // TODO: exit(1) instead
+    exit(-1);
 }
