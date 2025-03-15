@@ -129,3 +129,8 @@ ssize_t lseek(int fd, ssize_t offset, int whence)
 {
     return syscall(SYS_lseek, fd, offset, whence);
 }
+
+int msleep(uint64_t delay_ms)
+{
+    return syscall(SYS_msleep, delay_ms);
+}

@@ -13,3 +13,4 @@
 #define SYS_reboot   169
 #define SYS_getdents 217
 #define SYS_waitpid  1001
+#define SYS_msleep   1002

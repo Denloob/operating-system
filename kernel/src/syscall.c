@@ -1,6 +1,7 @@
 #include "file_descriptor_hashmap.h"
 #include "file_descriptor.h"
 #include "FAT16.h"
+#include "pit.h"
 #include "string.h"
 #include "io.h"
 #include "smartptr.h"
@@ -21,6 +22,7 @@
 #include "fs.h"
 #include "res.h"
 #include "scheduler.h"
+#include "time.h"
 #include "usermode.h"
 #include "execve.h"
 #include "shell.h"
@@ -494,6 +496,53 @@ static void syscall_write(Regs *regs)
     syscall_read_write(regs, process_fwrite, file_descriptor_perm_WRITE);
 }
 
+typedef struct {
+    uint64_t    target;
+} MSleepRefreshArgument;
+
+// @see pcb_IORefresh
+static pcb_IORefreshResult pcb_refresh_msleep(PCB *pcb)
+{
+    MSleepRefreshArgument *arg = pcb->refresh_arg;
+    assert(arg != NULL);
+
+    if (pit_ms_counter() < arg->target)
+    {
+        return PCB_IO_REFRESH_CONTINUE;
+    }
+
+    pcb->regs.rax = 0; // Return: success
+    kfree(arg);
+    return PCB_IO_REFRESH_DONE;
+}
+
+static void syscall_msleep(Regs *regs)
+{
+    regs->rax = 0; // Return: success
+    uint64_t delay_ms = regs->rdi;
+    if (delay_ms == 0)
+    {
+        return;
+    }
+
+    uint64_t start = pit_ms_counter();
+    uint64_t target;
+    bool overflow = __builtin_add_overflow(start, delay_ms, &target);
+    if (overflow)
+    {
+        target = UINT64_MAX; // If the delay is that large, the caller probably doesn't want us to ever really return, so let's make them happy.
+    }
+
+    PCB *pcb = scheduler_current_pcb();
+
+    MSleepRefreshArgument *arg = kcalloc(1, sizeof(*arg));
+    arg->target = target;
+
+    pcb->refresh_arg = arg;
+
+    scheduler_move_current_process_to_io_queue_and_context_switch(pcb_refresh_msleep);
+}
+
 static void __attribute__((used, sysv_abi)) syscall_handler(Regs *user_regs)
 {
     sti();
@@ -563,6 +612,9 @@ static void __attribute__((used, sysv_abi)) syscall_handler(Regs *user_regs)
             break;
         case SYSCALL_GETDENTS:
             syscall_getdents(user_regs);
+            break;
+        case SYSCALL_MSLEEP:
+            syscall_msleep(user_regs);
             break;
     }
 

@@ -23,6 +23,8 @@ typedef enum {
 
     SYSCALL_WAITPID = 1001,
 
+    SYSCALL_MSLEEP  = 1002,
+
 } syscall_Number;
 
 typedef enum {

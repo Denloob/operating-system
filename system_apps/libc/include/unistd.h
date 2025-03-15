@@ -33,3 +33,5 @@ int chdir(const char *path);
 #define SEEK_END    2   /* Seek from end of file.        */
 
 ssize_t lseek(int fd, ssize_t offset, int whence);
+
+int msleep(uint64_t delay_ms);
