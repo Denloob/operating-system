@@ -11,6 +11,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include "scheduler.h"
+#include "vga.h"
 
 static size_t handle_write(uint8_t *buffer, uint64_t buffer_size, uint64_t file_offset, int minor_number, bool block);
 static size_t handle_read(uint8_t *buffer, uint64_t buffer_size, uint64_t file_offset, int minor_number, bool block);
@@ -54,6 +55,11 @@ size_t handle_write(uint8_t *buffer, uint64_t buffer_size, uint64_t file_offset,
             return buffer_size; // Discard data written to `zero` and `null`.
         case char_special_device_MINOR_TTY:
         {
+            if (vga_current_mode() != VGA_MODE_TYPE_TEXT)
+            {
+                return -2;
+            }
+
             for (int i = 0; i < buffer_size; i++)
             {
                 putc(buffer[i]);
@@ -171,6 +177,11 @@ size_t handle_read(uint8_t *buffer, uint64_t buffer_size, uint64_t file_offset, 
             return buffer_size;
         case char_special_device_MINOR_TTY:
         {
+            if (vga_current_mode() != VGA_MODE_TYPE_TEXT)
+            {
+                return -2;
+            }
+
             if (block)
             {
                 tty_read_blocking(buffer, buffer_size);
