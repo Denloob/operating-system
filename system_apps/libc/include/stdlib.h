@@ -30,3 +30,7 @@ void *realloc(void *ptr, size_t size) _WUR;
 int rand(void);
 void srand(unsigned int seed);
 int rand_r(unsigned int *seed_ptr);
+
+int abs(int num) __attribute__((__const__)) _WUR;
+long labs(long num) __attribute__((__const__)) _WUR;;
+long long llabs(long long num) __attribute__((__const__)) _WUR;;;
