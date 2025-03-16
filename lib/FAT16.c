@@ -1123,10 +1123,9 @@ int fat16_getdents(uint16_t first_cluster, fat16_dirent *out_entries_buffer, int
             }
 
             memset(&out_entries_buffer[count], 0, sizeof(fat16_dirent));
-            for(int i=0; i <FAT16_FILENAME_SIZE ;i++)
-            {
-                out_entries_buffer[count].name[i] = entry.filename[i];
-            }
+            memmove(out_entries_buffer[count].name, (char *)&entry.filename[0], FAT16_FILENAME_SIZE);
+            out_entries_buffer[count].name[FAT16_FILENAME_SIZE] = ' ';
+            memmove(&out_entries_buffer[count].name[FAT16_FILENAME_SIZE + 1], (char *)&entry.extension[0], FAT16_EXTENSION_SIZE);
             out_entries_buffer[count].name[12] = '\0';
 
             out_entries_buffer[count].attr = entry.attributes;
