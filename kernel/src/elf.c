@@ -168,7 +168,7 @@ res elf_load(FILE *file, void **entry_point_ptr)
 
 
 
-                memset((char *)entry.segment_virtual_address, 0, entry.segment_size_in_memory - entry.segment_size_in_file);
+                memset((char *)entry.segment_virtual_address + entry.segment_size_in_file, 0, entry.segment_size_in_memory - entry.segment_size_in_file);
 
                 rs = mprotect((void *)entry.segment_virtual_address, entry.segment_size_in_memory, elf_flags_to_mmap_flags(entry.flags));
                 if (!IS_OK(rs))
