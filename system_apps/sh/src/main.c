@@ -81,8 +81,8 @@ int main()
         }
 
         int fail = -1;
-        bool is_absolute_path = cmd->shell_command[0][0] == '/';
-        if (is_absolute_path)
+        bool is_binary_path = strchr(cmd->shell_command[0], '/') != NULL;
+        if (is_binary_path)
         {
             fail = execve_new(cmd->shell_command[0], &cmd->shell_command[0]);
         }
