@@ -132,9 +132,39 @@ void gx_draw_fill_rect(gx_Canvas *canvas, gx_Vec2 top_left, gx_Vec2 bottom_right
 
 void gx_draw_circle(gx_Canvas *canvas, gx_Vec2 center, int radius, gx_Color color)
 {
+    int x = -radius, y = 0, err = 2 - 2 * radius; /* II. Quadrant */
+    do
+    {
+        gx_draw_point(canvas, (gx_Vec2){center.x - x, center.y + y}, color);
+        gx_draw_point(canvas, (gx_Vec2){center.x - y, center.y - x}, color);
+        gx_draw_point(canvas, (gx_Vec2){center.x + x, center.y - y}, color);
+        gx_draw_point(canvas, (gx_Vec2){center.x + y, center.y + x}, color);
+        int prev_err = err;
+        if (prev_err <= y)
+        {
+            err += ++y * 2 + 1;
+        }
+        if (prev_err > x || err > y)
+        {
+            err += ++x * 2 + 1;
+        }
+    } while (x < 0);
 }
 
-void gx_draw_fill_circle(gx_Canvas *canvas, gx_Vec2 center, int radius,
-                         gx_Color color)
+void gx_draw_fill_circle(gx_Canvas *canvas, gx_Vec2 center, int radius, gx_Color color)
 {
+    const int rr = radius * radius;
+    for (int y = -radius; y <= radius; y++)
+    {
+        const int yy = y * y;
+        for (int x = -radius; x <= radius; x++)
+        {
+            if (x * x + yy <= rr)
+            {
+                gx_draw_point(canvas, (gx_Vec2){center.x + x, center.y + y}, color);
+            }
+        }
+    }
+
+    gx_draw_circle(canvas, center, radius, color);
 }
