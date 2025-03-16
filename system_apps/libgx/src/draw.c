@@ -99,6 +99,18 @@ void gx_draw_line(gx_Canvas *canvas, gx_Vec2 start, gx_Vec2 end, gx_Color color)
     }
 }
 
+void gx_draw_rect_wh(gx_Canvas *canvas, gx_Vec2 top_left, int width, int height,
+                  gx_Color color)
+{
+    gx_draw_rect(canvas, top_left, (gx_Vec2){top_left.x + width - 1, top_left.y + height - 1}, color);
+}
+
+void gx_draw_fill_rect_wh(gx_Canvas *canvas, gx_Vec2 top_left, int width, int height,
+                  gx_Color color)
+{
+    gx_draw_fill_rect(canvas, top_left, (gx_Vec2){top_left.x + width - 1, top_left.y + height - 1}, color);
+}
+
 void gx_draw_rect(gx_Canvas *canvas, gx_Vec2 top_left, gx_Vec2 bottom_right,
                   gx_Color color)
 {

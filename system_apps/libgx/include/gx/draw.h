@@ -38,6 +38,11 @@ void gx_draw_line(gx_Canvas* canvas, gx_Vec2 start, gx_Vec2 end, gx_Color color)
 void gx_draw_rect(gx_Canvas* canvas, gx_Vec2 top_left, gx_Vec2 bottom_right, gx_Color color);
 
 /**
+ * @brief Like gx_draw_rect, but with width and height instead of bottom right
+ */
+void gx_draw_rect_wh(gx_Canvas* canvas, gx_Vec2 top_left, int width, int height, gx_Color color);
+
+/**
  * @brief Draw a filled rectangle on the canvas.
  *
  * @param top_left The top-left corner of the rectangle.
@@ -46,6 +51,11 @@ void gx_draw_rect(gx_Canvas* canvas, gx_Vec2 top_left, gx_Vec2 bottom_right, gx_
  * @note Content outside the canvas bounds will not be drawn. Assumes top_left.x <= bottom_right.x and top_left.y <= bottom_right.y.
  */
 void gx_draw_fill_rect(gx_Canvas* canvas, gx_Vec2 top_left, gx_Vec2 bottom_right, gx_Color color);
+
+/**
+ * @brief Like gx_draw_fill_rect, but with width and height instead of bottom right
+ */
+void gx_draw_fill_rect_wh(gx_Canvas* canvas, gx_Vec2 top_left, int width, int height, gx_Color color);
 
 /**
  * @brief Draw the outline of a circle on the canvas.
