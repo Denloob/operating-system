@@ -102,11 +102,32 @@ void gx_draw_line(gx_Canvas *canvas, gx_Vec2 start, gx_Vec2 end, gx_Color color)
 void gx_draw_rect(gx_Canvas *canvas, gx_Vec2 top_left, gx_Vec2 bottom_right,
                   gx_Color color)
 {
+    int left   = MAX(0,                  MIN(top_left.x, bottom_right.x));
+    int right  = MIN(canvas->width - 1,  MAX(top_left.x, bottom_right.x));
+    int top    = MAX(0,                  MIN(top_left.y, bottom_right.y));
+    int bottom = MIN(canvas->height - 1, MAX(top_left.y, bottom_right.y));
+
+    gx_draw_line(canvas, (gx_Vec2){left, top},     (gx_Vec2){right, top},       color);
+    gx_draw_line(canvas, (gx_Vec2){left, bottom},  (gx_Vec2){right, bottom},    color);
+    gx_draw_line(canvas, (gx_Vec2){left, top},     (gx_Vec2){left, bottom},     color);
+    gx_draw_line(canvas, (gx_Vec2){right, top},    (gx_Vec2){right, bottom},    color);
 }
 
 void gx_draw_fill_rect(gx_Canvas *canvas, gx_Vec2 top_left, gx_Vec2 bottom_right,
                        gx_Color color)
 {
+    int left   = MAX(0,                  MIN(top_left.x, bottom_right.x));
+    int right  = MIN(canvas->width - 1,  MAX(top_left.x, bottom_right.x));
+    int top    = MAX(0,                  MIN(top_left.y, bottom_right.y));
+    int bottom = MIN(canvas->height - 1, MAX(top_left.y, bottom_right.y));
+
+    for (int y = top; y <= bottom; y++)
+    {
+        for (int x = left; x <= right; x++)
+        {
+            gx_draw_point(canvas, (gx_Vec2){x, y}, color);
+        }
+    }
 }
 
 void gx_draw_circle(gx_Canvas *canvas, gx_Vec2 center, int radius, gx_Color color)
