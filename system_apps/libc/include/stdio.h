@@ -24,6 +24,10 @@ int putchar(int c);
 FILE *fopen(const char *restrict path, const char *restrict mode);
 int fclose(FILE *stream);
 
+#define SEEK_SET    0   /* Seek from beginning of file.  */
+#define SEEK_CUR    1   /* Seek from current position.   */
+#define SEEK_END    2   /* Seek from end of file.        */
+
 int fseek(FILE *stream, long offset, int whence);
 long ftell(FILE *stream);
 void rewind(FILE *stream);
