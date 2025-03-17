@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <stdint.h>
 #include <math.h>
 #include <gx/draw.h>
@@ -43,31 +44,124 @@ void shape_block(gx_Canvas *canvas, gx_Vec2 pos, gx_Color color_base)
     gx_draw_line(canvas, gx_vec2_add(pos, (gx_Vec2){ BLOCK_SIZE - 1, 0}), gx_vec2_add(pos, (gx_Vec2){BLOCK_SIZE - 1, BLOCK_SIZE - 1}), color_base + 2);
 }
 
-void shape_L(gx_Canvas *canvas, gx_Vec2 pos)
+void shape_block_on_board(gx_Canvas *canvas, gx_Vec2 grid_pos, gx_Color color_base)
 {
-    shape_block(canvas, gx_vec2_add(pos, (gx_Vec2){ 0, 0 }), COLOR_L_BASE);
-    shape_block(canvas, gx_vec2_add(pos, (gx_Vec2){ 0, BLOCK_SIZE }), COLOR_L_BASE);
-    shape_block(canvas, gx_vec2_add(pos, (gx_Vec2){ 0, 2 * BLOCK_SIZE }), COLOR_L_BASE);
-    shape_block(canvas, gx_vec2_add(pos, (gx_Vec2){ 0, 3 * BLOCK_SIZE }), COLOR_L_BASE);
-    shape_block(canvas, gx_vec2_add(pos, (gx_Vec2){ BLOCK_SIZE, 3 * BLOCK_SIZE }), COLOR_L_BASE);
+    shape_block(canvas, (gx_Vec2){BOARD_BEGIN + (grid_pos.x * BLOCK_SIZE), grid_pos.y * BLOCK_SIZE}, color_base);
 }
 
 void tile_background_at(gx_Canvas *canvas, gx_Vec2 start_pos, int horizontal_count)
 {
-    for (int x = start_pos.x; x < start_pos.x + horizontal_count * BLOCK_SIZE; x += BLOCK_SIZE)
+    for (int x = start_pos.x; x < start_pos.x + horizontal_count; x++)
     {
-        for (int y = start_pos.y; y < canvas->height; y += BLOCK_SIZE)
+        for (int y = start_pos.y; y < BOARD_BLOCKS_HEIGHT + 1; y++)
         {
-            shape_block(canvas, (gx_Vec2){x, y}, COLOR_BG_BLOCK_BASE);
+            shape_block_on_board(canvas, (gx_Vec2){x, y}, COLOR_BG_BLOCK_BASE);
         }
     }
 }
 
 void tile_background(gx_Canvas *canvas)
 {
-    tile_background_at(g_canvas, (gx_Vec2){ BOARD_BEGIN - BLOCK_SIZE, 0 }, 1);
-    tile_background_at(g_canvas, (gx_Vec2){ BOARD_BEGIN + (BLOCK_SIZE * BOARD_BLOCKS_LENGTH), 0 }, 1);
-    tile_background_at(g_canvas, (gx_Vec2){ BOARD_BEGIN, BOARD_BLOCKS_HEIGHT * BLOCK_SIZE }, BOARD_BLOCKS_LENGTH);
+    // We draw outside the bounds of the game board, which is then normalized to be on the screen around it
+    tile_background_at(g_canvas, (gx_Vec2){ -1, 0 }, 1);
+    tile_background_at(g_canvas, (gx_Vec2){ BOARD_BLOCKS_LENGTH, 0 }, 1);
+    tile_background_at(g_canvas, (gx_Vec2){ 0, BOARD_BLOCKS_HEIGHT}, BOARD_BLOCKS_LENGTH);
+}
+
+typedef enum {
+    PIECE_I,
+    PIECE_J,
+    PIECE_L,
+    PIECE_O,
+    PIECE_S,
+    PIECE_T,
+    PIECE_Z,
+    PIECE_COUNT,
+} PieceType;
+
+typedef enum {
+    ROTATION_0,
+    ROTATION_90,
+    ROTATION_180,
+    ROTATION_270,
+} Rotation;
+
+typedef struct {
+    gx_Vec2 pos;
+    PieceType type;
+    Rotation rotation;
+} Piece;
+
+static const gx_Vec2 piece_offsets[PIECE_COUNT][4][4] = {
+    [PIECE_I] = {
+        [ROTATION_0]   = {{0,0}, {1,0}, {2,0}, {3,0}},
+        [ROTATION_90]  = {{0,0}, {0,1}, {0,2}, {0,3}},
+        [ROTATION_180] = {{0,0}, {1,0}, {2,0}, {3,0}},
+        [ROTATION_270] = {{0,0}, {0,1}, {0,2}, {0,3}},
+    },
+    [PIECE_J] = {
+        [ROTATION_0]   = {{0,0}, {0,1}, {0,2}, {1,2}},
+        [ROTATION_90]  = {{0,0}, {1,0}, {2,0}, {0,1}},
+        [ROTATION_180] = {{0,0}, {1,0}, {1,1}, {1,2}},
+        [ROTATION_270] = {{2,0}, {0,1}, {1,1}, {2,1}},
+    },
+    [PIECE_L] = {
+        [ROTATION_0]   = {{0,0}, {0,1}, {0,2}, {1,0}},
+        [ROTATION_90]  = {{0,0}, {1,0}, {2,0}, {2,1}},
+        [ROTATION_180] = {{1,0}, {1,1}, {1,2}, {0,2}},
+        [ROTATION_270] = {{0,1}, {1,1}, {2,1}, {0,0}},
+    },
+    [PIECE_O] = {
+        [ROTATION_0]   = {{0,0}, {1,0}, {0,1}, {1,1}},
+        [ROTATION_90]  = {{0,0}, {1,0}, {0,1}, {1,1}},
+        [ROTATION_180] = {{0,0}, {1,0}, {0,1}, {1,1}},
+        [ROTATION_270] = {{0,0}, {1,0}, {0,1}, {1,1}},
+    },
+    [PIECE_S] = {
+        [ROTATION_0]   = {{0,0}, {1,0}, {1,1}, {2,1}},
+        [ROTATION_90]  = {{1,0}, {1,1}, {0,1}, {0,2}},
+        [ROTATION_180] = {{0,0}, {1,0}, {1,1}, {2,1}},
+        [ROTATION_270] = {{1,0}, {1,1}, {0,1}, {0,2}},
+    },
+    [PIECE_T] = {
+        [ROTATION_0]   = {{0,0}, {1,0}, {2,0}, {1,1}},
+        [ROTATION_90]  = {{0,1}, {1,0}, {1,1}, {1,2}},
+        [ROTATION_180] = {{1,0}, {0,1}, {1,1}, {2,1}},
+        [ROTATION_270] = {{0,0}, {0,1}, {0,2}, {1,1}},
+    },
+    [PIECE_Z] = {
+        [ROTATION_0]   = {{0,1}, {1,1}, {1,0}, {2,0}},
+        [ROTATION_90]  = {{0,0}, {0,1}, {1,1}, {1,2}},
+        [ROTATION_180] = {{0,1}, {1,1}, {1,0}, {2,0}},
+        [ROTATION_270] = {{0,0}, {0,1}, {1,1}, {1,2}},
+    }
+};
+
+_Static_assert((sizeof(piece_offsets) / sizeof(*piece_offsets)) == PIECE_COUNT, "Piece count should reflect the actual piece count");
+
+static const uint32_t piece_colors[] = {
+    [PIECE_I] = COLOR_I_BASE,
+    [PIECE_J] = COLOR_J_BASE,
+    [PIECE_L] = COLOR_L_BASE,
+    [PIECE_O] = COLOR_O_BASE,
+    [PIECE_S] = COLOR_S_BASE,
+    [PIECE_T] = COLOR_T_BASE,
+    [PIECE_Z] = COLOR_Z_BASE
+};
+
+void draw_piece(gx_Canvas *canvas, Piece piece) {
+    PieceType type = piece.type;
+    Rotation rotation = piece.rotation;
+    gx_Vec2 pos = piece.pos;
+
+    assert(type >= 0 && type < PIECE_COUNT && rotation <= ROTATION_270 && rotation >= ROTATION_0);
+
+    const int block_count = sizeof(piece_offsets[type][rotation]) / sizeof(*piece_offsets[type][rotation]);
+    for (int i = 0; i < block_count; i++) {
+        gx_Vec2 offset = piece_offsets[type][rotation][i];
+        gx_Vec2 block_pos = gx_vec2_add(pos, offset);
+        shape_block_on_board(canvas, block_pos, piece_colors[type]);
+    }
 }
 
 int main(int argc, char **argv)
@@ -85,10 +179,9 @@ int main(int argc, char **argv)
         memset(g_canvas->buf, COLOR_BLACK, g_canvas->width * g_canvas->height);
         tile_background(g_canvas);
 
-        shape_L(g_canvas, (gx_Vec2){BOARD_BEGIN + BLOCK_SIZE, BLOCK_SIZE});
-
-        shape_L(g_canvas, (gx_Vec2){BOARD_BEGIN, BLOCK_SIZE*3});
-        shape_L(g_canvas, (gx_Vec2){BOARD_BEGIN, BLOCK_SIZE*9});
+        draw_piece(g_canvas, (Piece){ .pos = {0, 0}, .type = PIECE_L });
+        draw_piece(g_canvas, (Piece){ .pos = {5, 7}, .type = PIECE_L, .rotation = ROTATION_90 });
+        draw_piece(g_canvas, (Piece){ .pos = {3, 1}, .type = PIECE_O });
 
         gx_canvas_draw(g_canvas);
         msleep(SPEED);
