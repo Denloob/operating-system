@@ -14,11 +14,13 @@
 #include "colors.h"
 #include "gx/palette.h"
 
+int g_score = 0;
+
 void die(const char *message)
 {
     gx_deinit();
 
-    printf("tetris: %s\n", message);
+    printf("tetris: %s \nyour score was: %d\n", message , g_score);
     exit(1);
 }
 
@@ -381,6 +383,7 @@ void handle_input(Game *game)
 
 void clear_full_lines(Game *game)
 {
+    int lines_cleared =0;
     for (int y = BOARD_BLOCKS_HEIGHT - 1; y >= 0; y--)
     {
         bool is_full = true;
@@ -411,7 +414,16 @@ void clear_full_lines(Game *game)
 
             //Because we cleared a raw it may be full again so we go up by one to recheck the same raw
             y++;
+            lines_cleared++;
         }
+    }
+    switch (lines_cleared)
+    {
+            case 1: g_score += 40; break;
+            case 2: g_score += 100; break;
+            case 3: g_score += 300; break;
+            case 4: g_score += 500; break;
+            case 5: g_score += 600; break;
     }
 }
 
