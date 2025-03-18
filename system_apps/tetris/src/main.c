@@ -188,6 +188,161 @@ void draw_taken_blocks(gx_Canvas *canvas, uint8_t taken_blocks[static BOARD_BLOC
     }
 }
 
+void move_piece(Piece *piece , int dx , int dy) //not a derative
+{
+    piece->pos.x += dx;
+    piece->pos.y += dy;
+}
+//return true if there will be a collision and false if not
+bool check_collision(Piece piece, int dx, int dy, uint8_t taken_blocks[static BOARD_BLOCKS_HEIGHT][BOARD_BLOCKS_LENGTH])
+{
+    PieceType type = piece.type;
+    Rotation rotation = piece.rotation;
+    gx_Vec2 pos = piece.pos;
+
+    pos.x += dx;
+    pos.y += dy;
+
+    assert(type >= 0 && type < PIECE_COUNT && rotation >= ROTATION_0 && rotation <= ROTATION_270);
+
+    const int block_count = sizeof(piece_offsets[type][rotation]) / sizeof(*piece_offsets[type][rotation]);
+    for (int i = 0; i < block_count; i++)
+    {
+        gx_Vec2 offset = piece_offsets[type][rotation][i];
+        gx_Vec2 block_pos = gx_vec2_add(pos, offset);
+
+        if (block_pos.x < 0 || block_pos.x >= BOARD_BLOCKS_LENGTH ||
+            block_pos.y < 0 || block_pos.y >= BOARD_BLOCKS_HEIGHT) {
+            return true;  // Collision with wall or floor/ceiling
+        }
+
+        if (taken_blocks[block_pos.y][block_pos.x] != COLOR_BLACK)
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+void init_game(Game *game)
+{
+    *game = (Game){
+        .current_piece = {
+            .type = rand() % PIECE_COUNT,
+            .rotation = ROTATION_0,
+            .pos = {3, 0},
+        },
+        .taken_blocks = {
+            [BOARD_BLOCKS_HEIGHT - 1][0] = COLOR_I_BASE,
+            [BOARD_BLOCKS_HEIGHT - 1][1] = COLOR_I_BASE,
+            [BOARD_BLOCKS_HEIGHT - 1][2] = COLOR_I_BASE,
+            [BOARD_BLOCKS_HEIGHT - 1][3] = COLOR_I_BASE,
+            //[BOARD_BLOCKS_HEIGHT - 1][4] = COLOR_O_BASE,
+            [BOARD_BLOCKS_HEIGHT - 1][5] = COLOR_O_BASE,
+            [BOARD_BLOCKS_HEIGHT - 1][6] = COLOR_O_BASE,
+            [BOARD_BLOCKS_HEIGHT - 1][7] = COLOR_O_BASE,
+            [BOARD_BLOCKS_HEIGHT - 1][8] = COLOR_O_BASE,
+            [BOARD_BLOCKS_HEIGHT - 1][9] = COLOR_O_BASE,
+            //[BOARD_BLOCKS_HEIGHT - 2][4] = COLOR_O_BASE,
+            //[BOARD_BLOCKS_HEIGHT - 2][5] = COLOR_O_BASE,
+        }
+    };
+}
+
+void draw_game(Game game)
+{
+    memset(g_canvas->buf, COLOR_BLACK, g_canvas->width * g_canvas->height);
+    tile_background(g_canvas);
+    draw_piece(g_canvas, game.current_piece);
+    draw_taken_blocks(g_canvas, game.taken_blocks);
+    gx_canvas_draw(g_canvas);
+}
+
+void lock_piece_into_board(Game *game)
+{
+    PieceType type = game->current_piece.type;
+    Rotation rotation = game->current_piece.rotation;
+    gx_Vec2 pos = game->current_piece.pos;
+
+    for (int i = 0; i < 4; i++)
+    {
+        gx_Vec2 offset = piece_offsets[type][rotation][i];
+        gx_Vec2 block_pos = gx_vec2_add(pos, offset);
+        if (block_pos.y >= 0 && block_pos.y < BOARD_BLOCKS_HEIGHT &&
+            block_pos.x >= 0 && block_pos.x < BOARD_BLOCKS_LENGTH)
+        {
+            game->taken_blocks[block_pos.y][block_pos.x] = piece_colors[type];
+        }
+    }
+}
+
+void spawn_new_piece(Game *game)
+{
+    Piece new_piece = {
+        .type = rand() % PIECE_COUNT,
+        .rotation = ROTATION_0,
+        .pos = {3, 0},
+    };
+
+    if (check_collision(new_piece, 0, 0, game->taken_blocks))
+    {
+        die("Game Over!");
+    }
+
+    game->current_piece = new_piece;
+}
+
+void clear_full_lines(Game *game)
+{
+    for (int y = BOARD_BLOCKS_HEIGHT - 1; y >= 0; y--)
+    {
+        bool is_full = true;
+        for (int x = 0; x < BOARD_BLOCKS_LENGTH; x++)
+        {
+            if (game->taken_blocks[y][x] == 0)
+            {
+                is_full = false;
+                break;
+            }
+        }
+
+        if (is_full)
+        {
+            for (int row = y; row > 0; row--)
+            {
+                for (int col = 0; col < BOARD_BLOCKS_LENGTH; col++)
+                {
+                    game->taken_blocks[row][col] = game->taken_blocks[row - 1][col];
+                }
+            }
+
+            //delete the good line from the board
+            for (int col = 0; col < BOARD_BLOCKS_LENGTH; col++)
+            {
+                game->taken_blocks[0][col] = 0;
+            }
+
+            //Because we cleared a raw it may be full again so we go up by one to recheck the same raw 
+            y++;
+        }
+    }
+}
+
+void update_game(Game *game)
+{
+    if (!check_collision(game->current_piece, 0, 1, game->taken_blocks))
+    {
+        move_piece(&game->current_piece, 0, 1);
+    }
+    else
+    {
+        lock_piece_into_board(game);
+        clear_full_lines(game);
+        spawn_new_piece(game);
+    }
+}
+
 int main(int argc, char **argv)
 {
     int ret = gx_init();
@@ -198,30 +353,12 @@ int main(int argc, char **argv)
 
     gx_palette_set(0, g_color_palette, sizeof(g_color_palette) / sizeof(*g_color_palette));
 
-    Game game = {
-        .current_piece = {
-            .type = PIECE_Z,
-        },
-        .taken_blocks = {
-            [BOARD_BLOCKS_HEIGHT - 1][0] = COLOR_I_BASE,
-            [BOARD_BLOCKS_HEIGHT - 1][1] = COLOR_I_BASE,
-            [BOARD_BLOCKS_HEIGHT - 1][2] = COLOR_I_BASE,
-            [BOARD_BLOCKS_HEIGHT - 1][3] = COLOR_I_BASE,
-            [BOARD_BLOCKS_HEIGHT - 1][4] = COLOR_O_BASE,
-            [BOARD_BLOCKS_HEIGHT - 1][5] = COLOR_O_BASE,
-            [BOARD_BLOCKS_HEIGHT - 2][4] = COLOR_O_BASE,
-            [BOARD_BLOCKS_HEIGHT - 2][5] = COLOR_O_BASE,
-        }
-    };
+    Game game;
+    init_game(&game);
     while (1)
     {
-        memset(g_canvas->buf, COLOR_BLACK, g_canvas->width * g_canvas->height);
-        tile_background(g_canvas);
-
-        draw_piece(g_canvas, game.current_piece);
-        draw_taken_blocks(g_canvas, game.taken_blocks);
-
-        gx_canvas_draw(g_canvas);
+        draw_game(game);
         msleep(SPEED);
+        update_game(&game);
     }
 }
