@@ -21,6 +21,10 @@ void die(const char *message)
     exit(1);
 }
 
+/************************
+ *       Graphics
+ ************************/
+
 gx_Canvas *g_canvas;
 
 #define BACKGROUND_BLOCKS_PER_SIDE 11
@@ -149,13 +153,6 @@ static const uint32_t piece_colors[] = {
     [PIECE_Z] = COLOR_Z_BASE
 };
 
-
-typedef struct {
-    // Each value is either 0 (empty) or a `COLOR_*_BASE` of a block
-    uint8_t taken_blocks[BOARD_BLOCKS_HEIGHT][BOARD_BLOCKS_LENGTH];
-    Piece current_piece;
-} Game;
-
 void draw_piece(gx_Canvas *canvas, Piece piece) {
     PieceType type = piece.type;
     Rotation rotation = piece.rotation;
@@ -171,7 +168,13 @@ void draw_piece(gx_Canvas *canvas, Piece piece) {
     }
 }
 
-void draw_taken_blocks(gx_Canvas *canvas, uint8_t taken_blocks[static BOARD_BLOCKS_HEIGHT][BOARD_BLOCKS_LENGTH])
+typedef struct {
+    // Each value is either 0 (empty) or a `COLOR_*_BASE` of a block
+    uint8_t taken_blocks[BOARD_BLOCKS_HEIGHT][BOARD_BLOCKS_LENGTH];
+    Piece current_piece;
+} Game;
+
+void draw_taken_blocks(gx_Canvas *canvas, const uint8_t taken_blocks[static BOARD_BLOCKS_HEIGHT][BOARD_BLOCKS_LENGTH])
 {
     for (int x = 0; x < BOARD_BLOCKS_LENGTH; x++)
     {
@@ -187,6 +190,19 @@ void draw_taken_blocks(gx_Canvas *canvas, uint8_t taken_blocks[static BOARD_BLOC
         }
     }
 }
+
+void draw_game(const Game *game)
+{
+    memset(g_canvas->buf, COLOR_BLACK, g_canvas->width * g_canvas->height);
+    tile_background(g_canvas);
+    draw_piece(g_canvas, game->current_piece);
+    draw_taken_blocks(g_canvas, game->taken_blocks);
+    gx_canvas_draw(g_canvas);
+}
+
+/************************
+ *      Game Logic
+ ************************/
 
 void move_piece(Piece *piece , int dx , int dy) //not a derative
 {
@@ -248,15 +264,6 @@ void init_game(Game *game)
             //[BOARD_BLOCKS_HEIGHT - 2][5] = COLOR_O_BASE,
         }
     };
-}
-
-void draw_game(Game game)
-{
-    memset(g_canvas->buf, COLOR_BLACK, g_canvas->width * g_canvas->height);
-    tile_background(g_canvas);
-    draw_piece(g_canvas, game.current_piece);
-    draw_taken_blocks(g_canvas, game.taken_blocks);
-    gx_canvas_draw(g_canvas);
 }
 
 void lock_piece_into_board(Game *game)
@@ -323,7 +330,7 @@ void clear_full_lines(Game *game)
                 game->taken_blocks[0][col] = 0;
             }
 
-            //Because we cleared a raw it may be full again so we go up by one to recheck the same raw 
+            //Because we cleared a raw it may be full again so we go up by one to recheck the same raw
             y++;
         }
     }
@@ -357,7 +364,7 @@ int main(int argc, char **argv)
     init_game(&game);
     while (1)
     {
-        draw_game(game);
+        draw_game(&game);
         msleep(SPEED);
         update_game(&game);
     }
