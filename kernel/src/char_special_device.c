@@ -185,10 +185,11 @@ size_t handle_read(uint8_t *buffer, uint64_t buffer_size, uint64_t file_offset, 
             if (block)
             {
                 tty_read_blocking(buffer, buffer_size);
+                assert(false && "Unreachable");
             }
             else
             {
-                tty_read_nonblocking(buffer, buffer_size);
+                return tty_read_nonblocking(buffer, buffer_size);
             }
         }
         default:
