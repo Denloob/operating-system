@@ -236,9 +236,13 @@ int input_check_key()
     return ch;
 }
 
+
+
 /************************
  *      Game Logic
  ************************/
+
+#define DROP_CYCLE_MS 500
 
 void move_piece(Piece *piece , int dx , int dy) //not a derative
 {
@@ -336,6 +340,45 @@ void spawn_new_piece(Game *game)
     game->current_piece = new_piece;
 }
 
+void handle_input(Game *game)
+{
+    int key = input_check_key();
+
+    switch (key)
+    {
+        default:
+            break;
+
+        case KEY_ARROW_LEFT:
+            if (!check_collision(game->current_piece, -1, 0, game->taken_blocks))
+                move_piece(&game->current_piece, -1, 0);
+            break;
+
+        case KEY_ARROW_RIGHT:
+            if (!check_collision(game->current_piece, 1, 0, game->taken_blocks))
+                move_piece(&game->current_piece, 1, 0);
+            break;
+
+        case KEY_ARROW_UP:
+        {
+            int old_rotation = game->current_piece.rotation;
+
+            game->current_piece.rotation = (game->current_piece.rotation + 1) % (ROTATION_270 + 1);
+
+            if (check_collision(game->current_piece, 0, 0, game->taken_blocks))
+            {
+                game->current_piece.rotation = old_rotation;
+            }
+            break;
+        }
+
+        case KEY_ARROW_DOWN:
+            if (!check_collision(game->current_piece, 0, 1, game->taken_blocks))
+                move_piece(&game->current_piece, 0, 1);
+            break;
+    }
+}
+
 void clear_full_lines(Game *game)
 {
     for (int y = BOARD_BLOCKS_HEIGHT - 1; y >= 0; y--)
@@ -372,6 +415,8 @@ void clear_full_lines(Game *game)
     }
 }
 
+
+
 void update_game(Game *game)
 {
     if (!check_collision(game->current_piece, 0, 1, game->taken_blocks))
@@ -385,6 +430,7 @@ void update_game(Game *game)
         spawn_new_piece(game);
     }
 }
+
 
 int main(int argc, char **argv)
 {
@@ -400,10 +446,19 @@ int main(int argc, char **argv)
 
     Game game;
     init_game(&game);
+    uint64_t last_drop_time = pit_time();
+
     while (1)
     {
-        draw_game(&game);
-        msleep(SPEED);
-        update_game(&game);
+        handle_input(&game);
+
+        uint64_t now = pit_time();
+        if (now - last_drop_time >= DROP_CYCLE_MS)
+        {
+            update_game(&game);//Drop cycle
+            last_drop_time = now;
+        }
+
+        draw_game(&game);//redraw the board after the turn was played
     }
 }
