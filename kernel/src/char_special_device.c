@@ -168,13 +168,13 @@ size_t handle_read(uint8_t *buffer, uint64_t buffer_size, uint64_t file_offset, 
             return buffer_size;
         case char_special_device_MINOR_TTY:
         {
-            if (vga_current_mode() != VGA_MODE_TYPE_TEXT)
-            {
-                return -2;
-            }
-
             if (block)
             {
+                if (vga_current_mode() != VGA_MODE_TYPE_TEXT)
+                {
+                    return -2;
+                }
+
                 tty_read_blocking(buffer, buffer_size);
                 assert(false && "Unreachable");
             }
