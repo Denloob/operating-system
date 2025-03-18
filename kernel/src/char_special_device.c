@@ -10,6 +10,7 @@
 #include "memory.h"
 #include <stdint.h>
 #include <stddef.h>
+#include "io.h"
 #include "scheduler.h"
 #include "vga.h"
 
@@ -140,27 +141,17 @@ static size_t tty_read_blocking(uint8_t *buffer, uint64_t buffer_size)
 
 static size_t tty_read_nonblocking(uint8_t *buffer, uint64_t buffer_size)
 {
+    assert(io_input_keyboard_key == io_keyboard_wait_key && "tty only works with the io_keyboard driver");
+
     for (int i = 0; i < buffer_size; i++)
     {
+        if (!io_keyboard_is_key_ready())
+        {
+            return i;
+        }
+
         // buffer
-        buffer[i] = key_to_char(io_input_keyboard_key());
-        if (buffer[i] == '\b')
-        {
-            if (i > 0)
-            {
-                putc('\b');
-                i--;
-            }
-            i--;
-            continue;
-        }
-
-        putc(buffer[i]); // TODO: add a way to configure the displaying/not-displaying. Maybe it should be a shell feature instead of being a kernel feature.
-
-        if (buffer[i] == '\n')
-        {
-            return i + 1;
-        }
+        buffer[i] = key_to_char(io_keyboard_wait_key());
     }
 
     return buffer_size;

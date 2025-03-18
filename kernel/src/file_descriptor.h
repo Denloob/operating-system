@@ -11,4 +11,5 @@ typedef struct {
         file_descriptor_perm_WRITE = 0x2,
         file_descriptor_perm_RW    = file_descriptor_perm_READ | file_descriptor_perm_WRITE,
     } perms;
+    bool is_buffered;
 } FileDescriptor;

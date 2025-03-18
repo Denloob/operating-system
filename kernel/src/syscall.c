@@ -199,6 +199,8 @@ static void syscall_open(Regs *regs)
             return;
     }
 
+    fd_desc->is_buffered = (flags & SYSCALL_OPEN_FLAGS_NONBLOCK) == 0;
+
     fd_desc->file = file;
     fd_desc->num = fd_num;
 
@@ -421,7 +423,7 @@ static void syscall_brk(Regs *regs)
 }
 
 // needed_perm is the permission the file descriptor shall have to perform the read/write. For example file_descriptor_perm_READ for the fread function.
-static void syscall_read_write(Regs *regs, typeof(fread) fread_fwrite_func, int needed_perm)
+static void syscall_read_write(Regs *regs, typeof(process_fread) fread_fwrite_func, int needed_perm)
 {
     regs->rax = -1; // Return: Failed
 
@@ -445,7 +447,7 @@ static void syscall_read_write(Regs *regs, typeof(fread) fread_fwrite_func, int 
     FILE *file = &fd_desc->file;
 
     asm volatile("stac" ::: "memory");
-    regs->rax = fread_fwrite_func(out_buffer, 1, buffer_size, file);
+    regs->rax = fread_fwrite_func(out_buffer, 1, buffer_size, file, fd_desc->is_buffered);
     asm volatile("clac" ::: "memory");
 }
 

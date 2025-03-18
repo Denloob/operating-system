@@ -43,6 +43,7 @@ typedef enum {
     SYSCALL_OPEN_FLAGS_CREATE =  0x40,
     SYSCALL_OPEN_FLAGS_TRUNC  = 0x200,
     SYSCALL_OPEN_FLAGS_APPEND = 0x400,
+    SYSCALL_OPEN_FLAGS_NONBLOCK    = 0x800
 } syscall_OpenFlags;
 
 /**

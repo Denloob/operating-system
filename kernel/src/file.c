@@ -25,9 +25,9 @@ size_t fread(void *ptr, size_t size, size_t count, FILE *stream)
     return internal_fread(ptr, size, count, stream, false);
 }
 
-size_t process_fread(void *ptr, size_t size, size_t count, FILE *stream)
+size_t process_fread(void *ptr, size_t size, size_t count, FILE *stream, bool is_buffered)
 {
-    return internal_fread(ptr, size, count, stream, true);
+    return internal_fread(ptr, size, count, stream, is_buffered);
 }
 
 static size_t internal_fwrite(void *ptr, size_t size, size_t count, FILE *stream, bool block)
@@ -53,9 +53,9 @@ size_t fwrite(void *ptr, size_t size, size_t count, FILE *stream)
     return internal_fwrite(ptr, size, count, stream, false);
 }
 
-size_t process_fwrite(void *ptr, size_t size, size_t count, FILE *stream)
+size_t process_fwrite(void *ptr, size_t size, size_t count, FILE *stream, bool is_buffered)
 {
-    return internal_fwrite(ptr, size, count, stream, true);
+    return internal_fwrite(ptr, size, count, stream, is_buffered);
 }
 
 int fseek(FILE *stream, int64_t offset, file_Whence whence)
