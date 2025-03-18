@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <fcntl.h>
 #include <stdint.h>
 #include <math.h>
 #include <gx/draw.h>
@@ -201,6 +202,41 @@ void draw_game(const Game *game)
 }
 
 /************************
+ *        Input
+ ************************/
+
+#define KEY_NONE        -1
+#define KEY_ARROW_LEFT  0x1b
+#define KEY_ARROW_RIGHT 0x1a
+#define KEY_ARROW_UP    0x18
+#define KEY_ARROW_DOWN  0x19
+#define KEY_SPACE       ' '
+#define KEY_UNKNOWN     0xa8
+
+int g_tty_fd;
+
+void input_init()
+{
+    g_tty_fd = open("/dev/tty", O_NONBLOCK | O_RDONLY);
+    if (g_tty_fd < 0)
+    {
+        die("open: /dev/tty");
+    }
+}
+
+int input_check_key()
+{
+    uint8_t ch = 0;
+    int bytes_read = read(g_tty_fd, &ch, 1);
+    if (bytes_read == 0)
+    {
+        return KEY_NONE;
+    }
+
+    return ch;
+}
+
+/************************
  *      Game Logic
  ************************/
 
@@ -359,6 +395,8 @@ int main(int argc, char **argv)
     if (g_canvas == NULL) die("gx_canvas_create: out of memory");
 
     gx_palette_set(0, g_color_palette, sizeof(g_color_palette) / sizeof(*g_color_palette));
+
+    input_init();
 
     Game game;
     init_game(&game);
