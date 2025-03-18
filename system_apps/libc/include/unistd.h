@@ -35,3 +35,5 @@ int chdir(const char *path);
 ssize_t lseek(int fd, ssize_t offset, int whence);
 
 int msleep(uint64_t delay_ms);
+
+float pit_time();

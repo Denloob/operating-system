@@ -545,6 +545,10 @@ static void syscall_msleep(Regs *regs)
     scheduler_move_current_process_to_io_queue_and_context_switch(pcb_refresh_msleep);
 }
 
+static void syscall_get_time_ms(Regs *regs)
+{
+    regs->rax = pit_ms_counter();
+}
 static void __attribute__((used, sysv_abi)) syscall_handler(Regs *user_regs)
 {
     sti();
@@ -617,6 +621,9 @@ static void __attribute__((used, sysv_abi)) syscall_handler(Regs *user_regs)
             break;
         case SYSCALL_MSLEEP:
             syscall_msleep(user_regs);
+            break;
+        case SYSCALL_GET_PIT_TIME:
+            syscall_get_time_ms(user_regs);
             break;
     }
 

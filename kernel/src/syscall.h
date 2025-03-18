@@ -25,6 +25,8 @@ typedef enum {
 
     SYSCALL_MSLEEP  = 1002,
 
+    SYSCALL_GET_PIT_TIME = 1003,
+
 } syscall_Number;
 
 typedef enum {

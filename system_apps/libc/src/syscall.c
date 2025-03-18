@@ -134,3 +134,8 @@ int msleep(uint64_t delay_ms)
 {
     return syscall(SYS_msleep, delay_ms);
 }
+
+float pit_time()
+{
+    return syscall(SYS_pitTime);
+}
