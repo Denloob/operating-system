@@ -149,6 +149,13 @@ static const uint32_t piece_colors[] = {
     [PIECE_Z] = COLOR_Z_BASE
 };
 
+
+typedef struct {
+    // Each value is either 0 (empty) or a `COLOR_*_BASE` of a block
+    uint8_t taken_blocks[BOARD_BLOCKS_HEIGHT][BOARD_BLOCKS_LENGTH];
+    Piece current_piece;
+} Game;
+
 void draw_piece(gx_Canvas *canvas, Piece piece) {
     PieceType type = piece.type;
     Rotation rotation = piece.rotation;
@@ -164,6 +171,23 @@ void draw_piece(gx_Canvas *canvas, Piece piece) {
     }
 }
 
+void draw_taken_blocks(gx_Canvas *canvas, uint8_t taken_blocks[static BOARD_BLOCKS_HEIGHT][BOARD_BLOCKS_LENGTH])
+{
+    for (int x = 0; x < BOARD_BLOCKS_LENGTH; x++)
+    {
+        for (int y = 0; y < BOARD_BLOCKS_HEIGHT; y++)
+        {
+            int color = taken_blocks[y][x];
+            if (color == 0)
+            {
+                continue;
+            }
+
+            shape_block_on_board(canvas, (gx_Vec2){x, y}, color);
+        }
+    }
+}
+
 int main(int argc, char **argv)
 {
     int ret = gx_init();
@@ -174,14 +198,28 @@ int main(int argc, char **argv)
 
     gx_palette_set(0, g_color_palette, sizeof(g_color_palette) / sizeof(*g_color_palette));
 
+    Game game = {
+        .current_piece = {
+            .type = PIECE_Z,
+        },
+        .taken_blocks = {
+            [BOARD_BLOCKS_HEIGHT - 1][0] = COLOR_I_BASE,
+            [BOARD_BLOCKS_HEIGHT - 1][1] = COLOR_I_BASE,
+            [BOARD_BLOCKS_HEIGHT - 1][2] = COLOR_I_BASE,
+            [BOARD_BLOCKS_HEIGHT - 1][3] = COLOR_I_BASE,
+            [BOARD_BLOCKS_HEIGHT - 1][4] = COLOR_O_BASE,
+            [BOARD_BLOCKS_HEIGHT - 1][5] = COLOR_O_BASE,
+            [BOARD_BLOCKS_HEIGHT - 2][4] = COLOR_O_BASE,
+            [BOARD_BLOCKS_HEIGHT - 2][5] = COLOR_O_BASE,
+        }
+    };
     while (1)
     {
         memset(g_canvas->buf, COLOR_BLACK, g_canvas->width * g_canvas->height);
         tile_background(g_canvas);
 
-        draw_piece(g_canvas, (Piece){ .pos = {0, 0}, .type = PIECE_L });
-        draw_piece(g_canvas, (Piece){ .pos = {5, 7}, .type = PIECE_L, .rotation = ROTATION_90 });
-        draw_piece(g_canvas, (Piece){ .pos = {3, 1}, .type = PIECE_O });
+        draw_piece(g_canvas, game.current_piece);
+        draw_taken_blocks(g_canvas, game.taken_blocks);
 
         gx_canvas_draw(g_canvas);
         msleep(SPEED);
