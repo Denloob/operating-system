@@ -227,6 +227,20 @@ char key_to_char(int keycode)
             return '/';
         case 0x39:
             return ' ';
+#ifdef __x86_64__ // If in the kernel
+#define IO_CHAR_ARROW_LEFT 0x1b
+#define IO_CHAR_ARROW_RIGHT 0x1a
+#define IO_CHAR_ARROW_UP 0x18
+#define IO_CHAR_ARROW_DOWN 0x19
+        case 0x4b:
+            return IO_CHAR_ARROW_LEFT;
+        case 0x4d:
+            return IO_CHAR_ARROW_RIGHT;
+        case 0x48:
+            return IO_CHAR_ARROW_UP;
+        case 0x50:
+            return IO_CHAR_ARROW_DOWN;
+#endif
     }
 }
 
