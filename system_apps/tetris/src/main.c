@@ -40,10 +40,8 @@ gx_Canvas *g_canvas;
 
 #define BOARD_BEGIN (BLOCK_SIZE * (BACKGROUND_BLOCKS_PER_SIDE))
 
-// @param color_base - The base color of the block, `color_base + 1` is the highlight and `+2` is the shadow.
-void shape_block(gx_Canvas *canvas, gx_Vec2 pos, gx_Color color_base)
+void shape_block_outline(gx_Canvas *canvas, gx_Vec2 pos, gx_Color color_base)
 {
-    gx_draw_fill_rect_wh(canvas, pos, BLOCK_SIZE, BLOCK_SIZE, color_base);
     gx_draw_rect_wh(canvas, pos, BLOCK_SIZE, BLOCK_SIZE, color_base + 1);
 
     const gx_Vec2 bottom_of_block = gx_vec2_add(pos, (gx_Vec2){ 0, BLOCK_SIZE - 1});
@@ -51,9 +49,25 @@ void shape_block(gx_Canvas *canvas, gx_Vec2 pos, gx_Color color_base)
     gx_draw_line(canvas, gx_vec2_add(pos, (gx_Vec2){ BLOCK_SIZE - 1, 0}), gx_vec2_add(pos, (gx_Vec2){BLOCK_SIZE - 1, BLOCK_SIZE - 1}), color_base + 2);
 }
 
+// @param color_base - The base color of the block, `color_base + 1` is the highlight and `+2` is the shadow.
+void shape_block(gx_Canvas *canvas, gx_Vec2 pos, gx_Color color_base)
+{
+    gx_draw_fill_rect_wh(canvas, pos, BLOCK_SIZE, BLOCK_SIZE, color_base);
+    shape_block_outline(canvas, pos, color_base);
+}
+
+void shape_block_on_board_with(gx_Canvas *canvas, gx_Vec2 grid_pos, gx_Color color_base, typeof(shape_block) func)
+{
+    func(canvas, (gx_Vec2){BOARD_BEGIN + (grid_pos.x * BLOCK_SIZE), grid_pos.y * BLOCK_SIZE}, color_base);
+}
 void shape_block_on_board(gx_Canvas *canvas, gx_Vec2 grid_pos, gx_Color color_base)
 {
-    shape_block(canvas, (gx_Vec2){BOARD_BEGIN + (grid_pos.x * BLOCK_SIZE), grid_pos.y * BLOCK_SIZE}, color_base);
+    shape_block_on_board_with(canvas, grid_pos, color_base, shape_block);
+}
+
+void shape_block_outline_on_board(gx_Canvas *canvas, gx_Vec2 grid_pos, gx_Color color_base)
+{
+    shape_block_on_board_with(canvas, grid_pos, color_base, shape_block_outline);
 }
 
 void tile_background_at(gx_Canvas *canvas, gx_Vec2 start_pos, int horizontal_count)
@@ -156,7 +170,8 @@ static const uint32_t piece_colors[] = {
     [PIECE_Z] = COLOR_Z_BASE
 };
 
-void draw_piece(gx_Canvas *canvas, Piece piece) {
+void draw_piece_with(gx_Canvas *canvas, Piece piece, typeof(shape_block_on_board) func)
+{
     PieceType type = piece.type;
     Rotation rotation = piece.rotation;
     gx_Vec2 pos = piece.pos;
@@ -167,8 +182,18 @@ void draw_piece(gx_Canvas *canvas, Piece piece) {
     for (int i = 0; i < block_count; i++) {
         gx_Vec2 offset = piece_offsets[type][rotation][i];
         gx_Vec2 block_pos = gx_vec2_add(pos, offset);
-        shape_block_on_board(canvas, block_pos, piece_colors[type]);
+        func(canvas, block_pos, piece_colors[type]);
     }
+}
+
+void draw_piece(gx_Canvas *canvas, Piece piece)
+{
+    draw_piece_with(canvas, piece, shape_block_on_board);
+}
+
+void draw_piece_outline(gx_Canvas *canvas, Piece piece)
+{
+    draw_piece_with(canvas, piece, shape_block_outline_on_board);
 }
 
 #define NEXT_PIECE_SQUARE_OFFSET_X (BOARD_BLOCKS_LENGTH + 2)
@@ -207,11 +232,23 @@ void draw_taken_blocks(gx_Canvas *canvas, const uint8_t taken_blocks[static BOAR
     }
 }
 
+void piece_move_max_down(Piece *piece, const uint8_t taken_blocks[static BOARD_BLOCKS_HEIGHT][BOARD_BLOCKS_LENGTH]);
+
+void draw_where_piece_would_fall(gx_Canvas *canvas, Piece piece, const uint8_t taken_blocks[static BOARD_BLOCKS_HEIGHT][BOARD_BLOCKS_LENGTH])
+{
+    Piece ghost = piece;
+
+    piece_move_max_down(&ghost, taken_blocks);
+
+    draw_piece_outline(canvas, ghost);
+}
+
 void draw_game(const Game *game)
 {
     memset(g_canvas->buf, COLOR_BLACK, g_canvas->width * g_canvas->height);
     tile_background(g_canvas);
     draw_piece(g_canvas, game->current_piece);
+    draw_where_piece_would_fall(g_canvas, game->current_piece, game->taken_blocks);
     draw_next_piece(g_canvas, game->next_piece_type);
     draw_taken_blocks(g_canvas, game->taken_blocks);
 
@@ -267,7 +304,7 @@ void move_piece(Piece *piece , int dx , int dy) //not a derative
     piece->pos.y += dy;
 }
 //return true if there will be a collision and false if not
-bool check_collision(Piece piece, int dx, int dy, uint8_t taken_blocks[static BOARD_BLOCKS_HEIGHT][BOARD_BLOCKS_LENGTH])
+bool check_collision(Piece piece, int dx, int dy, const uint8_t taken_blocks[static BOARD_BLOCKS_HEIGHT][BOARD_BLOCKS_LENGTH])
 {
     PieceType type = piece.type;
     Rotation rotation = piece.rotation;
@@ -296,6 +333,15 @@ bool check_collision(Piece piece, int dx, int dy, uint8_t taken_blocks[static BO
     }
 
     return false;
+}
+
+// Moves the given piece as much down as possible
+void piece_move_max_down(Piece *piece, const uint8_t taken_blocks[static BOARD_BLOCKS_HEIGHT][BOARD_BLOCKS_LENGTH])
+{
+    while (!check_collision(*piece, 0, 1, taken_blocks))
+    {
+        move_piece(piece, 0, 1);
+    }
 }
 
 void init_game(Game *game)
