@@ -291,20 +291,6 @@ void init_game(Game *game)
             .rotation = ROTATION_0,
             .pos = {3, 0},
         },
-        .taken_blocks = {
-            [BOARD_BLOCKS_HEIGHT - 1][0] = COLOR_I_BASE,
-            [BOARD_BLOCKS_HEIGHT - 1][1] = COLOR_I_BASE,
-            [BOARD_BLOCKS_HEIGHT - 1][2] = COLOR_I_BASE,
-            [BOARD_BLOCKS_HEIGHT - 1][3] = COLOR_I_BASE,
-            //[BOARD_BLOCKS_HEIGHT - 1][4] = COLOR_O_BASE,
-            [BOARD_BLOCKS_HEIGHT - 1][5] = COLOR_O_BASE,
-            [BOARD_BLOCKS_HEIGHT - 1][6] = COLOR_O_BASE,
-            [BOARD_BLOCKS_HEIGHT - 1][7] = COLOR_O_BASE,
-            [BOARD_BLOCKS_HEIGHT - 1][8] = COLOR_O_BASE,
-            [BOARD_BLOCKS_HEIGHT - 1][9] = COLOR_O_BASE,
-            //[BOARD_BLOCKS_HEIGHT - 2][4] = COLOR_O_BASE,
-            //[BOARD_BLOCKS_HEIGHT - 2][5] = COLOR_O_BASE,
-        }
     };
 }
 
