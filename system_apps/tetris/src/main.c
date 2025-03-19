@@ -20,7 +20,7 @@ void die(const char *message)
 {
     gx_deinit();
 
-    printf("tetris: %s \nyour score was: %d\n", message , g_score);
+    printf("tetris: %s\n", message);
     exit(1);
 }
 
@@ -420,6 +420,21 @@ void lock_piece_into_board(Game *game)
     }
 }
 
+__attribute__ ((noreturn))
+void game_over()
+{
+    gx_deinit();
+
+    puts("");
+    puts(" ------------------------------------------------------------------------------");
+    puts("                              T E T R I - M D S");
+    puts("");
+    printf("              G A M E - O V E R                      Score: %d\n", g_score);
+    puts(" ------------------------------------------------------------------------------");
+    puts("");
+    exit(0);
+}
+
 void spawn_new_piece(Game *game)
 {
     Piece new_piece = {
@@ -430,7 +445,7 @@ void spawn_new_piece(Game *game)
 
     if (check_collision(new_piece, 0, 0, game->taken_blocks))
     {
-        die("Game Over!");
+        game_over();
     }
 
     game->current_piece = new_piece;
