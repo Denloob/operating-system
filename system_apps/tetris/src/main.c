@@ -311,6 +311,7 @@ void draw_game(const Game *game)
 #define KEY_ARROW_UP    0x18
 #define KEY_ARROW_DOWN  0x19
 #define KEY_SPACE       ' '
+#define KEY_Q           'q'
 #define KEY_UNKNOWN     0xa8
 
 int g_tty_fd;
@@ -496,6 +497,10 @@ void handle_input(Game *game)
         case KEY_SPACE:
             piece_move_max_down(&game->current_piece, game->taken_blocks);
             break;
+
+        case KEY_Q:
+            game_over();
+            assert(false && "Unreachable");
     }
 }
 
