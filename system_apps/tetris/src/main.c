@@ -171,10 +171,23 @@ void draw_piece(gx_Canvas *canvas, Piece piece) {
     }
 }
 
+#define NEXT_PIECE_SQUARE_OFFSET_X (BOARD_BLOCKS_LENGTH + 2)
+#define NEXT_PIECE_SQUARE_OFFSET_Y (2)
+
+void draw_next_piece(gx_Canvas *canvas, PieceType piece_type)
+{
+    Piece piece = {
+        .type = piece_type,
+        .pos = {.x = NEXT_PIECE_SQUARE_OFFSET_X + 2, .y = NEXT_PIECE_SQUARE_OFFSET_Y + 2}
+    };
+    draw_piece(canvas, piece);
+}
+
 typedef struct {
     // Each value is either 0 (empty) or a `COLOR_*_BASE` of a block
     uint8_t taken_blocks[BOARD_BLOCKS_HEIGHT][BOARD_BLOCKS_LENGTH];
     Piece current_piece;
+    PieceType next_piece_type;
 } Game;
 
 void draw_taken_blocks(gx_Canvas *canvas, const uint8_t taken_blocks[static BOARD_BLOCKS_HEIGHT][BOARD_BLOCKS_LENGTH])
@@ -199,7 +212,9 @@ void draw_game(const Game *game)
     memset(g_canvas->buf, COLOR_BLACK, g_canvas->width * g_canvas->height);
     tile_background(g_canvas);
     draw_piece(g_canvas, game->current_piece);
+    draw_next_piece(g_canvas, game->next_piece_type);
     draw_taken_blocks(g_canvas, game->taken_blocks);
+
     gx_canvas_draw(g_canvas);
 }
 
@@ -291,6 +306,7 @@ void init_game(Game *game)
             .rotation = ROTATION_0,
             .pos = {3, 0},
         },
+        .next_piece_type = rand() % PIECE_COUNT,
     };
 }
 
@@ -315,7 +331,7 @@ void lock_piece_into_board(Game *game)
 void spawn_new_piece(Game *game)
 {
     Piece new_piece = {
-        .type = rand() % PIECE_COUNT,
+        .type = game->next_piece_type,
         .rotation = ROTATION_0,
         .pos = {3, 0},
     };
@@ -326,6 +342,11 @@ void spawn_new_piece(Game *game)
     }
 
     game->current_piece = new_piece;
+}
+
+void update_next_piece(Game *game)
+{
+    game->next_piece_type = rand() % PIECE_COUNT;
 }
 
 void handle_input(Game *game)
@@ -426,6 +447,7 @@ void update_game(Game *game)
         lock_piece_into_board(game);
         clear_full_lines(game);
         spawn_new_piece(game);
+        update_next_piece(game);
     }
 }
 
