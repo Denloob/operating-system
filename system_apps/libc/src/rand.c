@@ -4,10 +4,13 @@ static unsigned int g_rand_state = 1;
 
 int rand_r(unsigned int *seed_ptr)
 {
-    #define MULTIPLIER  1664525U
-    #define INCREMENT   1013904223U
+    unsigned int x = *seed_ptr;
 
-    *seed_ptr = MULTIPLIER * (*seed_ptr) + INCREMENT;
+    x ^= (x << 13);
+    x ^= (x >> 17);
+    x ^= (x << 5);
+
+    *seed_ptr = x;
 
     return *seed_ptr & ~(1U << 31); // Unset the sign bit before casting to `signed int`
 }
