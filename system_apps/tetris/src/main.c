@@ -70,11 +70,11 @@ void shape_block_outline_on_board(gx_Canvas *canvas, gx_Vec2 grid_pos, gx_Color 
     shape_block_on_board_with(canvas, grid_pos, color_base, shape_block_outline);
 }
 
-void tile_background_at(gx_Canvas *canvas, gx_Vec2 start_pos, int horizontal_count)
+void tile_background_at(gx_Canvas *canvas, gx_Vec2 start_pos, int horizontal_count, int vertical_count)
 {
     for (int x = start_pos.x; x < start_pos.x + horizontal_count; x++)
     {
-        for (int y = start_pos.y; y < BOARD_BLOCKS_HEIGHT + 1; y++)
+        for (int y = start_pos.y; y < start_pos.y + vertical_count; y++)
         {
             shape_block_on_board(canvas, (gx_Vec2){x, y}, COLOR_BG_BLOCK_BASE);
         }
@@ -84,9 +84,22 @@ void tile_background_at(gx_Canvas *canvas, gx_Vec2 start_pos, int horizontal_cou
 void tile_background(gx_Canvas *canvas)
 {
     // We draw outside the bounds of the game board, which is then normalized to be on the screen around it
-    tile_background_at(g_canvas, (gx_Vec2){ -1, 0 }, 1);
-    tile_background_at(g_canvas, (gx_Vec2){ BOARD_BLOCKS_LENGTH, 0 }, 1);
-    tile_background_at(g_canvas, (gx_Vec2){ 0, BOARD_BLOCKS_HEIGHT}, BOARD_BLOCKS_LENGTH);
+    tile_background_at(g_canvas, (gx_Vec2){ -1, 0 }, 1, BOARD_BLOCKS_HEIGHT + 1);
+    tile_background_at(g_canvas, (gx_Vec2){ BOARD_BLOCKS_LENGTH, 0 }, 1, BOARD_BLOCKS_HEIGHT + 1);
+    tile_background_at(g_canvas, (gx_Vec2){ 0, BOARD_BLOCKS_HEIGHT}, BOARD_BLOCKS_LENGTH, 1);
+}
+
+#define NEXT_PIECE_SQUARE_OFFSET_X (BOARD_BLOCKS_LENGTH + 4)
+#define NEXT_PIECE_SQUARE_OFFSET_Y (2)
+#define NEXT_PIECE_SQUARE_HEIGHT (5 + 2)
+#define NEXT_PIECE_SQUARE_WIDTH NEXT_PIECE_SQUARE_HEIGHT
+
+void tile_next_piece_square(gx_Canvas *canvas)
+{
+    tile_background_at(canvas, (gx_Vec2){NEXT_PIECE_SQUARE_OFFSET_X, NEXT_PIECE_SQUARE_OFFSET_Y}, NEXT_PIECE_SQUARE_WIDTH, 1);
+    tile_background_at(canvas, (gx_Vec2){NEXT_PIECE_SQUARE_OFFSET_X, NEXT_PIECE_SQUARE_OFFSET_Y}, 1, NEXT_PIECE_SQUARE_HEIGHT);
+    tile_background_at(canvas, (gx_Vec2){NEXT_PIECE_SQUARE_OFFSET_X, NEXT_PIECE_SQUARE_OFFSET_Y + NEXT_PIECE_SQUARE_HEIGHT - 1}, NEXT_PIECE_SQUARE_WIDTH, 1);
+    tile_background_at(canvas, (gx_Vec2){NEXT_PIECE_SQUARE_OFFSET_X + NEXT_PIECE_SQUARE_WIDTH - 1, NEXT_PIECE_SQUARE_OFFSET_Y}, 1, NEXT_PIECE_SQUARE_HEIGHT);
 }
 
 typedef enum {
@@ -196,9 +209,6 @@ void draw_piece_outline(gx_Canvas *canvas, Piece piece)
     draw_piece_with(canvas, piece, shape_block_outline_on_board);
 }
 
-#define NEXT_PIECE_SQUARE_OFFSET_X (BOARD_BLOCKS_LENGTH + 2)
-#define NEXT_PIECE_SQUARE_OFFSET_Y (2)
-
 void draw_next_piece(gx_Canvas *canvas, PieceType piece_type)
 {
     Piece piece = {
@@ -249,6 +259,7 @@ void draw_game(const Game *game)
     tile_background(g_canvas);
     draw_piece(g_canvas, game->current_piece);
     draw_where_piece_would_fall(g_canvas, game->current_piece, game->taken_blocks);
+    tile_next_piece_square(g_canvas);
     draw_next_piece(g_canvas, game->next_piece_type);
     draw_taken_blocks(g_canvas, game->taken_blocks);
 
