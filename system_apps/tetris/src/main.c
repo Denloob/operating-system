@@ -446,6 +446,7 @@ void update_game(Game *game)
 
 int main(int argc, char **argv)
 {
+    srand(pit_time());
     int ret = gx_init();
     if (ret < 0) die("gx_init: couldn't initialize gx");
 
