@@ -209,13 +209,48 @@ void draw_piece_outline(gx_Canvas *canvas, Piece piece)
     draw_piece_with(canvas, piece, shape_block_outline_on_board);
 }
 
-void draw_next_piece(gx_Canvas *canvas, PieceType piece_type)
-{
-    Piece piece = {
-        .type = piece_type,
-        .pos = {.x = NEXT_PIECE_SQUARE_OFFSET_X + 2, .y = NEXT_PIECE_SQUARE_OFFSET_Y + 2}
+gx_Vec2f get_piece_center(PieceType type) {
+    const gx_Vec2 *offsets = piece_offsets[type][ROTATION_0];
+    int min_x = 0;
+    int max_x = 0;
+    int min_y = 0;
+    int max_y = 0;
+
+    for (int i = 0; i < 4; i++) {
+        if (offsets[i].x < min_x) min_x = offsets[i].x;
+        if (offsets[i].x > max_x) max_x = offsets[i].x;
+        if (offsets[i].y < min_y) min_y = offsets[i].y;
+        if (offsets[i].y > max_y) max_y = offsets[i].y;
+    }
+
+    gx_Vec2f center = {
+        .x = (double)(min_x + max_x) / 2.0,
+        .y = (double)(min_y + max_y) / 2.0
     };
-    draw_piece(canvas, piece);
+
+    return center;
+}
+
+void draw_next_piece(gx_Canvas *canvas, PieceType piece_type) {
+    int frame_center_x = BOARD_BEGIN + ((NEXT_PIECE_SQUARE_OFFSET_X + 3) * BLOCK_SIZE);
+    int frame_center_y = (NEXT_PIECE_SQUARE_OFFSET_Y + 3) * BLOCK_SIZE;
+
+    gx_Vec2f piece_center = get_piece_center(piece_type);
+
+    gx_Vec2f top_left_pos = {
+        .x = frame_center_x - (piece_center.x * BLOCK_SIZE),
+        .y = frame_center_y - (piece_center.y * BLOCK_SIZE),
+    };
+
+    // Draw the piece
+    const gx_Vec2 *offsets = piece_offsets[piece_type][ROTATION_0];
+    for (int i = 0; i < 4; i++) {
+        gx_Vec2f block_pos = {
+            .x = top_left_pos.x + (offsets[i].x * BLOCK_SIZE),
+            .y = top_left_pos.y + (offsets[i].y * BLOCK_SIZE)
+        };
+        shape_block(canvas, (gx_Vec2){(int)block_pos.x, (int)block_pos.y}, piece_colors[piece_type]);
+    }
 }
 
 typedef struct {
