@@ -6,6 +6,7 @@
 #include "char_device.h"
 #include "math.h"
 #include "vga.h"
+#include "io.h"
 #include <stddef.h>
 #include "memory.h"
 
@@ -69,7 +70,9 @@ static size_t handle_write(uint8_t *buffer, uint64_t buffer_size, uint64_t file_
             switch (*buffer)
             {
                 case vga_char_device_CONFIG_TEXT:
+                    vga_restore_default_color_palette();
                     vga_mode_text();
+                    io_clear_vga();
                     break;
                 case vga_char_device_CONFIG_GRAPHICS:
                     vga_mode_graphics();
