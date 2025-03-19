@@ -431,6 +431,10 @@ void handle_input(Game *game)
             if (!check_collision(game->current_piece, 0, 1, game->taken_blocks))
                 move_piece(&game->current_piece, 0, 1);
             break;
+
+        case KEY_SPACE:
+            piece_move_max_down(&game->current_piece, game->taken_blocks);
+            break;
     }
 }
 
