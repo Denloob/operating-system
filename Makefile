@@ -34,9 +34,10 @@ $(IMAGE_NAME).img: $(BOOTLOADER) $(KERNEL) sysapps initfat16 kernel.cfg
 	mcopy ./system_apps/reboot/reboot a:
 	mcopy ./system_apps/sh/bin/sh     a:
 	mcopy ./system_apps/ls/ls         a:
+	mcopy ./system_apps/ps/ps         a:
 	mcopy ./system_apps/screensaver/scr         a:
 	mcopy ./system_apps/tetris/bin/tetris      	a:
-	mcopy ./system_apps/ps/ps         a:
+	mcopy ./system_apps/pong/bin/pong           a:
 
 	mmd a:/dev
 
