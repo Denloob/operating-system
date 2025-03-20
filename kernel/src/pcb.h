@@ -16,6 +16,18 @@ typedef enum
     PCB_STATE_ZOMBIE,
 } pcb_State;
 
+typedef enum 
+{
+    WINDOW_TEXT,
+    WINDOW_GRAPHICS
+} WindowMode;
+
+typedef struct 
+{
+    WindowMode mode;
+    void *buffer; 
+    size_t width, height;
+} Window;
 
 typedef struct PCB PCB;
 
@@ -83,6 +95,7 @@ struct PCB
     FileDescriptorHashmap fd_map;
     uint64_t last_fd;
 
+    Window *window;
     // TODO: signal info
 };
 
