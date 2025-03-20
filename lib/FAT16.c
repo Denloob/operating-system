@@ -533,7 +533,7 @@ uint32_t fat16_cluster_to_sector(fat16_Ref *fat16, uint16_t cluster)
     return firstDataSector + (cluster - 2) * bpb->sectorsPerCluster;
 }
 
-
+#ifndef BASIC_FAT
 bool fat16_write_FAT_at(Drive *drive, fat16_BootSector *bpb, const uint8_t FAT[static SECTOR_SIZE], uint32_t sector_offset)
 {
     assert(sector_offset < bpb->FATSize);
@@ -1147,3 +1147,5 @@ bool fat16_does_file_exist(fat16_Ref *fat16, const char *path)
     fat16_DirEntry temp;
     return fat16_find_file_based_on_path(fat16, path, &temp, NULL);
 }
+
+#endif
