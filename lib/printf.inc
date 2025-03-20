@@ -125,6 +125,11 @@ void printf(const char *fmt, ...)
             case 's':
             {
                 char *str = va_arg(args, char *);
+                if(str==NULL)
+                {
+                    __printf_putstring("(null)");
+                    break;
+                }
                 __printf_putstring(str);
                 break;
             }
