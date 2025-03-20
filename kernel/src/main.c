@@ -1,5 +1,6 @@
 #include "IDT.h"
 #include "mouse.h"
+#include "mouse_char_device.h"
 #include "char_special_device.h"
 #include "mmu_config.h"
 #include "fs.h"
@@ -109,6 +110,7 @@ void __attribute__((section(".entry"), sysv_abi)) kernel_main(uint32_t param_mmu
 
     char_special_device_init();
     vga_char_device_init();
+    mouse_char_device_init();
 
     res rs = rtl8139_init();
     assert(IS_OK(rs) && "RTL8139 was not found");
