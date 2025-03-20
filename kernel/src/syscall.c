@@ -572,6 +572,34 @@ static void syscall_get_processes(Regs *regs)
 }
 
 
+
+static void syscall_create_window(Regs *regs)
+{
+    int mode = regs->rdi;  //(0 = text, 1 = graphics)
+
+    if (mode != WINDOW_TEXT && mode != WINDOW_GRAPHICS) 
+    {
+        regs->rax = -1; //MOde doesnt exists 
+        return;
+    }
+    PCB *process = scheduler_current_pcb();
+    if (process->window != NULL) //We do not support double windows 
+    {
+        regs->rax = -2; 
+        return;
+    }
+
+    int result = create_window_for_process(process, (WindowMode)mode);
+    if (result != 0) 
+    {
+        regs->rax = -3; 
+        return;
+    }
+
+    regs->rax = 0;
+}
+
+
 static void __attribute__((used, sysv_abi)) syscall_handler(Regs *user_regs)
 {
     sti();

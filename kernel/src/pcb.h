@@ -101,3 +101,5 @@ struct PCB
 
 void PCB_cleanup(PCB *pcb);
 PCB* PCB_init(uint64_t id, PCB *parent, uint64_t entry_point, mmu_PageMapEntry *kernel_pml);
+
+int create_window_for_process(PCB *process , WindowMode mode);
