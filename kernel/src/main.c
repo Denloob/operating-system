@@ -1,4 +1,5 @@
 #include "IDT.h"
+#include "mouse.h"
 #include "char_special_device.h"
 #include "mmu_config.h"
 #include "fs.h"
@@ -65,7 +66,7 @@ ide_device ide_devices[4];
 
 int ide_init();
 static void init_kernel_memory(uint64_t mmu_map_base_address, range_Range *memory_map, uint64_t memory_map_length);
-static void init_pic_keyboard_and_timer();
+static void init_pic_keyboard_mouse_and_timer();
 static void init_drive_devices();
 static void print_time();
 static void parse_boot_config_and_play_logo();
@@ -97,7 +98,7 @@ void __attribute__((section(".entry"), sysv_abi)) kernel_main(uint32_t param_mmu
     init_idt();
     syscall_initialize();
 
-    init_pic_keyboard_and_timer();
+    init_pic_keyboard_mouse_and_timer();
     init_drive_devices();
 
     print_time();
@@ -263,7 +264,7 @@ void init_kernel_memory(uint64_t mmu_map_base_address, range_Range *memory_map, 
     mmu_migrate_to_virt_mem(MMU_VIRT_ADDR);
 }
 
-static void init_pic_keyboard_and_timer()
+static void init_pic_keyboard_mouse_and_timer()
 {
     PIC_remap(PIC_IDT_OFFSET_1, PIC_IDT_OFFSET_2);
     pic_mask_all();
@@ -271,6 +272,10 @@ static void init_pic_keyboard_and_timer()
     pic_clear_mask(pic_IRQ_KEYBOARD);
     idt_register(pic_irq_number_to_idt(pic_IRQ_KEYBOARD), IDT_gate_type_INTERRUPT, io_isr_keyboard_event);
     io_input_keyboard_key = io_keyboard_wait_key;
+
+    pic_clear_mask(pic_IRQ_PS2_MOUSE);
+    idt_register(pic_irq_number_to_idt(pic_IRQ_PS2_MOUSE), IDT_gate_type_INTERRUPT, mouse_isr);
+    mouse_init();
 
     pic_clear_mask(pic_IRQ_TIMER);
     idt_register(pic_irq_number_to_idt(pic_IRQ_TIMER), IDT_gate_type_INTERRUPT, pit_isr_clock);
