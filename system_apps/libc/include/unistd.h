@@ -37,3 +37,14 @@ ssize_t lseek(int fd, ssize_t offset, int whence);
 int msleep(uint64_t delay_ms);
 
 float pit_time();
+
+#define PROCESS_NAME_MAX_LEN 32
+
+typedef struct {
+    uint64_t pid;
+    char cwd[50];
+    char name[PROCESS_NAME_MAX_LEN];
+    int state;
+} ProcessInfo;
+
+int get_processes(ProcessInfo *out, size_t max);

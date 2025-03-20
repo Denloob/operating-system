@@ -5,6 +5,16 @@
 
 #define SCHEDULER_NOT_A_PIC_INTERRUPT -1
 
+
+#define PROCESS_NAME_MAX_LEN 32
+
+typedef struct {
+    uint64_t pid;
+    char cwd[50];
+    char name[PROCESS_NAME_MAX_LEN];
+    int state;
+} ProcessInfo;
+
 /**
  * @brief - Performs a context switch into the process of the given PCB.
  *
@@ -87,3 +97,5 @@ void scheduler_move_current_process_to_io_queue_and_context_switch(pcb_IORefresh
  * @return PCB of that process if found, NULL otherwise.
  */
 PCB *scheduler_find_by_pid(uint64_t pid);
+
+int scheduler_get_all_processes(ProcessInfo *out, int max);

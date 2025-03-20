@@ -9,6 +9,7 @@
 #include "scheduler.h"
 #include "usermode.h"
 #include "shell.h"
+#include "string.h"
 
 static PCB *g_current_process; // Process queue head
 static PCB *g_process_queue_tail;
@@ -257,4 +258,36 @@ PCB *scheduler_find_by_pid(uint64_t pid)
     }
 
     return NULL;
+}
+
+int scheduler_get_all_processes(ProcessInfo *out, int max) 
+{
+    int count = 0;
+
+    // Only ready queue check without IO queue:
+    PCB *cur = g_current_process;
+    while (cur && count < max)
+    {
+        out[count].pid = cur->id;
+        strncpy(out[count].name, cur->cwd, PROCESS_NAME_MAX_LEN);
+        strncpy(out[count].cwd, cur->cwd, sizeof(out[count].cwd));
+        out[count].state = cur->state;
+        count++;
+
+        cur = cur->queue_next;
+    }
+
+    PCB *io = g_io_head;
+    while (io && count < max)
+    {
+        out[count].pid = io->id;
+        strncpy(out[count].name, io->cwd, PROCESS_NAME_MAX_LEN);
+        strncpy(out[count].cwd, io->cwd, sizeof(out[count].cwd));
+        out[count].state = io->state;
+        count++;
+
+        io = io->queue_next;
+    }
+
+    return count;
 }

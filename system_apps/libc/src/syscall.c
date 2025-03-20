@@ -139,3 +139,11 @@ float pit_time()
 {
     return syscall(SYS_pitTime);
 }
+
+
+
+int get_processes(ProcessInfo *out, size_t max)
+{
+    long ret = syscall(SYS_getprocesses, out, max);
+    return ret >= 0 ? ret : -1;
+}

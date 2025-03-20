@@ -16,6 +16,8 @@ typedef enum {
     SYSCALL_CHDIR   = 80,
 
     SYSCALL_MKDIR   = 83,
+    
+    SYSCALL_GET_PROCESSES = 90,
 
     SYSCALL_REBOOT  = 169,
 

@@ -549,6 +549,29 @@ static void syscall_get_time_ms(Regs *regs)
 {
     regs->rax = pit_ms_counter();
 }
+
+
+
+static void syscall_get_processes(Regs *regs)
+{
+    usermode_mem *user_buf = (usermode_mem *)regs->rdi;
+    int max = (int)regs->rsi;
+
+    ProcessInfo kernel_buf[10]; // safe upper bound
+    if (max > 10) max = 10;
+
+    int count = scheduler_get_all_processes(kernel_buf, max);
+
+    res result = usermode_copy_to_user(user_buf, kernel_buf, count * sizeof(ProcessInfo));
+    if (!IS_OK(result)) {
+        regs->rax = -1;
+        return;
+    }
+
+    regs->rax = count;
+}
+
+
 static void __attribute__((used, sysv_abi)) syscall_handler(Regs *user_regs)
 {
     sti();
@@ -624,6 +647,9 @@ static void __attribute__((used, sysv_abi)) syscall_handler(Regs *user_regs)
             break;
         case SYSCALL_GET_PIT_TIME:
             syscall_get_time_ms(user_regs);
+            break;
+        case SYSCALL_GET_PROCESSES:
+            syscall_get_processes(user_regs);
             break;
     }
 
