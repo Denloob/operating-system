@@ -446,7 +446,6 @@ static void syscall_read_write(Regs *regs, typeof(process_fread) fread_fwrite_fu
     {
         return;
     }
-
     FILE *file = &fd_desc->file;
 
     asm volatile("stac" ::: "memory");
@@ -602,7 +601,7 @@ static void syscall_create_window(Regs *regs)
     }
     add_to_windowed_process_list(process);
 
-
+    assert(!scheduler_foucsed_pcb()); 
     if(!scheduler_foucsed_pcb())
     {
         scheduler_set_foucsed_pcb(process);

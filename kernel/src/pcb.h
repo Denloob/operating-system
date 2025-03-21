@@ -95,6 +95,8 @@ struct PCB
     uint64_t last_fd;
 
     Window *window;
+    PCB *window_list_next;
+    PCB *window_list_prev;
     // TODO: signal info
 };
 

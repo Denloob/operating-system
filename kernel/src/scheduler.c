@@ -17,7 +17,7 @@ static PCB *g_process_queue_tail;
 
 static PCB *g_io_head; // Process IO linked list
 
-static PCB *g_focused_process;
+static PCB *g_focused_process = NULL;
 PCB *g_windowed_processes=NULL;
 
 static PCB *wait_until_one_IO_is_ready()
@@ -307,32 +307,35 @@ int scheduler_get_all_processes(ProcessInfo *out, int max)
 }
 
 
-void add_to_windowed_process_list(PCB *process) {
+
+void add_to_windowed_process_list(PCB *process)
+{
     if (!process) return;
 
     if (!g_windowed_processes)
     {
         g_windowed_processes = process;
-        process->queue_next = process;
-        process->queue_prev = process;
-        return;
+        process->window_list_next = process;
+        process->window_list_prev = process;
     }
+    else
+    {
+        PCB *head = g_windowed_processes;
+        PCB *tail = head->window_list_prev;
 
-    PCB *tail = g_windowed_processes->queue_prev;
-
-    tail->queue_next = process;
-    process->queue_prev = tail;
-
-    process->queue_next = g_windowed_processes;
-    g_windowed_processes->queue_prev = process;
+        tail->window_list_next = process;
+        process->window_list_prev = tail;
+        process->window_list_next = head;
+        head->window_list_prev = process;
+    }
 }
-
 
 void remove_from_windowed_process_list(PCB *process)
 {
     if (!process || !g_windowed_processes) return;
 
-    if (process->queue_next == process && process->queue_prev == process)
+    // If only one in the list
+    if (process->window_list_next == process && process->window_list_prev == process)
     {
         g_windowed_processes = NULL;
         if (g_focused_process == process)
@@ -342,20 +345,33 @@ void remove_from_windowed_process_list(PCB *process)
         return;
     }
 
-    process->queue_prev->queue_next = process->queue_next;
-    process->queue_next->queue_prev = process->queue_prev;
+    if (!process->window_list_next || !process->window_list_prev)
+    {
+        return;
+    }
+
+    process->window_list_prev->window_list_next = process->window_list_next;
+    process->window_list_next->window_list_prev = process->window_list_prev;
 
     if (g_windowed_processes == process)
     {
-        g_windowed_processes = process->queue_next;
+        g_windowed_processes = process->window_list_next;
     }
 
     if (g_focused_process == process)
     {
         g_focused_process = g_windowed_processes;
-        redraw_vga_from_process_window(g_focused_process);
+
+        if (g_focused_process && g_focused_process->window)
+        {
+            redraw_vga_from_process_window(g_focused_process);
+        }
     }
+
+    process->window_list_next = NULL;
+    process->window_list_prev = NULL;
 }
+
 
 int create_window_for_process(PCB *process , WindowMode mode)
 {
