@@ -16,6 +16,13 @@ typedef enum
     PCB_STATE_ZOMBIE,
 } pcb_State;
 
+typedef struct PCB PCB;
+
+typedef enum {
+    PCB_IO_REFRESH_DONE,
+    PCB_IO_REFRESH_CONTINUE,
+} pcb_IORefreshResult;
+
 typedef enum 
 {
     WINDOW_TEXT,
@@ -28,14 +35,6 @@ typedef struct
     void *buffer; 
     size_t width, height;
 } Window;
-
-typedef struct PCB PCB;
-
-typedef enum {
-    PCB_IO_REFRESH_DONE,
-    PCB_IO_REFRESH_CONTINUE,
-} pcb_IORefreshResult;
-
 /**
  * @brief - Refresh the IO operation of the PCB. If the operation was
  *            complete, return true.
@@ -102,4 +101,3 @@ struct PCB
 void PCB_cleanup(PCB *pcb);
 PCB* PCB_init(uint64_t id, PCB *parent, uint64_t entry_point, mmu_PageMapEntry *kernel_pml);
 
-int create_window_for_process(PCB *process , WindowMode mode);

@@ -95,7 +95,7 @@ debug: $(IMAGE_NAME).img $(DEBUG_SYM)
 		echo '$(GDB_COMMAND)';                                                 \
 		echo '```'; echo;                                                      \
 		echo -n "Then, press enter to start the OS...";                        \
-		read;                                                                  \
+		read tmp;                                                                  \
 	fi
 
 	$(EMU) -hda $< $(QEMU_LOG_OPTIONS) $(QEMU_MISC_OPTIONS) $(QEMU_DEBUG_OPTIONS)

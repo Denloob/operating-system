@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdint.h>
+#include "pcb.h"
 
 #define VGA_GRAPHICS_BUF1_PHYS 0xa0000
 #define VGA_GRAPHICS_BUF3_PHYS 0xb8000
@@ -21,6 +22,7 @@ typedef enum {
     VGA_MODE_TYPE_GRAPHICS,
     VGA_MODE_TYPE_TEXT,
 } vga_ModeType;
+
 
 vga_ModeType vga_current_mode();
 
@@ -66,3 +68,5 @@ void vga_restore_default_color_palette();
  * @see - vga_color_index
  */
 void vga_color_write_color(uint8_t red, uint8_t green, uint8_t blue);
+
+void redraw_vga_from_process_window(PCB *process_window_to_draw);

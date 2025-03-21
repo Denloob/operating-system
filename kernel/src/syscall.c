@@ -1,6 +1,7 @@
 #include "file_descriptor_hashmap.h"
 #include "file_descriptor.h"
 #include "FAT16.h"
+#include "pcb.h"
 #include "pit.h"
 #include "string.h"
 #include "io.h"
@@ -15,6 +16,7 @@
 #include "syscall.h"
 #include "brk.h"
 #include "assert.h"
+#include <stdbool.h>
 #include <stdint.h>
 #include "program.h"
 #include "memory.h"
@@ -25,6 +27,7 @@
 #include "time.h"
 #include "usermode.h"
 #include "execve.h"
+#include "vga.h"
 #include "shell.h"
 #include "waitpid.h"
 
@@ -575,14 +578,16 @@ static void syscall_get_processes(Regs *regs)
 
 static void syscall_create_window(Regs *regs)
 {
-    int mode = regs->rdi;  //(0 = text, 1 = graphics)
+    WindowMode mode = (WindowMode)regs->rdi;  //(0 = text, 1 = graphics)
 
     if (mode != WINDOW_TEXT && mode != WINDOW_GRAPHICS) 
     {
         regs->rax = -1; //MOde doesnt exists 
         return;
     }
+
     PCB *process = scheduler_current_pcb();
+
     if (process->window != NULL) //We do not support double windows 
     {
         regs->rax = -2; 
@@ -595,7 +600,15 @@ static void syscall_create_window(Regs *regs)
         regs->rax = -3; 
         return;
     }
+    add_to_windowed_process_list(process);
 
+
+    if(!scheduler_foucsed_pcb())
+    {
+        scheduler_set_foucsed_pcb(process);
+
+        redraw_vga_from_process_window(process);
+    }
     regs->rax = 0;
 }
 
@@ -678,6 +691,9 @@ static void __attribute__((used, sysv_abi)) syscall_handler(Regs *user_regs)
             break;
         case SYSCALL_GET_PROCESSES:
             syscall_get_processes(user_regs);
+            break;
+        case SYSCALL_CREATE_WINDOW:
+            syscall_create_window(user_regs);
             break;
     }
 

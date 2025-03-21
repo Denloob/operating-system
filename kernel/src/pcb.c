@@ -255,25 +255,4 @@ size_t pcb_ProcessChildrenArray_find(pcb_ProcessChildrenArray *arr, uint64_t pid
 }
 
 
-int create_window_for_process(PCB *process , WindowMode mode)
-{
-    if (process->window) return -1; //Will need to change this if we will want to support multiple windows at some point
 
-    Window *win = kmalloc(sizeof(Window));
-    if (!win) return -1;
-
-    win->mode = mode;
-    #define VGA_TEXT_WINDOW_SIZE 80*25*2
-    #define VGA_GRAPGHICS_WINDWOS_SIZE 320*200*3
-    if(mode == WINDOW_TEXT)
-    {
-        win->buffer = kmalloc(VGA_TEXT_WINDOW_SIZE);
-    }
-    if(mode == WINDOW_GRAPHICS)
-    {
-        win->buffer = kmalloc(VGA_GRAPGHICS_WINDWOS_SIZE);
-    }
-    process->window = win;
-
-    return 0;
-}

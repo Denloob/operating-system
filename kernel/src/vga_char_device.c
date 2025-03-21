@@ -5,8 +5,10 @@
 #include "fs.h"
 #include "char_device.h"
 #include "math.h"
+#include "pcb.h"
 #include "vga.h"
 #include "io.h"
+#include "scheduler.h"
 #include <stddef.h>
 #include "memory.h"
 
@@ -36,9 +38,20 @@ static size_t handle_write(uint8_t *buffer, uint64_t buffer_size, uint64_t file_
             }
 
             const uint64_t available = VGA_SCREEN_SIZE - file_offset;
-
             const uint64_t size = MIN(buffer_size, available);
-            memmove((void *)(VGA_GRAPHICS_ADDRESS + file_offset), buffer, size);
+
+            PCB *current_process = scheduler_current_pcb();
+            if(!current_process || !current_process->window || current_process->window->mode !=WINDOW_GRAPHICS)
+            {
+                return -1;
+            }
+            //in any case we copy the new bufer to the window buffer of the process 
+            memmove((uint8_t *)current_process->window->buffer + file_offset, buffer, size);
+            //But if this is the focused process we also copy the buffer to the real vga
+            if(current_process == scheduler_foucsed_pcb())
+            {
+                memmove((void *)(VGA_GRAPHICS_ADDRESS + file_offset), buffer, size);
+            }
             return size;
         }
         case vga_char_device_MINOR_COLOR_PALETTE:

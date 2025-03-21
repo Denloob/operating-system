@@ -10,11 +10,15 @@
 #include "usermode.h"
 #include "shell.h"
 #include "string.h"
+#include "vga.h"
 
 static PCB *g_current_process; // Process queue head
 static PCB *g_process_queue_tail;
 
 static PCB *g_io_head; // Process IO linked list
+
+static PCB *g_focused_process;
+PCB *g_windowed_processes=NULL;
 
 static PCB *wait_until_one_IO_is_ready()
 {
@@ -109,6 +113,17 @@ PCB *scheduler_io_refresh()
 PCB *scheduler_current_pcb()
 {
     return g_current_process;
+}
+
+PCB *scheduler_foucsed_pcb()
+{
+    return g_focused_process;
+}
+
+
+void scheduler_set_foucsed_pcb(PCB *process)
+{
+    g_focused_process = process;
 }
 
 void scheduler_context_switch_to(PCB *pcb, int pic_number)
@@ -264,7 +279,6 @@ int scheduler_get_all_processes(ProcessInfo *out, int max)
 {
     int count = 0;
 
-    // Only ready queue check without IO queue:
     PCB *cur = g_current_process;
     while (cur && count < max)
     {
@@ -291,3 +305,93 @@ int scheduler_get_all_processes(ProcessInfo *out, int max)
 
     return count;
 }
+
+
+void add_to_windowed_process_list(PCB *process) {
+    if (!process) return;
+
+    if (!g_windowed_processes)
+    {
+        g_windowed_processes = process;
+        process->queue_next = process;
+        process->queue_prev = process;
+        return;
+    }
+
+    PCB *tail = g_windowed_processes->queue_prev;
+
+    tail->queue_next = process;
+    process->queue_prev = tail;
+
+    process->queue_next = g_windowed_processes;
+    g_windowed_processes->queue_prev = process;
+}
+
+
+void remove_from_windowed_process_list(PCB *process) 
+{
+    if (!process || !g_windowed_processes) return;
+
+    if (process->queue_next == process && process->queue_prev == process)
+    {
+        g_windowed_processes = NULL;
+        if (g_focused_process == process) 
+        {
+            g_focused_process = NULL;
+        }
+        return;
+    }
+
+    process->queue_prev->queue_next = process->queue_next;
+    process->queue_next->queue_prev = process->queue_prev;
+
+    if (g_windowed_processes == process) 
+    {
+        g_windowed_processes = process->queue_next;
+    }
+
+    if (g_focused_process == process)
+    {
+        g_focused_process = g_windowed_processes;
+        redraw_vga_from_process_window(g_focused_process);
+    }
+}
+
+int create_window_for_process(PCB *process , WindowMode mode)
+{
+    if (process->window) return -1; //Will need to change this if we will want to support multiple windows at some point
+
+    Window *win = kmalloc(sizeof(Window));
+    if (!win) return -1;
+
+    win->mode = mode;
+    #define VGA_TEXT_WINDOW_WIDTH 80
+    #define VGA_TEXT_WINDOW_HEIGH 25
+    #define VGA_GRAPGHICS_WINDWOS_WIDTH 320
+    #define VGA_GRAPGHICS_WINDWOS_HEIGH 200
+    if(mode == WINDOW_TEXT)
+    {
+        win->width = VGA_TEXT_WINDOW_WIDTH;
+        win->height = VGA_TEXT_WINDOW_HEIGH;
+        win->buffer = kmalloc(VGA_TEXT_WINDOW_HEIGH*VGA_TEXT_WINDOW_WIDTH*2);
+    }
+    if(mode == WINDOW_GRAPHICS)
+    {
+        win->height = VGA_TEXT_WINDOW_HEIGH;
+        win->width = VGA_TEXT_WINDOW_WIDTH;
+        win->buffer = kmalloc(VGA_TEXT_WINDOW_HEIGH*VGA_TEXT_WINDOW_WIDTH);
+    }
+    process->window = win;
+    add_to_windowed_process_list(process);
+
+    return 0;
+}
+
+void switch_focused_process() 
+{
+    if (!g_focused_process || !g_windowed_processes) return;
+
+    g_focused_process = g_focused_process->queue_next;
+    redraw_vga_from_process_window(g_focused_process);
+}
+
