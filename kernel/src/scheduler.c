@@ -404,10 +404,18 @@ int create_window_for_process(PCB *process , WindowMode mode)
     return 0;
 }
 
+
 void switch_focused_process()
 {
     if (!g_focused_process || !g_windowed_processes) return;
 
-    g_focused_process = g_focused_process->queue_next;
-    redraw_vga_from_process_window(g_focused_process);
+    if(g_focused_process->window_list_next)
+    {
+        g_focused_process = g_focused_process->window_list_next;
+    }
+    if (g_focused_process && g_focused_process->window)
+    {
+        redraw_vga_from_process_window(g_focused_process);
+    }
 }
+
