@@ -585,17 +585,27 @@ int main(int argc, char **argv)
     init_game(&game);
     uint64_t last_drop_time = pit_time();
 
+    int starting_delay_time = DROP_CYCLE_MS;
+    #define MINIMUM_DELAY_TIME 120
+    #define TIME_DELAY_DEDUCTION 2
     while (1)
     {
         handle_input(&game);
 
         uint64_t now = pit_time();
-        if (now - last_drop_time >= DROP_CYCLE_MS)
+        if (now - last_drop_time >= starting_delay_time)
         {
             update_game(&game);//Drop cycle
             last_drop_time = now;
+
+            //Make the game harder as the cycles goes
+            if(starting_delay_time > MINIMUM_DELAY_TIME)
+            {
+                starting_delay_time = starting_delay_time - TIME_DELAY_DEDUCTION;
+            }
         }
 
         draw_game(&game);//redraw the board after the turn was played
+
     }
 }
