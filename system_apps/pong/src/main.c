@@ -77,6 +77,13 @@ gx_Canvas *g_canvas;
 
 #define FRAME_DELAY 20
 
+typedef enum {
+    ANIMATION_NONE,
+    ANIMATION_WORLD_BREAK,
+    ANIMATION_WORLD_EXPLODE,
+    ANIMATION_WORLD_RESTORE,
+} AnimationState;
+
 typedef struct {
     int player_pos;
     double player_velocity;
@@ -84,12 +91,18 @@ typedef struct {
 
     gx_Vec2f ball_pos;
     gx_Vec2f ball_velocity;
+
+    uint64_t last_animation_state_change;
+    AnimationState animation_state;
 } Game;
 
-void count_match_as_lost()
+void count_match_as_lost(Game *game)
 {
     int delta = pit_time() - g_game_begin_time;
     if (delta > g_longest_time) g_longest_time = delta;
+
+    game->last_animation_state_change = pit_time();
+    game->animation_state = ANIMATION_WORLD_BREAK;
 }
 
 void count_match_as_won()
@@ -208,12 +221,32 @@ void process_plank_collisions(Game *game)
 
 void game_tick(Game *game)
 {
+    if (game->animation_state != ANIMATION_NONE)
+    {
+        if (game->animation_state == ANIMATION_WORLD_BREAK && pit_time() - game->last_animation_state_change > 500)
+        {
+            game->animation_state = ANIMATION_WORLD_EXPLODE;
+            game->last_animation_state_change = pit_time();
+        }
+        else if (game->animation_state == ANIMATION_WORLD_EXPLODE && pit_time() - game->last_animation_state_change > 2000)
+        {
+            reset_match(game); // When ANIMATION_WORLD_RESTORE is running, the match is already reset
+            game->animation_state = ANIMATION_WORLD_RESTORE;
+            game->last_animation_state_change = pit_time();
+        }
+        else if (game->animation_state == ANIMATION_WORLD_RESTORE && pit_time() - game->last_animation_state_change > 1000)
+        {
+            game->animation_state = ANIMATION_NONE;
+            game->last_animation_state_change = pit_time();
+        }
+        return;
+    }
+
     const double x = game->ball_pos.x;
     bool player_lost = x < 0;
     if (player_lost)
     {
-        count_match_as_lost();
-        reset_match(game);
+        count_match_as_lost(game);
         return;
     }
 
@@ -261,11 +294,53 @@ void game_draw(Game *game)
 {
     memset(g_canvas->buf, COLOR_BLACK, g_canvas->height * g_canvas->width);
 
-    gx_draw_fill_circle(g_canvas, (gx_Vec2){game->ball_pos.x, game->ball_pos.y}, BALL_RADIUS, COLOR_WHITE);
-    gx_draw_rect_wh(g_canvas, (gx_Vec2){PLAYER_X_DELTA, game->player_pos}, PLANK_WIDTH, PLANK_HEIGHT, COLOR_WHITE);
-    gx_draw_rect_wh(g_canvas, (gx_Vec2){g_canvas->width - ENEMY_X_DELTA, game->enemy_pos}, PLANK_WIDTH, PLANK_HEIGHT, COLOR_WHITE);
+    int get_shake()
+    {
+        if (game->animation_state == ANIMATION_WORLD_BREAK)
+            return RANDOM_SHAKE;
+        return 0;
+    }
 
-    gx_draw_rect_wh(g_canvas, (gx_Vec2){0, 0}, g_canvas->width, g_canvas->height, COLOR_WHITE);
+    gx_Vec2 border_pos = {get_shake(), get_shake()};
+    gx_Vec2 border_size = {g_canvas->width + get_shake(), g_canvas->height + get_shake()};
+
+    if (game->animation_state == ANIMATION_WORLD_EXPLODE)
+    {
+        int cur_animation_duration = pit_time() - game->last_animation_state_change;
+        if (cur_animation_duration < 400)
+        {
+            // Shrink the border on y towards center
+            border_pos.y += cur_animation_duration / 4;
+            border_size.y -= (cur_animation_duration / 4) * 2;
+        }
+        else if (cur_animation_duration < 700)
+        {
+            // Keep it in the center
+            border_pos.y = g_canvas->height / 2;
+            border_size.y = 0;
+        }
+        else
+        {
+            // Flash bang
+            memset(g_canvas->buf, COLOR_WHITE, g_canvas->height * g_canvas->width);
+        }
+    }
+
+    gx_draw_fill_circle(g_canvas, (gx_Vec2){game->ball_pos.x + get_shake(), game->ball_pos.y + get_shake()}, BALL_RADIUS, COLOR_WHITE);
+    gx_draw_rect_wh(g_canvas, (gx_Vec2){PLAYER_X_DELTA + get_shake(), game->player_pos + get_shake()}, PLANK_WIDTH, PLANK_HEIGHT, COLOR_WHITE);
+    gx_draw_rect_wh(g_canvas, (gx_Vec2){g_canvas->width - ENEMY_X_DELTA + get_shake(), game->enemy_pos + get_shake()}, PLANK_WIDTH, PLANK_HEIGHT, COLOR_WHITE);
+
+    gx_draw_rect_wh(g_canvas, border_pos, border_size.x, border_size.y, COLOR_WHITE);
+
+    if (game->animation_state == ANIMATION_WORLD_RESTORE)
+    {
+        // The game was already restored, but we hide it under the white flash, and slowly reveal it
+
+        int cur_animation_duration = pit_time() - game->last_animation_state_change;
+        int flash_height = (g_canvas->height - (cur_animation_duration / 5));
+        if (flash_height < 0) flash_height = 0;
+        memset(g_canvas->buf, COLOR_WHITE, g_canvas->width * flash_height);
+    }
 
     gx_canvas_draw(g_canvas);
 }
