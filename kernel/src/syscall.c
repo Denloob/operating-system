@@ -601,7 +601,6 @@ static void syscall_create_window(Regs *regs)
     }
     add_to_windowed_process_list(process);
 
-    assert(!scheduler_foucsed_pcb()); 
     if(!scheduler_foucsed_pcb())
     {
         scheduler_set_foucsed_pcb(process);
