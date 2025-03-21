@@ -116,26 +116,22 @@ static void __attribute__((used, sysv_abi)) mouse_isr_impl(isr_InterruptFrame *f
 {
     defer({ pic_send_EOI(pic_IRQ_PS2_MOUSE); });
 
-    while (in_byte(PS2_PORT_COMMAND) & 1)
+    uint8_t data = in_byte(PS2_PORT_DATA);
+    g_mouse_state.packet[g_mouse_state.byte_count++] = data;
+
+    if (g_mouse_state.byte_count == 3 && (g_mouse_state.packet[0] & 0x8))
     {
-        uint8_t data = in_byte(PS2_PORT_DATA);
-        g_mouse_state.packet[g_mouse_state.byte_count++] = data;
+        g_mouse_state.buttons = g_mouse_state.packet[0] & 0x7;
 
-        if (g_mouse_state.byte_count == 3 && (g_mouse_state.packet[0] & 0x8))
-        {
-            g_mouse_state.buttons = g_mouse_state.packet[0] & 0x7;
+        // 9-bit signed deltas - subtract 256 if sign bit set
+        int16_t x_delta = g_mouse_state.packet[1] - ((g_mouse_state.packet[0] << 4) & 0x100);
+        int16_t y_delta = g_mouse_state.packet[2] - ((g_mouse_state.packet[0] << 3) & 0x100);
 
-            // 9-bit signed deltas - subtract 256 if sign bit set
-            int16_t x_delta = g_mouse_state.packet[1] - ((g_mouse_state.packet[0] << 4) & 0x100);
-            int16_t y_delta = g_mouse_state.packet[2] - ((g_mouse_state.packet[0] << 3) & 0x100);
+        update_mouse_pos(x_delta, y_delta);
 
-            update_mouse_pos(x_delta, y_delta);
+        g_mouse_state.byte_count = 0;
 
-            g_mouse_state.byte_count = 0;
-
-        }
     }
-
 }
 
 void __attribute__((naked)) mouse_isr()
