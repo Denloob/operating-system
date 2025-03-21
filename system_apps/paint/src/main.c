@@ -52,6 +52,10 @@ typedef struct {
         gx_Vec2 pos;
         bool is_pressed;
     } mouse;
+
+    gx_Vec2 prev_mouse_pos;
+
+    bool is_drawing;
 } App;
 
 
@@ -112,6 +116,8 @@ void input_handle(App *app)
     }
 
     gx_mouse_State mouse_state = gx_mouse_get_state();
+
+    app->prev_mouse_pos = app->mouse.pos;
 
     app->mouse.pos.x = mouse_state.x;
     app->mouse.pos.y = mouse_state.y;
@@ -190,24 +196,90 @@ bool is_trashcan_pressed(gx_Vec2 mouse_pos)
             && mouse_pos.y >= 0 && mouse_pos.y < (TRASHCAN_Y + 13);
 }
 
+void draw_line(App *app, gx_Vec2 start, gx_Vec2 end, gx_Color color)
+{
+    int x0;
+    int x1;
+    int y0;
+    int y1;
+    if (start.x > end.x)
+    {
+        x0 = end.x;
+        y0 = end.y;
+        x1 = start.x;
+        y1 = start.y;
+    }
+    else
+    {
+        x0 = start.x;
+        y0 = start.y;
+        x1 = end.x;
+        y1 = end.y;
+    }
+
+    int dx = abs(x1 - x0);
+    int sx = x0 < x1 ? 1 : -1;
+    int dy = -abs(y1 - y0);
+    int sy = y0 < y1 ? 1 : -1;
+
+    int err = dx + dy;
+    int e2 = 2;
+    while (true)
+    {
+        int idx = x0 + (y0 * PAINT_BUF_WIDTH);
+        if (idx > 0 && idx < PAINT_BUF_WIDTH * PAINT_BUF_HEIGHT)
+        {
+            app->paint_canvas[idx] = color;
+        }
+        if (x0 == x1 && y0 == y1)
+        {
+            break;
+        }
+
+        e2 = 2 * err;
+
+        if (e2 >= dy)
+        {
+            err += dy;
+            x0 += sx;
+        }
+
+        if (e2 <= dx)
+        {
+            err += dx;
+            y0 += sy;
+        }
+    }
+}
 
 void app_update(App *app)
 {
     bool is_on_canvas = app->mouse.pos.y > COLOR_SELECTION_REGION_END;
     if (is_on_canvas && app->mouse.is_pressed)
     {
-        int canvas_y = app->mouse.pos.y - COLOR_SELECTION_REGION_END;
-        int canvas_x = app->mouse.pos.x;
-
-        for (int x = 0; x < BRUSH_SIZE; x++)
+        bool is_prev_on_canvas = app->prev_mouse_pos.y > COLOR_SELECTION_REGION_END;
+        if (app->is_drawing && is_prev_on_canvas)
         {
-            for (int y = 0; y < BRUSH_SIZE; y++)
+            gx_Vec2 start = {app->prev_mouse_pos.x, app->prev_mouse_pos.y - COLOR_SELECTION_REGION_END};
+            gx_Vec2 end = {app->mouse.pos.x, app->mouse.pos.y - COLOR_SELECTION_REGION_END};
+
+            for (int x = 0; x < BRUSH_SIZE; x++)
             {
-                app->paint_canvas[canvas_x + x + ((canvas_y + y) * PAINT_BUF_WIDTH)] = app->selected_color;
+                for (int y = 0; y < BRUSH_SIZE; y++)
+                {
+                    draw_line(app, (gx_Vec2){start.x + x, start.y + y}, (gx_Vec2){end.x + x, end.y + y}, app->selected_color);
+                }
             }
         }
+
+        app->is_drawing = true;
     }
-    else if (app->mouse.is_pressed)
+    else
+    {
+        app->is_drawing = false;
+    }
+
+    if (app->mouse.is_pressed)
     {
         int selected_color = position_to_color(app->mouse.pos);
         if (selected_color >= 0)
