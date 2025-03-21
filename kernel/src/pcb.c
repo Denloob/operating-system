@@ -122,6 +122,14 @@ void PCB_cleanup(PCB *pcb)
 
     file_descriptor_hashmap_cleanup(&pcb->fd_map);
     pcb_ProcessChildrenArray_cleanup(&pcb->children);
+    if(pcb->window)
+    {
+        if(pcb->window->buffer)
+        {
+            kfree(pcb->window->buffer);
+        }
+        kfree(pcb->window);
+    }
     kfree(pcb);
 }
 
