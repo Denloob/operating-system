@@ -275,7 +275,7 @@ PCB *scheduler_find_by_pid(uint64_t pid)
     return NULL;
 }
 
-int scheduler_get_all_processes(ProcessInfo *out, int max) 
+int scheduler_get_all_processes(ProcessInfo *out, int max)
 {
     int count = 0;
 
@@ -328,14 +328,14 @@ void add_to_windowed_process_list(PCB *process) {
 }
 
 
-void remove_from_windowed_process_list(PCB *process) 
+void remove_from_windowed_process_list(PCB *process)
 {
     if (!process || !g_windowed_processes) return;
 
     if (process->queue_next == process && process->queue_prev == process)
     {
         g_windowed_processes = NULL;
-        if (g_focused_process == process) 
+        if (g_focused_process == process)
         {
             g_focused_process = NULL;
         }
@@ -345,7 +345,7 @@ void remove_from_windowed_process_list(PCB *process)
     process->queue_prev->queue_next = process->queue_next;
     process->queue_next->queue_prev = process->queue_prev;
 
-    if (g_windowed_processes == process) 
+    if (g_windowed_processes == process)
     {
         g_windowed_processes = process->queue_next;
     }
@@ -365,33 +365,33 @@ int create_window_for_process(PCB *process , WindowMode mode)
     if (!win) return -1;
 
     win->mode = mode;
-    #define VGA_TEXT_WINDOW_WIDTH 80
-    #define VGA_TEXT_WINDOW_HEIGH 25
-    #define VGA_GRAPGHICS_WINDWOS_WIDTH 320
-    #define VGA_GRAPGHICS_WINDWOS_HEIGH 200
-    if(mode == WINDOW_TEXT)
+
+    if (mode == WINDOW_TEXT)
     {
-        win->width = VGA_TEXT_WINDOW_WIDTH;
-        win->height = VGA_TEXT_WINDOW_HEIGH;
-        win->buffer = kmalloc(VGA_TEXT_WINDOW_HEIGH*VGA_TEXT_WINDOW_WIDTH*2);
+        win->width = VGA_TEXT_WIDTH_BYTES;
+        win->height = VGA_TEXT_HEIGHT;
     }
-    if(mode == WINDOW_GRAPHICS)
+    else if (mode == WINDOW_GRAPHICS)
     {
-        win->height = VGA_TEXT_WINDOW_HEIGH;
-        win->width = VGA_TEXT_WINDOW_WIDTH;
-        win->buffer = kmalloc(VGA_TEXT_WINDOW_HEIGH*VGA_TEXT_WINDOW_WIDTH);
+        win->height = VGA_GRAPHICS_HEIGHT;
+        win->width = VGA_GRAPHICS_WIDTH;
     }
+    else
+    {
+        assert(false && "Unsupported window mode");
+    }
+
+    win->buffer = kmalloc(win->height * win->width);
     process->window = win;
     add_to_windowed_process_list(process);
 
     return 0;
 }
 
-void switch_focused_process() 
+void switch_focused_process()
 {
     if (!g_focused_process || !g_windowed_processes) return;
 
     g_focused_process = g_focused_process->queue_next;
     redraw_vga_from_process_window(g_focused_process);
 }
-

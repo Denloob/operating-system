@@ -560,14 +560,12 @@ void redraw_vga_from_process_window(PCB *process_window_to_draw)
     if (!process_window_to_draw->window || !process_window_to_draw->window->buffer) return;
 
     void *dest = NULL;
-    size_t bytes_per_pixel = 1;
 
     if (process_window_to_draw->window->mode == WINDOW_TEXT)
         dest = (void *)VGA_TEXT_ADDRESS;
     else if (process_window_to_draw->window->mode == WINDOW_GRAPHICS)
         dest = (void *)VGA_GRAPHICS_ADDRESS;
 
-    size_t size = process_window_to_draw->window->width * process_window_to_draw->window->height * (process_window_to_draw->window->mode == WINDOW_TEXT ? 2 : bytes_per_pixel);
+    size_t size = process_window_to_draw->window->width * process_window_to_draw->window->height;
     memmove(dest, process_window_to_draw->window->buffer, size);
 }
-
