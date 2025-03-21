@@ -110,8 +110,8 @@ int rand_sign()
 #define BALL_RADIUS 3
 #define PLANK_HEIGHT 30
 #define PLANK_WIDTH 2
-#define PLAYER_X_DELTA 10
-#define ENEMY_X_DELTA 10
+#define PLAYER_X_DELTA 20
+#define ENEMY_X_DELTA 20
 
 void reset_match(Game *game)
 {
