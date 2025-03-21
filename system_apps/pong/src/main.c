@@ -208,6 +208,27 @@ void game_tick(Game *game)
         if (colliding_with_player)
         {
             game->ball_velocity.y += game->player_velocity;
+
+            if (abs(game->player_velocity) > 2) // A strong hit
+            {
+                game->ball_velocity.y = game->player_velocity * 1.5;
+
+                const int cur_time = pit_time();
+                while (pit_time() - cur_time < 700)
+                {
+                    memset(g_canvas->buf, COLOR_BLACK, g_canvas->height * g_canvas->width);
+#define RANDOM_SHAKE (rand() % 5 - 2)
+
+                    gx_draw_fill_circle(g_canvas, (gx_Vec2){game->ball_pos.x + RANDOM_SHAKE, game->ball_pos.y + RANDOM_SHAKE}, BALL_RADIUS, COLOR_WHITE);
+                    gx_draw_rect_wh(g_canvas, (gx_Vec2){PLAYER_X_DELTA + RANDOM_SHAKE, game->player_pos + RANDOM_SHAKE}, PLANK_WIDTH, PLANK_HEIGHT, COLOR_WHITE);
+                    gx_draw_rect_wh(g_canvas, (gx_Vec2){g_canvas->width - ENEMY_X_DELTA, game->enemy_pos}, PLANK_WIDTH, PLANK_HEIGHT, COLOR_WHITE);
+
+                    gx_draw_rect_wh(g_canvas, (gx_Vec2){RANDOM_SHAKE, RANDOM_SHAKE}, g_canvas->width, g_canvas->height, COLOR_WHITE);
+
+                    gx_canvas_draw(g_canvas);
+                }
+            }
+
         }
     }
 }
@@ -273,9 +294,9 @@ int main(int argc, char **argv)
         {
             prev_frame = pit_time();
             game_tick(&game);
-            game_draw(&game);
 
             g_prev_mouse_y = gx_mouse_get_state().y;
         }
+        game_draw(&game);
     }
 }
