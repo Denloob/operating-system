@@ -11,6 +11,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include "io.h"
+#include "pcb.h"
 #include "scheduler.h"
 #include "vga.h"
 
@@ -47,13 +48,64 @@ void char_special_device_init()
     create_char_device_file("/dev/tty",  char_special_device_MINOR_TTY );
 }
 
+
+
+#define VGA_COLOR_WHITE 0x0F
+void putc_window(Window *win, char ch, bool focused)
+{
+    if (!win || win->mode != WINDOW_TEXT || !win->buffer) return;
+
+    size_t window_cells = win->width * win->height;
+    uint8_t *buf = (uint8_t *)win->buffer;
+    static size_t write_pos = 0; 
+
+    if (ch == '\b') 
+    {
+        if (write_pos > 0)
+        {
+            write_pos -= 2; 
+            buf[write_pos] = ' ';
+            buf[write_pos + 1] = VGA_COLOR_WHITE;
+        }
+        return;
+    }
+
+    if (ch == '\n') 
+    {
+        write_pos += win->width;
+        write_pos -= write_pos % (win->width);
+    }
+    else
+    {
+        if (write_pos + 1 < window_cells)
+        {
+            buf[write_pos++] = ch;
+            buf[write_pos++] = VGA_COLOR_WHITE;
+        }
+    }
+
+    if (write_pos >= window_cells * 2)
+    {
+        memmove(buf, buf + win->width, (win->height - 1) * win->width);
+        memset(buf + (win->height - 1) * win->width, 0, win->width);
+        write_pos = (win->height - 1) * win->width;
+    }
+
+    if (focused)
+    {
+        memmove((void *)io_vga_addr_base, win->buffer, win->width * win->height);
+    }
+}
+
+
 size_t handle_write(uint8_t *buffer, uint64_t buffer_size, uint64_t file_offset, int minor_number, bool block /* unused */)
 {
     switch ((char_special_device_MinorDeviceType)minor_number)
     {
         case char_special_device_MINOR_NULL:
         case char_special_device_MINOR_ZERO:
-            return buffer_size; // Discard data written to `zero` and `null`.
+            return buffer_size;
+
         case char_special_device_MINOR_TTY:
         {
             if (vga_current_mode() != VGA_MODE_TYPE_TEXT)
@@ -61,13 +113,22 @@ size_t handle_write(uint8_t *buffer, uint64_t buffer_size, uint64_t file_offset,
                 return -2;
             }
 
-            for (int i = 0; i < buffer_size; i++)
+            PCB *current = scheduler_current_pcb();
+            if (!current || !current->window || current->window->mode != WINDOW_TEXT)
             {
-                putc(buffer[i]);
+                return -1;
+            }
+
+            bool is_focused = (current == scheduler_foucsed_pcb());
+
+            for (uint64_t i = 0; i < buffer_size; i++)
+            {
+                putc_window(current->window, buffer[i], is_focused);
             }
 
             return buffer_size;
         }
+
         default:
             return 0;
     }
@@ -82,6 +143,11 @@ typedef struct {
 // @see pcb_IORefresh
 static pcb_IORefreshResult pcb_refresh_tty_read(PCB *pcb)
 {
+    PCB *focused = scheduler_foucsed_pcb();
+    if(pcb != focused)
+    {
+        return PCB_IO_REFRESH_CONTINUE;
+    }
     if (!io_keyboard_is_key_ready())
     {
         return PCB_IO_REFRESH_CONTINUE;
@@ -142,7 +208,12 @@ static size_t tty_read_blocking(uint8_t *buffer, uint64_t buffer_size)
 static size_t tty_read_nonblocking(uint8_t *buffer, uint64_t buffer_size)
 {
     assert(io_input_keyboard_key == io_keyboard_wait_key && "tty only works with the io_keyboard driver");
-
+    PCB *pcb = scheduler_current_pcb();
+    PCB *focused = scheduler_foucsed_pcb();
+    if(pcb!=focused)
+    {
+        return 0;
+    }
     for (int i = 0; i < buffer_size; i++)
     {
         if (!io_keyboard_is_key_ready())
