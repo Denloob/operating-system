@@ -50,6 +50,93 @@ const uint8_t g_heart_mask[HEART_SIZE * HEART_SIZE] = {
     0, 0, 0, 0, 0, 0, 0, 0,
 };
 
+#define HEART_BREAK_FRAMES 4
+const uint8_t g_heart_break_bitmap[HEART_BREAK_FRAMES][HEART_SIZE * HEART_SIZE] = {
+    {
+        2, 0, 0, 2, 2, 0, 0, 2,
+        0, 2, 2, 0, 0, 2, 2, 0,
+        0, 2, 3, 2, 2, 3, 2, 0,
+        2, 3, 3, 3, 3, 3, 3, 2,
+        0, 2, 3, 3, 3, 3, 2, 0,
+        0, 0, 2, 3, 3, 2, 0, 0,
+        0, 0, 0, 2, 2, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+    },
+    {
+        2, 0, 0, 0, 0, 0, 0, 2,
+        0, 2, 0, 2, 2, 0, 2, 0,
+        0, 0, 2, 0, 0, 2, 0, 0,
+        2, 2, 3, 3, 3, 3, 2, 2,
+        0, 0, 2, 3, 3, 2, 0, 0,
+        0, 0, 0, 2, 2, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+    },
+    {
+        2, 0, 0, 0, 0, 0, 0, 2,
+        0, 2, 0, 0, 0, 0, 2, 0,
+        0, 0, 0, 2, 2, 0, 0, 0,
+        0, 0, 2, 0, 0, 2, 0, 0,
+        0, 0, 0, 2, 2, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+    },
+    {
+        2, 0, 0, 0, 0, 0, 0, 2,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+    }
+};
+
+const uint8_t g_heart_break_mask[HEART_BREAK_FRAMES][HEART_SIZE * HEART_SIZE] = {
+    {
+        1, 0, 0, 1, 1, 0, 0, 1,
+        0, 1, 1, 0, 0, 1, 1, 0,
+        0, 1, 1, 1, 1, 1, 1, 0,
+        1, 1, 1, 1, 1, 1, 1, 1,
+        0, 1, 1, 1, 1, 1, 1, 0,
+        0, 0, 1, 1, 1, 1, 0, 0,
+        0, 0, 0, 1, 1, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+    },
+    {
+        1, 0, 0, 0, 0, 0, 0, 1,
+        0, 1, 0, 1, 1, 0, 1, 0,
+        0, 0, 1, 0, 0, 1, 0, 0,
+        1, 1, 1, 1, 1, 1, 1, 1,
+        0, 0, 1, 1, 1, 1, 0, 0,
+        0, 0, 0, 1, 1, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+    },
+    {
+        1, 0, 0, 0, 0, 0, 0, 1,
+        0, 1, 0, 0, 0, 0, 1, 0,
+        0, 0, 0, 1, 1, 0, 0, 0,
+        0, 0, 1, 0, 0, 1, 0, 0,
+        0, 0, 0, 1, 1, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+    },
+    {
+        1, 0, 0, 0, 0, 0, 0, 1,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+    }
+};
+
 int g_longest_time = 0;
 int g_game_begin_time;
 
@@ -111,6 +198,9 @@ typedef enum {
     ANIMATION_WORLD_EXPLODE,
     ANIMATION_WORLD_RESTORE,
 
+    ANIMATION_HEART_SHAKE,
+    ANIMATION_HEART_BREAK,
+
     ANIMATION_STRONG_HIT,
 } AnimationState;
 
@@ -164,18 +254,8 @@ void reset_match(Game *game, bool reset_health)
 void count_match_as_lost(Game *game)
 {
     game->health--;
-
-    if (game->health > 0)
-    {
-        reset_match(game, false);
-        return;
-    }
-
-    int delta = pit_time() - g_game_begin_time;
-    if (delta > g_longest_time) g_longest_time = delta;
-
     game->last_animation_state_change = pit_time();
-    game->animation_state = ANIMATION_WORLD_BREAK;
+    game->animation_state = ANIMATION_HEART_SHAKE;
 }
 
 void count_match_as_won()
@@ -271,6 +351,26 @@ void game_tick(Game *game)
 {
     if (game->animation_state != ANIMATION_NONE)
     {
+        // Heart animation
+        if (game->animation_state == ANIMATION_HEART_SHAKE && pit_time() - game->last_animation_state_change > 600)
+        {
+            game->animation_state = ANIMATION_HEART_BREAK;
+            game->last_animation_state_change = pit_time();
+        }
+        else if (game->animation_state == ANIMATION_HEART_BREAK && pit_time() - game->last_animation_state_change > 400)
+        {
+            if (game->health == 0)
+            {
+                game->animation_state = ANIMATION_WORLD_BREAK;
+                game->last_animation_state_change = pit_time();
+            }
+            else
+            {
+                reset_match(game, false);
+            }
+        }
+
+        // World animation
         if (game->animation_state == ANIMATION_WORLD_BREAK && pit_time() - game->last_animation_state_change > 500)
         {
             game->animation_state = ANIMATION_WORLD_EXPLODE;
@@ -338,7 +438,7 @@ void input_handle(Game *game)
     game->player_velocity = (state.y - g_prev_mouse_y) / 5;
 }
 
-void draw_heart(gx_Canvas *canvas, gx_Vec2 pos)
+void draw_heart(gx_Canvas *canvas, gx_Vec2 pos, const uint8_t *bitmap, const uint8_t *mask)
 {
     for (int x = 0; x < HEART_SIZE; x++)
     {
@@ -346,21 +446,33 @@ void draw_heart(gx_Canvas *canvas, gx_Vec2 pos)
         {
             int heart_idx = (y * HEART_SIZE) + x;
 
-            if (g_heart_mask[heart_idx])
+            if (mask[heart_idx])
             {
-                gx_draw_fill_rect_wh(canvas, (gx_Vec2){pos.x + x * HEART_SCALE, pos.y + y * HEART_SCALE}, HEART_SCALE, HEART_SCALE, g_heart_bitmap[heart_idx]);
+                gx_draw_fill_rect_wh(canvas, (gx_Vec2){pos.x + x * HEART_SCALE, pos.y + y * HEART_SCALE}, HEART_SCALE, HEART_SCALE, bitmap[heart_idx]);
             }
         }
     }
 }
 
-int get_shake(const Game *game)
+int get_shake_cond(const Game *game, bool cond)
 {
-    if (game->animation_state == ANIMATION_WORLD_BREAK || game->animation_state == ANIMATION_STRONG_HIT)
+    if (cond)
         return RANDOM_SHAKE;
     return 0;
 }
 
+int get_shake(const Game *game)
+{
+    return get_shake_cond(game, game->animation_state == ANIMATION_WORLD_BREAK || game->animation_state == ANIMATION_STRONG_HIT);
+}
+
+
+void draw_heart_break_anim_frame(Game *game, gx_Vec2 pos, int frame_num)
+{
+    assert(frame_num < HEART_BREAK_FRAMES);
+
+    draw_heart(g_canvas, pos, g_heart_break_bitmap[frame_num], g_heart_break_mask[frame_num]);
+}
 
 void draw_hearts(Game *game)
 {
@@ -370,11 +482,22 @@ void draw_hearts(Game *game)
 
     int x = HEART_START_X;
 
-
     for (int i = 0; i < game->health; i++)
     {
-        draw_heart(g_canvas, (gx_Vec2){x + get_shake(game), HEART_START_Y + get_shake(game)});
+        draw_heart(g_canvas, (gx_Vec2){x + get_shake(game), HEART_START_Y + get_shake(game)}, g_heart_bitmap, g_heart_mask);
         x += HEART_SIZE * HEART_SCALE + HEART_PADDING;
+    }
+
+    if (game->animation_state == ANIMATION_HEART_SHAKE)
+    {
+        draw_heart(g_canvas, (gx_Vec2){x + get_shake_cond(game, true), HEART_START_Y + get_shake_cond(game, true)}, g_heart_bitmap, g_heart_mask);
+    }
+    else if (game->animation_state == ANIMATION_HEART_BREAK)
+    {
+        int cur_animation_duration = pit_time() - game->last_animation_state_change;
+        int frame_num = cur_animation_duration / 100;
+        if (frame_num >= HEART_BREAK_FRAMES) frame_num = HEART_BREAK_FRAMES - 1;
+        draw_heart_break_anim_frame(game, (gx_Vec2){x + get_shake(game), HEART_START_Y + get_shake(game)}, frame_num);
     }
 }
 
