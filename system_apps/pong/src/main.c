@@ -17,9 +17,37 @@
 
 #define COLOR_BLACK       0
 #define COLOR_WHITE       1
+#define COLOR_GRAY        2
+#define COLOR_RED         3
 gx_palette_Color g_color_palette[256] = {
     [COLOR_WHITE] = {0xff, 0xff, 0xff}, // White
     [COLOR_BLACK] = {0x00, 0x00, 0x00}, // Black
+    [COLOR_GRAY] = {0x33, 0x33, 0x33},
+    [COLOR_RED] = {0xff, 0x00, 0x00},
+};
+
+#define HEART_SIZE 8
+#define HEART_SCALE 2
+const uint8_t g_heart_bitmap[HEART_SIZE * HEART_SIZE] = {
+    0, 2, 2, 0, 0, 2, 2, 0,
+    2, 3, 3, 2, 2, 3, 3, 2,
+    2, 3, 3, 3, 3, 3, 3, 2,
+    2, 3, 3, 3, 3, 3, 3, 2,
+    0, 2, 3, 3, 3, 3, 2, 0,
+    0, 0, 2, 3, 3, 2, 0, 0,
+    0, 0, 0, 2, 2, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+};
+
+const uint8_t g_heart_mask[HEART_SIZE * HEART_SIZE] = {
+    0, 1, 1, 0, 0, 1, 1, 0,
+    1, 1, 1, 1, 1, 1, 1, 1,
+    1, 1, 1, 1, 1, 1, 1, 1,
+    1, 1, 1, 1, 1, 1, 1, 1,
+    0, 1, 1, 1, 1, 1, 1, 0,
+    0, 0, 1, 1, 1, 1, 0, 0,
+    0, 0, 0, 1, 1, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
 };
 
 int g_longest_time = 0;
@@ -82,6 +110,8 @@ typedef enum {
     ANIMATION_WORLD_BREAK,
     ANIMATION_WORLD_EXPLODE,
     ANIMATION_WORLD_RESTORE,
+
+    ANIMATION_STRONG_HIT,
 } AnimationState;
 
 typedef struct {
@@ -94,10 +124,53 @@ typedef struct {
 
     uint64_t last_animation_state_change;
     AnimationState animation_state;
+
+    int health;
 } Game;
+
+
+// Returns randomly either -1 or 1
+int rand_sign()
+{
+    return ((rand() % 2) == 0) ? -1 : 1;
+}
+
+#define STARTING_HEALTH 3
+#define BALL_RADIUS 3
+#define PLANK_HEIGHT 30
+#define PLANK_WIDTH 2
+#define PLAYER_X_DELTA 20
+#define ENEMY_X_DELTA 20
+
+void reset_match(Game *game, bool reset_health)
+{
+    *game = (Game){
+        .ball_pos = {
+            g_canvas->width / 2.0,
+            g_canvas->height / 2.0,
+        },
+        .ball_velocity = {
+            .x = rand_sign() * 7,
+            .y = rand_sign() * ((rand() % 100) / 100.0),
+        },
+        .player_pos = gx_mouse_get_state().y,
+        .enemy_pos = (g_canvas->height - PLANK_HEIGHT) / 2,
+        .health = reset_health ? STARTING_HEALTH : game->health,
+    };
+
+    g_game_begin_time = pit_time();
+}
 
 void count_match_as_lost(Game *game)
 {
+    game->health--;
+
+    if (game->health > 0)
+    {
+        reset_match(game, false);
+        return;
+    }
+
     int delta = pit_time() - g_game_begin_time;
     if (delta > g_longest_time) g_longest_time = delta;
 
@@ -112,36 +185,6 @@ void count_match_as_won()
     puts("You won!!!");
 
     exit(0);
-}
-
-// Returns randomly either -1 or 1
-int rand_sign()
-{
-    return ((rand() % 2) == 0) ? -1 : 1;
-}
-
-#define BALL_RADIUS 3
-#define PLANK_HEIGHT 30
-#define PLANK_WIDTH 2
-#define PLAYER_X_DELTA 20
-#define ENEMY_X_DELTA 20
-
-void reset_match(Game *game)
-{
-    *game = (Game){
-        .ball_pos = {
-            g_canvas->width / 2.0,
-            g_canvas->height / 2.0,
-        },
-        .ball_velocity = {
-            .x = rand_sign() * 7,
-            .y = rand_sign() * ((rand() % 100) / 100.0),
-        },
-        .player_pos = gx_mouse_get_state().y,
-        .enemy_pos = (g_canvas->height - PLANK_HEIGHT) / 2,
-    };
-
-    g_game_begin_time = pit_time();
 }
 
 bool is_colliding_with_plank(int plank_y, gx_Vec2f ball_pos, bool is_enemy)
@@ -182,6 +225,8 @@ void auto_move_enemy(Game *game)
     }
 }
 
+void draw_hearts(Game *game);
+
 void process_plank_collisions(Game *game)
 {
     bool colliding_with_player = is_colliding_with_plank(game->player_pos, game->ball_pos, false);
@@ -197,12 +242,14 @@ void process_plank_collisions(Game *game)
 
             if (abs(game->player_velocity) > 2) // A strong hit
             {
+                game->animation_state = ANIMATION_STRONG_HIT;
                 game->ball_velocity.y = game->player_velocity * 1.5;
 
                 const int cur_time = pit_time();
                 while (pit_time() - cur_time < 700)
                 {
                     memset(g_canvas->buf, COLOR_BLACK, g_canvas->height * g_canvas->width);
+                    draw_hearts(game);
 #define RANDOM_SHAKE (rand() % 5 - 2)
 
                     gx_draw_fill_circle(g_canvas, (gx_Vec2){game->ball_pos.x + RANDOM_SHAKE, game->ball_pos.y + RANDOM_SHAKE}, BALL_RADIUS, COLOR_WHITE);
@@ -215,6 +262,7 @@ void process_plank_collisions(Game *game)
                 }
             }
 
+            game->animation_state = ANIMATION_NONE;
         }
     }
 }
@@ -230,7 +278,7 @@ void game_tick(Game *game)
         }
         else if (game->animation_state == ANIMATION_WORLD_EXPLODE && pit_time() - game->last_animation_state_change > 2000)
         {
-            reset_match(game); // When ANIMATION_WORLD_RESTORE is running, the match is already reset
+            reset_match(game, true); // When ANIMATION_WORLD_RESTORE is running, the match is already reset
             game->animation_state = ANIMATION_WORLD_RESTORE;
             game->last_animation_state_change = pit_time();
         }
@@ -254,7 +302,7 @@ void game_tick(Game *game)
     if (player_won)
     {
         count_match_as_won();
-        reset_match(game);
+        reset_match(game, true);
         return;
     }
 
@@ -290,19 +338,52 @@ void input_handle(Game *game)
     game->player_velocity = (state.y - g_prev_mouse_y) / 5;
 }
 
+void draw_heart(gx_Canvas *canvas, gx_Vec2 pos)
+{
+    for (int x = 0; x < HEART_SIZE; x++)
+    {
+        for (int y = 0; y < HEART_SIZE; y++)
+        {
+            int heart_idx = (y * HEART_SIZE) + x;
+
+            if (g_heart_mask[heart_idx])
+            {
+                gx_draw_fill_rect_wh(canvas, (gx_Vec2){pos.x + x * HEART_SCALE, pos.y + y * HEART_SCALE}, HEART_SCALE, HEART_SCALE, g_heart_bitmap[heart_idx]);
+            }
+        }
+    }
+}
+
+int get_shake(const Game *game)
+{
+    if (game->animation_state == ANIMATION_WORLD_BREAK || game->animation_state == ANIMATION_STRONG_HIT)
+        return RANDOM_SHAKE;
+    return 0;
+}
+
+
+void draw_hearts(Game *game)
+{
+#define HEART_START_Y 10
+#define HEART_START_X 30
+#define HEART_PADDING 5
+
+    int x = HEART_START_X;
+
+
+    for (int i = 0; i < game->health; i++)
+    {
+        draw_heart(g_canvas, (gx_Vec2){x + get_shake(game), HEART_START_Y + get_shake(game)});
+        x += HEART_SIZE * HEART_SCALE + HEART_PADDING;
+    }
+}
+
 void game_draw(Game *game)
 {
     memset(g_canvas->buf, COLOR_BLACK, g_canvas->height * g_canvas->width);
 
-    int get_shake()
-    {
-        if (game->animation_state == ANIMATION_WORLD_BREAK)
-            return RANDOM_SHAKE;
-        return 0;
-    }
-
-    gx_Vec2 border_pos = {get_shake(), get_shake()};
-    gx_Vec2 border_size = {g_canvas->width + get_shake(), g_canvas->height + get_shake()};
+    gx_Vec2 border_pos = {get_shake(game), get_shake(game)};
+    gx_Vec2 border_size = {g_canvas->width + get_shake(game), g_canvas->height + get_shake(game)};
 
     if (game->animation_state == ANIMATION_WORLD_EXPLODE)
     {
@@ -326,9 +407,11 @@ void game_draw(Game *game)
         }
     }
 
-    gx_draw_fill_circle(g_canvas, (gx_Vec2){game->ball_pos.x + get_shake(), game->ball_pos.y + get_shake()}, BALL_RADIUS, COLOR_WHITE);
-    gx_draw_rect_wh(g_canvas, (gx_Vec2){PLAYER_X_DELTA + get_shake(), game->player_pos + get_shake()}, PLANK_WIDTH, PLANK_HEIGHT, COLOR_WHITE);
-    gx_draw_rect_wh(g_canvas, (gx_Vec2){g_canvas->width - ENEMY_X_DELTA + get_shake(), game->enemy_pos + get_shake()}, PLANK_WIDTH, PLANK_HEIGHT, COLOR_WHITE);
+    draw_hearts(game);
+
+    gx_draw_fill_circle(g_canvas, (gx_Vec2){game->ball_pos.x + get_shake(game), game->ball_pos.y + get_shake(game)}, BALL_RADIUS, COLOR_WHITE);
+    gx_draw_rect_wh(g_canvas, (gx_Vec2){PLAYER_X_DELTA + get_shake(game), game->player_pos + get_shake(game)}, PLANK_WIDTH, PLANK_HEIGHT, COLOR_WHITE);
+    gx_draw_rect_wh(g_canvas, (gx_Vec2){g_canvas->width - ENEMY_X_DELTA + get_shake(game), game->enemy_pos + get_shake(game)}, PLANK_WIDTH, PLANK_HEIGHT, COLOR_WHITE);
 
     gx_draw_rect_wh(g_canvas, border_pos, border_size.x, border_size.y, COLOR_WHITE);
 
@@ -363,7 +446,7 @@ int main(int argc, char **argv)
     input_init();
 
     Game game = {};
-    reset_match(&game);
+    reset_match(&game, true);
 
     uint64_t prev_frame = pit_time();
     while (1)
