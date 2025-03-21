@@ -169,35 +169,8 @@ void auto_move_enemy(Game *game)
     }
 }
 
-void game_tick(Game *game)
+void process_plank_collisions(Game *game)
 {
-    const double x = game->ball_pos.x;
-    bool player_lost = x < 0;
-    if (player_lost)
-    {
-        count_match_as_lost();
-        reset_match(game);
-        return;
-    }
-
-    bool player_won = x >= g_canvas->width;
-    if (player_won)
-    {
-        count_match_as_won();
-        reset_match(game);
-        return;
-    }
-
-    auto_move_enemy(game);
-
-    game->ball_pos = gx_vec2f_add(game->ball_pos, game->ball_velocity);
-
-    const double y = game->ball_pos.y;
-    if (y < 0 || y >= g_canvas->height)
-    {
-        game->ball_velocity.y = -game->ball_velocity.y;
-    }
-
     bool colliding_with_player = is_colliding_with_plank(game->player_pos, game->ball_pos, false);
     bool colliding_with_enemy = is_colliding_with_plank(game->enemy_pos, game->ball_pos, true);
     if (colliding_with_enemy || colliding_with_player)
@@ -231,6 +204,38 @@ void game_tick(Game *game)
 
         }
     }
+}
+
+void game_tick(Game *game)
+{
+    const double x = game->ball_pos.x;
+    bool player_lost = x < 0;
+    if (player_lost)
+    {
+        count_match_as_lost();
+        reset_match(game);
+        return;
+    }
+
+    bool player_won = x >= g_canvas->width;
+    if (player_won)
+    {
+        count_match_as_won();
+        reset_match(game);
+        return;
+    }
+
+    auto_move_enemy(game);
+
+    game->ball_pos = gx_vec2f_add(game->ball_pos, game->ball_velocity);
+
+    const double y = game->ball_pos.y;
+    if (y < 0 || y >= g_canvas->height)
+    {
+        game->ball_velocity.y = -game->ball_velocity.y;
+    }
+
+    process_plank_collisions(game);
 }
 
 static int g_prev_mouse_y;
