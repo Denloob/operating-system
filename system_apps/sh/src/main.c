@@ -9,6 +9,7 @@
 #include <stdbool.h>
 #include <sys/wait.h>
 #include <dirent.h>
+#include <sys/syscall.h>
 
 void cd(ShellCommand *cmd)
 {
@@ -29,6 +30,7 @@ int main()
 {
     int8_t return_code = 0;
 
+    syscall(SYS_CreateWindow , 0);
 #define MAX_PATH_LENGTH 512
 
 #define INITIAL_PATH_SIZE MAX_PATH_LENGTH
