@@ -3,6 +3,7 @@
 #include "isr.h"
 #include "pic.h"
 #include "smartptr.h"
+#include "scheduler.h"
 
 // @see io.c
 #define KEYBOARD_PORT 0x60
@@ -10,6 +11,8 @@
 volatile int io_keyboard_buffer[IO_KEYBOARD_BUFFER_SIZE];
 volatile uint8_t io_keyboard_buffer_head;
 volatile uint8_t io_keyboard_buffer_tail;
+
+#define TAB_KEY 0xf
 
 static void __attribute__((used, sysv_abi)) io_isr_keyboard_event_impl(isr_InterruptFrame *frame)
 {
@@ -20,7 +23,11 @@ static void __attribute__((used, sysv_abi)) io_isr_keyboard_event_impl(isr_Inter
     {
         return;
     }
-
+    if(key == TAB_KEY)
+    {
+        switch_focused_process();
+        return;
+    }
     bool is_ringbuffer_full = ((io_keyboard_buffer_head + 1) %
                                IO_KEYBOARD_BUFFER_SIZE) == io_keyboard_buffer_tail;
     if (is_ringbuffer_full)
