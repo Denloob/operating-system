@@ -15,6 +15,13 @@ typedef struct {
 gx_Canvas *gx_canvas_create();
 
 /**
+ * @brief Allocate a new Canvas of the given size
+ *
+ * @see gx_canvas_destroy
+ */
+gx_Canvas *gx_canvas_create_of_size(int width, int height);
+
+/**
  * @brief Destroy the given canvas
  */
 void gx_canvas_destroy(gx_Canvas **canvas);
