@@ -39,13 +39,13 @@ gx_palette_Color g_color_palette[256] = {
 
 #define COLOR_SELECTION_REGION_END 20
 
-#define PAINT_BUF_WIDTH 320
-#define PAINT_BUF_HEIGHT 180
+#define PAINT_CANVAS_WIDTH 320
+#define PAINT_CANVAS_HEIGHT 180
 
 #define BRUSH_SIZE 4
 
 typedef struct {
-    uint8_t paint_canvas[PAINT_BUF_WIDTH * PAINT_BUF_HEIGHT];
+    gx_Canvas *paint_canvas;
     uint8_t selected_color;
 
     struct {
@@ -196,62 +196,6 @@ bool is_trashcan_pressed(gx_Vec2 mouse_pos)
             && mouse_pos.y >= 0 && mouse_pos.y < (TRASHCAN_Y + 13);
 }
 
-void draw_line(App *app, gx_Vec2 start, gx_Vec2 end, gx_Color color)
-{
-    int x0;
-    int x1;
-    int y0;
-    int y1;
-    if (start.x > end.x)
-    {
-        x0 = end.x;
-        y0 = end.y;
-        x1 = start.x;
-        y1 = start.y;
-    }
-    else
-    {
-        x0 = start.x;
-        y0 = start.y;
-        x1 = end.x;
-        y1 = end.y;
-    }
-
-    int dx = abs(x1 - x0);
-    int sx = x0 < x1 ? 1 : -1;
-    int dy = -abs(y1 - y0);
-    int sy = y0 < y1 ? 1 : -1;
-
-    int err = dx + dy;
-    int e2 = 2;
-    while (true)
-    {
-        int idx = x0 + (y0 * PAINT_BUF_WIDTH);
-        if (idx > 0 && idx < PAINT_BUF_WIDTH * PAINT_BUF_HEIGHT)
-        {
-            app->paint_canvas[idx] = color;
-        }
-        if (x0 == x1 && y0 == y1)
-        {
-            break;
-        }
-
-        e2 = 2 * err;
-
-        if (e2 >= dy)
-        {
-            err += dy;
-            x0 += sx;
-        }
-
-        if (e2 <= dx)
-        {
-            err += dx;
-            y0 += sy;
-        }
-    }
-}
-
 void app_update(App *app)
 {
     bool is_on_canvas = app->mouse.pos.y > COLOR_SELECTION_REGION_END;
@@ -267,7 +211,7 @@ void app_update(App *app)
             {
                 for (int y = 0; y < BRUSH_SIZE; y++)
                 {
-                    draw_line(app, (gx_Vec2){start.x + x, start.y + y}, (gx_Vec2){end.x + x, end.y + y}, app->selected_color);
+                    gx_draw_line(app->paint_canvas, (gx_Vec2){start.x + x, start.y + y}, (gx_Vec2){end.x + x, end.y + y}, app->selected_color);
                 }
             }
         }
@@ -289,7 +233,7 @@ void app_update(App *app)
 
         if (is_trashcan_pressed(app->mouse.pos))
         {
-            memset(app->paint_canvas, COLOR_WHITE, sizeof(app->paint_canvas));
+            memset(app->paint_canvas->buf, COLOR_WHITE, app->paint_canvas->width * app->paint_canvas->height);
         }
     }
 }
@@ -298,7 +242,7 @@ void app_display(App *app)
 {
     memset(&g_canvas->buf[0], COLOR_WHITE, COLOR_SELECTION_REGION_END * g_canvas->width);
 
-    memmove(&g_canvas->buf[COLOR_SELECTION_REGION_END * g_canvas->width], app->paint_canvas, sizeof(app->paint_canvas));
+    gx_draw_canvas(g_canvas, (gx_Vec2){0, COLOR_SELECTION_REGION_END}, app->paint_canvas);
 
     gx_draw_line(g_canvas, (gx_Vec2){0, COLOR_SELECTION_REGION_END - 1}, (gx_Vec2){g_canvas->width, COLOR_SELECTION_REGION_END - 1}, COLOR_GRAY);
 
@@ -332,6 +276,7 @@ int main(int argc, char **argv)
 
     input_init();
 
+    g_app.paint_canvas = gx_canvas_create_of_size(PAINT_CANVAS_WIDTH, PAINT_CANVAS_HEIGHT);
     g_app.selected_color = COLOR_BLACK;
 
     uint64_t prev_frame = pit_time();
