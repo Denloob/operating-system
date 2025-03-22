@@ -30,6 +30,7 @@
 #include "vga.h"
 #include "shell.h"
 #include "waitpid.h"
+#include "window.h"
 
 #define MSR_STAR   0xC0000081
 #define MSR_LSTAR  0xC0000082
@@ -579,34 +580,29 @@ static void syscall_create_window(Regs *regs)
 {
     WindowMode mode = (WindowMode)regs->rdi;  //(0 = text, 1 = graphics)
 
-    if (mode != WINDOW_TEXT && mode != WINDOW_GRAPHICS) 
+    if (mode != WINDOW_TEXT && mode != WINDOW_GRAPHICS)
     {
-        regs->rax = -1; //MOde doesnt exists 
+        regs->rax = -1; //MOde doesnt exists
         return;
     }
 
     PCB *process = scheduler_current_pcb();
 
-    if (process->window != NULL) //We do not support double windows 
+    if (process->window != NULL) //We do not support double windows
     {
-        regs->rax = -2; 
+        regs->rax = -2;
         return;
     }
 
-    int result = create_window_for_process(process, (WindowMode)mode);
-    if (result != 0) 
+    process->window = window_create(mode);
+    if (process->window == NULL)
     {
-        regs->rax = -3; 
+        regs->rax = -3;
         return;
     }
-    add_to_windowed_process_list(process);
 
-    if(!scheduler_foucsed_pcb())
-    {
-        scheduler_set_foucsed_pcb(process);
-
-        redraw_vga_from_process_window(process);
-    }
+    window_register(process->window);
+    window_switch_focus_to(process->window);
     regs->rax = 0;
 }
 

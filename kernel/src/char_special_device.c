@@ -14,6 +14,7 @@
 #include "pcb.h"
 #include "scheduler.h"
 #include "vga.h"
+#include "window.h"
 
 static size_t handle_write(uint8_t *buffer, uint64_t buffer_size, uint64_t file_offset, int minor_number, bool block);
 static size_t handle_read(uint8_t *buffer, uint64_t buffer_size, uint64_t file_offset, int minor_number, bool block);
@@ -51,9 +52,9 @@ void char_special_device_init()
 
 
 #define VGA_COLOR_WHITE 7
-void putc_window(Window *win, char ch, bool focused)
+void putc_window(Window *win, char ch)
 {
-    if (!win || win->mode != WINDOW_TEXT || !win->buffer) return;
+    assert(win != NULL && win->mode == WINDOW_TEXT && win->buffer != NULL);
 
     size_t window_cells = win->width * win->height;
     uint8_t *buf = (uint8_t *)win->buffer;
@@ -90,22 +91,7 @@ void putc_window(Window *win, char ch, bool focused)
         memset(buf + (win->height - 1) * win->width, 0, win->width);
         write_pos = (win->height - 1) * win->width;
     }
-
-    if (focused)
-    {
-        memmove((void *)io_vga_addr_base, win->buffer, win->width * win->height);
-    }
 }
-
-void putc_process(PCB *pcb, char ch)
-{
-    const bool is_focused = (pcb == scheduler_foucsed_pcb());
-    Window *window = pcb->window;
-
-    assert(window != NULL && window->mode == WINDOW_TEXT);
-    putc_window(window, ch, is_focused);
-}
-
 
 size_t handle_write(uint8_t *buffer, uint64_t buffer_size, uint64_t file_offset, int minor_number, bool block /* unused */)
 {
@@ -130,8 +116,10 @@ size_t handle_write(uint8_t *buffer, uint64_t buffer_size, uint64_t file_offset,
 
             for (uint64_t i = 0; i < buffer_size; i++)
             {
-                putc_process(current, buffer[i]);
+                putc_window(current->window, buffer[i]);
             }
+
+            window_notify_update(current->window);
 
             return buffer_size;
         }
@@ -150,17 +138,20 @@ typedef struct {
 // @see pcb_IORefresh
 static pcb_IORefreshResult pcb_refresh_tty_read(PCB *pcb)
 {
-    PCB *focused = scheduler_foucsed_pcb();
-    if(pcb != focused)
+    Window *window = pcb->window;
+    assert(window != NULL);
+
+    if (!window_is_in_focus(window))
     {
         return PCB_IO_REFRESH_CONTINUE;
     }
+
     if (!io_keyboard_is_key_ready())
     {
         return PCB_IO_REFRESH_CONTINUE;
     }
 
-    bool should_output = pcb->window->mode == WINDOW_TEXT;
+    assert(pcb->window->mode == WINDOW_TEXT);
 
     TTYReadRefreshArgument *arg = pcb->refresh_arg;
     assert(arg != NULL);
@@ -176,13 +167,15 @@ static pcb_IORefreshResult pcb_refresh_tty_read(PCB *pcb)
     {
         if (arg->current_index > 0)
         {
-            if (should_output) putc_process(pcb, '\b');
+            putc_window(window, '\b');
+            window_notify_update(window);
             arg->current_index--;
         }
         return PCB_IO_REFRESH_CONTINUE;
     }
 
-    if (should_output) putc_process(pcb, ch); // TODO: add a way to configure the displaying/not-displaying. Maybe it should be a shell feature instead of being a kernel feature.
+    putc_window(window, ch); // TODO: add a way to configure the displaying/not-displaying. Maybe it should be a shell feature instead of being a kernel feature.
+    window_notify_update(window);
 
     arg->current_index++;
 
@@ -217,12 +210,13 @@ static size_t tty_read_blocking(uint8_t *buffer, uint64_t buffer_size)
 static size_t tty_read_nonblocking(uint8_t *buffer, uint64_t buffer_size)
 {
     assert(io_input_keyboard_key == io_keyboard_wait_key && "tty only works with the io_keyboard driver");
+
     PCB *pcb = scheduler_current_pcb();
-    PCB *focused = scheduler_foucsed_pcb();
-    if(pcb!=focused)
+    if (!window_is_in_focus(pcb->window))
     {
         return 0;
     }
+
     for (int i = 0; i < buffer_size; i++)
     {
         if (!io_keyboard_is_key_ready())

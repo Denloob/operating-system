@@ -11,6 +11,7 @@
 #include "scheduler.h"
 #include <stddef.h>
 #include "memory.h"
+#include "window.h"
 
 #define VGA_SCREEN_SIZE (VGA_GRAPHICS_WIDTH * VGA_GRAPHICS_HEIGHT)
 #define COLOR_PALETTE_SIZE 256
@@ -45,10 +46,10 @@ static size_t handle_write(uint8_t *buffer, uint64_t buffer_size, uint64_t file_
             {
                 return -1;
             }
-            //in any case we copy the new bufer to the window buffer of the process 
+            // In any case we copy the new buffer to the window buffer of the process.
             memmove((uint8_t *)current_process->window->buffer + file_offset, buffer, size);
-            //But if this is the focused process we also copy the buffer to the real vga
-            if(current_process == scheduler_foucsed_pcb())
+            // But if this is the focused process we also copy the buffer to the real vga
+            if (window_is_in_focus(current_process->window))
             {
                 memmove((void *)(VGA_GRAPHICS_ADDRESS + file_offset), buffer, size);
             }

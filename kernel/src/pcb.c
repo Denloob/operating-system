@@ -9,6 +9,7 @@
 #include "res.h"
 #include <stdint.h>
 #include "scheduler.h"
+#include "window.h"
 
 const static int kernel_start_index = 256;
 PCB* PCB_init(uint64_t id, PCB *parent, uint64_t entry_point, mmu_PageMapEntry *kernel_pml)
@@ -123,14 +124,10 @@ void PCB_cleanup(PCB *pcb)
 
     file_descriptor_hashmap_cleanup(&pcb->fd_map);
     pcb_ProcessChildrenArray_cleanup(&pcb->children);
-    if(pcb->window)
+    if (pcb->window)
     {
-        remove_from_windowed_process_list(pcb);
-        if(pcb->window->buffer)
-        {
-            kfree(pcb->window->buffer);
-        }
-        kfree(pcb->window);
+        window_unregister(pcb->window);
+        window_destroy(pcb->window);
     }
     kfree(pcb);
 }
@@ -263,6 +260,3 @@ size_t pcb_ProcessChildrenArray_find(pcb_ProcessChildrenArray *arr, uint64_t pid
 
     return arr->length;
 }
-
-
-

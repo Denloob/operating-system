@@ -1,6 +1,7 @@
 #pragma once
 
 #include "file_descriptor_hashmap.h"
+#include "window.h"
 #include "mmu.h"
 #include "fs.h"
 #include "regs.h"
@@ -23,18 +24,6 @@ typedef enum {
     PCB_IO_REFRESH_CONTINUE,
 } pcb_IORefreshResult;
 
-typedef enum 
-{
-    WINDOW_TEXT,
-    WINDOW_GRAPHICS
-} WindowMode;
-
-typedef struct 
-{
-    WindowMode mode;
-    void *buffer; 
-    size_t width, height;
-} Window;
 /**
  * @brief - Refresh the IO operation of the PCB. If the operation was
  *            complete, return true.
@@ -95,11 +84,8 @@ struct PCB
     uint64_t last_fd;
 
     Window *window;
-    PCB *window_list_next;
-    PCB *window_list_prev;
     // TODO: signal info
 };
 
 void PCB_cleanup(PCB *pcb);
 PCB* PCB_init(uint64_t id, PCB *parent, uint64_t entry_point, mmu_PageMapEntry *kernel_pml);
-

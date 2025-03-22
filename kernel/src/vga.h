@@ -68,5 +68,3 @@ void vga_restore_default_color_palette();
  * @see - vga_color_index
  */
 void vga_color_write_color(uint8_t red, uint8_t green, uint8_t blue);
-
-void redraw_vga_from_process_window(PCB *process_window_to_draw);

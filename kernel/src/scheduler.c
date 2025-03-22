@@ -17,9 +17,6 @@ static PCB *g_process_queue_tail;
 
 static PCB *g_io_head; // Process IO linked list
 
-static PCB *g_focused_process = NULL;
-PCB *g_windowed_processes=NULL;
-
 static PCB *wait_until_one_IO_is_ready()
 {
     if (g_io_head == NULL)
@@ -113,17 +110,6 @@ PCB *scheduler_io_refresh()
 PCB *scheduler_current_pcb()
 {
     return g_current_process;
-}
-
-PCB *scheduler_foucsed_pcb()
-{
-    return g_focused_process;
-}
-
-
-void scheduler_set_foucsed_pcb(PCB *process)
-{
-    g_focused_process = process;
 }
 
 void scheduler_context_switch_to(PCB *pcb, int pic_number)
@@ -305,117 +291,3 @@ int scheduler_get_all_processes(ProcessInfo *out, int max)
 
     return count;
 }
-
-
-
-void add_to_windowed_process_list(PCB *process)
-{
-    if (!process) return;
-
-    if (!g_windowed_processes)
-    {
-        g_windowed_processes = process;
-        process->window_list_next = process;
-        process->window_list_prev = process;
-    }
-    else
-    {
-        PCB *head = g_windowed_processes;
-        PCB *tail = head->window_list_prev;
-
-        tail->window_list_next = process;
-        process->window_list_prev = tail;
-        process->window_list_next = head;
-        head->window_list_prev = process;
-    }
-}
-
-void remove_from_windowed_process_list(PCB *process)
-{
-    if (!process || !g_windowed_processes) return;
-
-    // If only one in the list
-    if (process->window_list_next == process && process->window_list_prev == process)
-    {
-        g_windowed_processes = NULL;
-        if (g_focused_process == process)
-        {
-            g_focused_process = NULL;
-        }
-        return;
-    }
-
-    if (!process->window_list_next || !process->window_list_prev)
-    {
-        return;
-    }
-
-    process->window_list_prev->window_list_next = process->window_list_next;
-    process->window_list_next->window_list_prev = process->window_list_prev;
-
-    if (g_windowed_processes == process)
-    {
-        g_windowed_processes = process->window_list_next;
-    }
-
-    if (g_focused_process == process)
-    {
-        g_focused_process = g_windowed_processes;
-
-        if (g_focused_process && g_focused_process->window)
-        {
-            redraw_vga_from_process_window(g_focused_process);
-        }
-    }
-
-    process->window_list_next = NULL;
-    process->window_list_prev = NULL;
-}
-
-
-int create_window_for_process(PCB *process , WindowMode mode)
-{
-    if (process->window) return -1; //Will need to change this if we will want to support multiple windows at some point
-
-    Window *win = kmalloc(sizeof(Window));
-    if (!win) return -1;
-
-    win->mode = mode;
-
-    if (mode == WINDOW_TEXT)
-    {
-        win->width = VGA_TEXT_WIDTH_BYTES;
-        win->height = VGA_TEXT_HEIGHT;
-    }
-    else if (mode == WINDOW_GRAPHICS)
-    {
-        win->height = VGA_GRAPHICS_HEIGHT;
-        win->width = VGA_GRAPHICS_WIDTH;
-    }
-    else
-    {
-        assert(false && "Unsupported window mode");
-    }
-
-    win->buffer = kmalloc(win->height * win->width);
-    process->window = win;
-    add_to_windowed_process_list(process);
-
-    return 0;
-}
-
-
-void switch_focused_process()
-{
-    if (!g_focused_process || !g_windowed_processes) return;
-
-    if(g_focused_process->window_list_next)
-    {
-        g_focused_process = g_focused_process->window_list_next;
-    }
-    if (g_focused_process && g_focused_process->window)
-    {
-        redraw_vga_from_process_window(g_focused_process);
-    }
-}
-

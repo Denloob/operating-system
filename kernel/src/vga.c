@@ -551,27 +551,3 @@ static unsigned char g_8x16_font[4096] = /* Definition for the previously declar
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 };
 // NOLINTEND(readability-magic-numbers)
-
-
-
-
-void redraw_vga_from_process_window(PCB *process_window_to_draw)
-{
-    if (!process_window_to_draw->window || !process_window_to_draw->window->buffer) return;
-
-    void *dest = NULL;
-
-    if (process_window_to_draw->window->mode == WINDOW_TEXT)
-    {
-        vga_mode_text();
-        dest = (void *)VGA_TEXT_ADDRESS;
-    }
-    else if (process_window_to_draw->window->mode == WINDOW_GRAPHICS)
-    {
-        vga_mode_graphics();
-        dest = (void *)VGA_GRAPHICS_ADDRESS;
-    }
-
-    size_t size = process_window_to_draw->window->width * process_window_to_draw->window->height;
-    memmove(dest, process_window_to_draw->window->buffer, size);
-}

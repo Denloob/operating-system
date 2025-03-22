@@ -4,6 +4,7 @@
 #include "pic.h"
 #include "smartptr.h"
 #include "scheduler.h"
+#include "window.h"
 
 // @see io.c
 #define KEYBOARD_PORT 0x60
@@ -23,9 +24,9 @@ static void __attribute__((used, sysv_abi)) io_isr_keyboard_event_impl(isr_Inter
     {
         return;
     }
-    if(key == TAB_KEY)
+    if (key == TAB_KEY)
     {
-        switch_focused_process();
+        window_switch_focus();
         return;
     }
     bool is_ringbuffer_full = ((io_keyboard_buffer_head + 1) %

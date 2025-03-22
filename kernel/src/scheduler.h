@@ -57,9 +57,6 @@ void scheduler_start() __attribute__((noreturn));
  */
 PCB *scheduler_current_pcb();
 
-
-PCB *scheduler_foucsed_pcb();
-void scheduler_set_foucsed_pcb(PCB *process);
 /**
  * @brief Dequeue the current process from the queue and context switch to the next one in the queue.
  */
@@ -102,15 +99,3 @@ void scheduler_move_current_process_to_io_queue_and_context_switch(pcb_IORefresh
 PCB *scheduler_find_by_pid(uint64_t pid);
 
 int scheduler_get_all_processes(ProcessInfo *out, int max);
-
-/**
- * @brief adds a process to the queue of the process that has window
- */
-void add_to_windowed_process_list(PCB *process);
-void remove_from_windowed_process_list(PCB *process);
-
-int create_window_for_process(PCB *process , WindowMode mode);
-/**
- * @brief the function switch the foucsed process to the next one in queue
- * */
-void switch_focused_process();
