@@ -274,6 +274,9 @@ void vga_mode_graphics()
     if (!g_default_color_palette_initialized)
         default_color_palette_initialize();
 
+    if (g_mode_type == VGA_MODE_TYPE_GRAPHICS)
+        return;
+
     write_regs(g_320x200x256);
     g_mode_type = VGA_MODE_TYPE_GRAPHICS;
 }
@@ -285,6 +288,8 @@ void vga_restore_default_color_palette()
 
 void vga_mode_text()
 {
+    if (g_mode_type == VGA_MODE_TYPE_TEXT)
+        return;
     write_regs(g_80x25_text);
     write_font(g_8x16_font);
     g_mode_type = VGA_MODE_TYPE_TEXT;
