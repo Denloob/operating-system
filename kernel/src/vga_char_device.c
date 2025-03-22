@@ -27,11 +27,6 @@ static size_t handle_write(uint8_t *buffer, uint64_t buffer_size, uint64_t file_
     {
         case vga_char_device_MINOR_SCREEN:
         {
-            if (vga_current_mode() != VGA_MODE_TYPE_GRAPHICS)
-            {
-                return -2;
-            }
-
             if (file_offset >= VGA_SCREEN_SIZE)
             {
                 assert(false && "fseek shouldn't ever allow this to happen");
@@ -42,14 +37,15 @@ static size_t handle_write(uint8_t *buffer, uint64_t buffer_size, uint64_t file_
             const uint64_t size = MIN(buffer_size, available);
 
             PCB *current_process = scheduler_current_pcb();
-            if(!current_process || !current_process->window || current_process->window->mode !=WINDOW_GRAPHICS)
+            Window *window = PCB_get_window_in_mode(current_process, WINDOW_GRAPHICS);
+            if (window == NULL)
             {
-                return -1;
+                return -2;
             }
             // In any case we copy the new buffer to the window buffer of the process.
-            memmove((uint8_t *)current_process->window->graphics->buf + file_offset, buffer, size);
+            memmove((uint8_t *)window->graphics->buf + file_offset, buffer, size);
             // But if this is the focused process we also copy the buffer to the real vga
-            if (window_is_in_focus(current_process->window))
+            if (window_is_in_focus(window))
             {
                 memmove((void *)(VGA_GRAPHICS_ADDRESS + file_offset), buffer, size);
             }

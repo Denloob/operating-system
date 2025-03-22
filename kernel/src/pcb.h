@@ -89,3 +89,22 @@ struct PCB
 
 void PCB_cleanup(PCB *pcb);
 PCB* PCB_init(uint64_t id, PCB *parent, uint64_t entry_point, mmu_PageMapEntry *kernel_pml);
+
+/**
+ * @brief - Walks up the parent list until finds a window with the given mode.
+ *
+ *           For example, if `pcb->window` is a graphics window, and requested
+ *            (`mode`) for WINDOW_GRAPHICS, it will return `pcb->window`.
+ *           However, if the request is for a text window, and `pcb->parent->window`
+ *            is a text window, would return `pcb->parent->window`.
+ *
+ *           When no such window was found, returns NULL.
+ *
+ *           To get any non NULL window, regardless the mode, use `PCB_get_window`.
+ *
+ * @see PCB_get_window
+ *
+ * @param mode The mode in which the requested window should be in.
+ * @return The first parent's (or self's) window satisfying `mode`, or NULL if none.
+ */
+Window *PCB_get_window_in_mode(PCB *pcb, WindowMode mode);

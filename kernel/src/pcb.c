@@ -260,3 +260,22 @@ size_t pcb_ProcessChildrenArray_find(pcb_ProcessChildrenArray *arr, uint64_t pid
 
     return arr->length;
 }
+
+Window *PCB_get_window_in_mode(PCB *pcb, WindowMode mode)
+{
+    assert(pcb != NULL);
+    assert(mode == WINDOW_TEXT || mode == WINDOW_GRAPHICS);
+
+    PCB *cur_pcb = pcb;
+    while (cur_pcb != NULL)
+    {
+        if (cur_pcb->window != NULL && cur_pcb->window->mode == mode)
+        {
+            return cur_pcb->window;
+        }
+
+        cur_pcb = cur_pcb->parent;
+    }
+
+    return NULL;
+}

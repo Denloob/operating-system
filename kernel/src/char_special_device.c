@@ -102,23 +102,19 @@ size_t handle_write(uint8_t *buffer, uint64_t buffer_size, uint64_t file_offset,
 
         case char_special_device_MINOR_TTY:
         {
-            if (vga_current_mode() != VGA_MODE_TYPE_TEXT)
+            PCB *current = scheduler_current_pcb();
+            Window *window = PCB_get_window_in_mode(current, WINDOW_TEXT);
+            if (window == NULL)
             {
                 return -2;
             }
 
-            PCB *current = scheduler_current_pcb();
-            if (!current || !current->window || current->window->mode != WINDOW_TEXT) // TODO: walk up the parent tree
-            {
-                return -1;
-            }
-
             for (uint64_t i = 0; i < buffer_size; i++)
             {
-                putc_window(current->window, buffer[i]);
+                putc_window(window, buffer[i]);
             }
 
-            window_notify_update(current->window);
+            window_notify_update(window);
 
             return buffer_size;
         }
@@ -137,8 +133,12 @@ typedef struct {
 // @see pcb_IORefresh
 static pcb_IORefreshResult pcb_refresh_tty_read(PCB *pcb)
 {
-    Window *window = pcb->window;
-    assert(window != NULL);
+    Window *window = PCB_get_window_in_mode(pcb, WINDOW_TEXT);
+    if (window == NULL)
+    {
+        pcb->regs.rax = -2;
+        return PCB_IO_REFRESH_DONE;
+    }
 
     if (!window_is_in_focus(window))
     {
@@ -149,8 +149,6 @@ static pcb_IORefreshResult pcb_refresh_tty_read(PCB *pcb)
     {
         return PCB_IO_REFRESH_CONTINUE;
     }
-
-    assert(pcb->window->mode == WINDOW_TEXT);
 
     TTYReadRefreshArgument *arg = pcb->refresh_arg;
     assert(arg != NULL);
@@ -211,7 +209,21 @@ static size_t tty_read_nonblocking(uint8_t *buffer, uint64_t buffer_size)
     assert(io_input_keyboard_key == io_keyboard_wait_key && "tty only works with the io_keyboard driver");
 
     PCB *pcb = scheduler_current_pcb();
-    if (!window_is_in_focus(pcb->window))
+
+    // We are ok with pcb's window (both text and graphics), or parent's text window (but not graphics).
+    //  If we allowed parent's graphics, GUIs with multiple windows would "eat" each other's keys.
+    Window *window = pcb->window;
+    if (window == NULL)
+    {
+        window = PCB_get_window_in_mode(pcb, WINDOW_TEXT);
+    }
+
+    if (window == NULL)
+    {
+        return -2;
+    }
+
+    if (!window_is_in_focus(window))
     {
         return 0;
     }
@@ -243,11 +255,6 @@ size_t handle_read(uint8_t *buffer, uint64_t buffer_size, uint64_t file_offset, 
         {
             if (block)
             {
-                if (vga_current_mode() != VGA_MODE_TYPE_TEXT)
-                {
-                    return -2;
-                }
-
                 tty_read_blocking(buffer, buffer_size);
                 assert(false && "Unreachable");
             }
