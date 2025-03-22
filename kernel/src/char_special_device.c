@@ -85,7 +85,7 @@ void putc_window(Window *win, char ch)
         }
     }
 
-    if (write_pos >= window_cells * 2)
+    if (write_pos >= window_cells)
     {
         memmove(buf, buf + win->width, (win->height - 1) * win->width);
         memset(buf + (win->height - 1) * win->width, 0, win->width);
