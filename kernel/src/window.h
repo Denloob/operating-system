@@ -2,6 +2,7 @@
 
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdint.h>
 
 typedef enum
 {
@@ -9,10 +10,22 @@ typedef enum
     WINDOW_GRAPHICS
 } WindowMode;
 
+typedef struct {
+    size_t cursor;
+    uint8_t buf[];
+} TextBuffer;
+
+typedef struct {
+    uint8_t buf[0];
+} GraphicsBuffer;
+
 typedef struct Window
 {
     WindowMode mode;
-    void *buffer;
+    union {
+        GraphicsBuffer *graphics;
+        TextBuffer     *text;
+    };
     size_t width, height;
 
     struct Window *next;

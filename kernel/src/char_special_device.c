@@ -54,42 +54,41 @@ void char_special_device_init()
 #define VGA_COLOR_WHITE 7
 void putc_window(Window *win, char ch)
 {
-    assert(win != NULL && win->mode == WINDOW_TEXT && win->buffer != NULL);
+    assert(win != NULL && win->mode == WINDOW_TEXT && win->text != NULL);
 
     size_t window_cells = win->width * win->height;
-    uint8_t *buf = (uint8_t *)win->buffer;
-    static size_t write_pos = 0;
+    uint8_t *buf = (uint8_t *)win->text->buf;
 
     if (ch == '\b')
     {
-        if (write_pos > 0)
+        if (win->text->cursor > 0)
         {
-            write_pos -= 2;
-            buf[write_pos] = ' ';
-            buf[write_pos + 1] = VGA_COLOR_WHITE;
+            win->text->cursor -= 2;
+            buf[win->text->cursor] = ' ';
+            buf[win->text->cursor + 1] = VGA_COLOR_WHITE;
         }
         return;
     }
 
     if (ch == '\n')
     {
-        write_pos += win->width;
-        write_pos -= write_pos % (win->width);
+        win->text->cursor += win->width;
+        win->text->cursor -= win->text->cursor % (win->width);
     }
     else
     {
-        if (write_pos + 1 < window_cells)
+        if (win->text->cursor + 1 < window_cells)
         {
-            buf[write_pos++] = ch;
-            buf[write_pos++] = VGA_COLOR_WHITE;
+            buf[win->text->cursor++] = ch;
+            buf[win->text->cursor++] = VGA_COLOR_WHITE;
         }
     }
 
-    if (write_pos >= window_cells)
+    if (win->text->cursor >= window_cells)
     {
         memmove(buf, buf + win->width, (win->height - 1) * win->width);
         memset(buf + (win->height - 1) * win->width, 0, win->width);
-        write_pos = (win->height - 1) * win->width;
+        win->text->cursor = (win->height - 1) * win->width;
     }
 }
 

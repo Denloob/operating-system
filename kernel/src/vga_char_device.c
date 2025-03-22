@@ -47,7 +47,7 @@ static size_t handle_write(uint8_t *buffer, uint64_t buffer_size, uint64_t file_
                 return -1;
             }
             // In any case we copy the new buffer to the window buffer of the process.
-            memmove((uint8_t *)current_process->window->buffer + file_offset, buffer, size);
+            memmove((uint8_t *)current_process->window->graphics->buf + file_offset, buffer, size);
             // But if this is the focused process we also copy the buffer to the real vga
             if (window_is_in_focus(current_process->window))
             {
