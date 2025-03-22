@@ -171,6 +171,9 @@ void scheduler_context_switch_from(Regs *regs, isr_InterruptFrame *frame, int pi
     assert(g_process_queue_tail != NULL);
     assert(g_current_process    != NULL);
 
+    // While we are here, refresh IO
+    scheduler_io_refresh();
+
     PCB *pcb = g_current_process;
 
     pcb->rip = frame->rip;
