@@ -493,10 +493,10 @@ void app_display(App *app)
     {
         app_display_tools(app);
     }
-    else
-    {
-        gx_draw_fill_rect_wh(g_canvas, app->mouse.pos, BRUSH_SIZE, BRUSH_SIZE, app->selected_color);
-    }
+
+    int brush_border_size = BRUSH_SIZE + 2;
+    gx_draw_fill_rect_wh(g_canvas, app->mouse.pos, BRUSH_SIZE, BRUSH_SIZE, app->selected_color);
+    gx_draw_rect_wh(g_canvas, gx_vec2_add(app->mouse.pos, (gx_Vec2){-1, -1}), brush_border_size, brush_border_size, COLOR_BLACK);
 
     gx_canvas_draw(g_canvas);
 }
