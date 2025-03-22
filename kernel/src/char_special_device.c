@@ -57,20 +57,20 @@ void putc_window(Window *win, char ch, bool focused)
 
     size_t window_cells = win->width * win->height;
     uint8_t *buf = (uint8_t *)win->buffer;
-    static size_t write_pos = 0; 
+    static size_t write_pos = 0;
 
-    if (ch == '\b') 
+    if (ch == '\b')
     {
         if (write_pos > 0)
         {
-            write_pos -= 2; 
+            write_pos -= 2;
             buf[write_pos] = ' ';
             buf[write_pos + 1] = VGA_COLOR_WHITE;
         }
         return;
     }
 
-    if (ch == '\n') 
+    if (ch == '\n')
     {
         write_pos += win->width;
         write_pos -= write_pos % (win->width);
@@ -97,6 +97,15 @@ void putc_window(Window *win, char ch, bool focused)
     }
 }
 
+void putc_process(PCB *pcb, char ch)
+{
+    const bool is_focused = (pcb == scheduler_foucsed_pcb());
+    Window *window = pcb->window;
+
+    assert(window != NULL && window->mode == WINDOW_TEXT);
+    putc_window(window, ch, is_focused);
+}
+
 
 size_t handle_write(uint8_t *buffer, uint64_t buffer_size, uint64_t file_offset, int minor_number, bool block /* unused */)
 {
@@ -119,11 +128,9 @@ size_t handle_write(uint8_t *buffer, uint64_t buffer_size, uint64_t file_offset,
                 return -1;
             }
 
-            bool is_focused = (current == scheduler_foucsed_pcb());
-
             for (uint64_t i = 0; i < buffer_size; i++)
             {
-                putc_window(current->window, buffer[i], is_focused);
+                putc_process(current, buffer[i]);
             }
 
             return buffer_size;
@@ -153,6 +160,8 @@ static pcb_IORefreshResult pcb_refresh_tty_read(PCB *pcb)
         return PCB_IO_REFRESH_CONTINUE;
     }
 
+    bool should_output = pcb->window->mode == WINDOW_TEXT;
+
     TTYReadRefreshArgument *arg = pcb->refresh_arg;
     assert(arg != NULL);
     assert(arg->current_index <= arg->buffer_size);
@@ -167,13 +176,13 @@ static pcb_IORefreshResult pcb_refresh_tty_read(PCB *pcb)
     {
         if (arg->current_index > 0)
         {
-            putc('\b');
+            if (should_output) putc_process(pcb, '\b');
             arg->current_index--;
         }
         return PCB_IO_REFRESH_CONTINUE;
     }
 
-    putc(ch); // TODO: add a way to configure the displaying/not-displaying. Maybe it should be a shell feature instead of being a kernel feature.
+    if (should_output) putc_process(pcb, ch); // TODO: add a way to configure the displaying/not-displaying. Maybe it should be a shell feature instead of being a kernel feature.
 
     arg->current_index++;
 
