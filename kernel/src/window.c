@@ -66,11 +66,9 @@ static void display_window(Window *window)
     switch (window->mode)
     {
         case WINDOW_TEXT:
-            vga_mode_text();
             memmove((void *)VGA_TEXT_ADDRESS, window->text->buf, size);
             break;
         case WINDOW_GRAPHICS:
-            vga_mode_graphics();
             memmove((void *)VGA_GRAPHICS_ADDRESS, window->graphics->buf, size);
             break;
         default:
@@ -88,6 +86,19 @@ void window_switch_focus_to(Window *window)
 {
     assert(window != NULL);
     g_focused_window = window;
+
+    switch (window->mode)
+    {
+        case WINDOW_TEXT:
+            vga_mode_text();
+            break;
+        case WINDOW_GRAPHICS:
+            vga_mode_graphics();
+            break;
+        default:
+            assert(false && "Unreachable");
+    }
+
     window_display_focused_window();
 }
 
