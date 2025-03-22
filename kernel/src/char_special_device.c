@@ -50,7 +50,7 @@ void char_special_device_init()
 
 
 
-#define VGA_COLOR_WHITE 0x0F
+#define VGA_COLOR_WHITE 7
 void putc_window(Window *win, char ch, bool focused)
 {
     if (!win || win->mode != WINDOW_TEXT || !win->buffer) return;
@@ -123,7 +123,7 @@ size_t handle_write(uint8_t *buffer, uint64_t buffer_size, uint64_t file_offset,
             }
 
             PCB *current = scheduler_current_pcb();
-            if (!current || !current->window || current->window->mode != WINDOW_TEXT)
+            if (!current || !current->window || current->window->mode != WINDOW_TEXT) // TODO: walk up the parent tree
             {
                 return -1;
             }
