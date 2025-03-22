@@ -76,3 +76,11 @@ void gx_draw_circle(gx_Canvas* canvas, gx_Vec2 center, int radius, gx_Color colo
  * @note Content outside the canvas bounds will not be drawn. Assumes radius >= 0.
  */
 void gx_draw_fill_circle(gx_Canvas* canvas, gx_Vec2 center, int radius, gx_Color color);
+
+/**
+ * @brief Draws the `target_canvas` on top of the `canvas`.
+ *
+ * @param top_left The top left position on `canvas` where to start drawing `target_canvas`.
+ * @param target_canvas The canvas to draw on top of `canvas`.
+ */
+void gx_draw_canvas(gx_Canvas* canvas, gx_Vec2 top_left, gx_Canvas *target_canvas);

@@ -180,3 +180,16 @@ void gx_draw_fill_circle(gx_Canvas *canvas, gx_Vec2 center, int radius, gx_Color
 
     gx_draw_circle(canvas, center, radius, color);
 }
+
+void gx_draw_canvas(gx_Canvas* canvas, gx_Vec2 top_left, gx_Canvas *target_canvas)
+{
+    for (int x = top_left.x; x < MIN(canvas->width, top_left.x + target_canvas->width); x++)
+    {
+        for (int y = top_left.y; y < MIN(canvas->height, top_left.y + target_canvas->height); y++)
+        {
+            int target_x = x - top_left.x;
+            int target_y = y - top_left.y;
+            canvas->buf[x + (y * canvas->width)] = target_canvas->buf[target_x + (target_y * target_canvas->width)];
+        }
+    }
+}
