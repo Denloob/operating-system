@@ -70,3 +70,16 @@ double sin(double x)
 {
     return cos(x - M_PI_2);
 }
+
+int isqrt(int x)
+{
+    // The Babylonian Method
+    int a = x;
+    int b = 1;
+    while (a > b)
+    {
+        a = (a + b) >> 1;
+        b = x / a;
+    }
+    return a;
+}

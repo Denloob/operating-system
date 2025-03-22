@@ -12,3 +12,5 @@
 
 double cos(double x);
 double sin(double x);
+
+int isqrt(int x);
