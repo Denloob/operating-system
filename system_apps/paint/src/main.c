@@ -45,7 +45,7 @@ gx_palette_Color g_color_palette[256] = {
 #define PAINT_CANVAS_WIDTH 320
 #define PAINT_CANVAS_HEIGHT 180
 
-#define BRUSH_SIZE 4
+#define BRUSH_SIZE 2
 
 typedef enum {
     TOOL_BRUSH,
