@@ -155,6 +155,10 @@ static pcb_IORefreshResult pcb_refresh_tty_read(PCB *pcb)
     assert(arg->current_index <= arg->buffer_size);
 
     char ch = key_to_char(io_input_keyboard_key());
+    if ((uint8_t)ch == IO_KEY_UNKNOWN)
+    {
+        return PCB_IO_REFRESH_CONTINUE;
+    }
 
     // syscall checked that the buffer is safe to write to.
     asm volatile ("stac" ::: "memory");
@@ -236,7 +240,13 @@ static size_t tty_read_nonblocking(uint8_t *buffer, uint64_t buffer_size)
         }
 
         // buffer
-        buffer[i] = key_to_char(io_keyboard_wait_key());
+        uint8_t ch = key_to_char(io_keyboard_wait_key());
+        if (ch == IO_KEY_UNKNOWN)
+        {
+            i--;
+            continue;
+        }
+        buffer[i] = ch;
     }
 
     return buffer_size;

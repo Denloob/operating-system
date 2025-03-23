@@ -116,14 +116,18 @@ typedef enum KeycodeType
  */
 int get_key_type(int keycode);
 
+// An upside down question mark in our font
+#define IO_KEY_UNKNOWN (uint8_t)0xa8
+
 /**
  * @brief Converts a (set 1) keycode to an ascii character. If there's no ascii
- *          character for the given keycode, '\0' is returned.
+ *          character for the given keycode, IO_KEY_UNKNOWN is returned.
  *
  * @param keycode
- * @return Corresponding ascii character or '\0'
+ * @return Corresponding ascii character or IO_KEY_UNKNOWN.
  */
 char key_to_char(int keycode);
+
 /* Function to get a string from the keyboard and write it into the provided array
   input: pointer to array , array max size
 */

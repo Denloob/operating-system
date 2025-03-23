@@ -123,7 +123,7 @@ char key_to_char(int keycode)
     switch (keycode)
     {
         default:
-            return 0xa8; // An unpside down question mark in our font
+            return IO_KEY_UNKNOWN;
 
         case 0x02:
             return '1';
