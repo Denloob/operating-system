@@ -273,7 +273,7 @@ static void init_pic_keyboard_mouse_and_timer()
 
     pic_clear_mask(pic_IRQ_KEYBOARD);
     idt_register(pic_irq_number_to_idt(pic_IRQ_KEYBOARD), IDT_gate_type_INTERRUPT, io_isr_keyboard_event);
-    io_input_keyboard_key = io_keyboard_wait_key;
+    io_input_keyboard_key = io_keyboard_wait_key_code;
 
     pic_clear_mask(pic_IRQ_PS2_MOUSE);
     idt_register(pic_irq_number_to_idt(pic_IRQ_PS2_MOUSE), IDT_gate_type_INTERRUPT, mouse_isr);

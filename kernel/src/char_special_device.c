@@ -154,7 +154,7 @@ static pcb_IORefreshResult pcb_refresh_tty_read(PCB *pcb)
     assert(arg != NULL);
     assert(arg->current_index <= arg->buffer_size);
 
-    char ch = key_to_char(io_input_keyboard_key());
+    char ch = io_keyboard_key_to_char(io_keyboard_wait_key());
     if ((uint8_t)ch == IO_KEY_UNKNOWN)
     {
         return PCB_IO_REFRESH_CONTINUE;
@@ -210,7 +210,7 @@ static size_t tty_read_blocking(uint8_t *buffer, uint64_t buffer_size)
 
 static size_t tty_read_nonblocking(uint8_t *buffer, uint64_t buffer_size)
 {
-    assert(io_input_keyboard_key == io_keyboard_wait_key && "tty only works with the io_keyboard driver");
+    assert(io_input_keyboard_key == io_keyboard_wait_key_code && "tty only works with the io_keyboard driver");
 
     PCB *pcb = scheduler_current_pcb();
 
@@ -240,7 +240,7 @@ static size_t tty_read_nonblocking(uint8_t *buffer, uint64_t buffer_size)
         }
 
         // buffer
-        uint8_t ch = key_to_char(io_keyboard_wait_key());
+        uint8_t ch = io_keyboard_key_to_char(io_keyboard_wait_key());
         if (ch == IO_KEY_UNKNOWN)
         {
             i--;
