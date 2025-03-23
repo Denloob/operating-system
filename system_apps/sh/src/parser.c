@@ -112,8 +112,13 @@ ShellCommand *parser_parse_shell_expression(const char *expression, size_t lengt
             continue;
         }
 
-        if (*it == ' ')
+        if (*it == ' ' || *it == '&')
         {
+            if (*it == '&')
+            {
+                cmd->is_async = true;
+            }
+
             if (!currently_parsing_token)
             {
                 continue; // Skip spaces

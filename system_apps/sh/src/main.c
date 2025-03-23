@@ -146,7 +146,7 @@ int main()
         {
             printf("Unknown command: '%s'\n", cmd->shell_command[0]);
         }
-        else
+        else if (!cmd->is_async)
         {
             int wstatus;
             pid_t child_pid = waitpid(-1, &wstatus, 0);

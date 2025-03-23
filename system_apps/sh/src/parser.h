@@ -1,11 +1,14 @@
 #pragma once
 
+#include <stdbool.h>
 #include <stddef.h>
 #include <sys/cdefs.h>
 
 typedef struct {
     char **shell_command;
     size_t length;
+
+    bool is_async;
 } ShellCommand;
 
 /**
