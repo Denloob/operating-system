@@ -73,9 +73,9 @@ void *sbrk(intptr_t increment)
     return prev_brk;
 }
 
-int execve_new(const char *path, char *const *argv)
+pid_t execve_new(const char *path, char *const *argv)
 {
-    return syscall(SYS_execve, path, argv) ? 0 : -1;
+    return syscall(SYS_execve, path, argv);
 }
 
 void exit(int status)

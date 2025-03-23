@@ -338,7 +338,7 @@ static void syscall_execute_program(Regs *regs)
 {
     res rs;
 
-    regs->rax = false; // Return: failed.
+    regs->rax = -1; // Return: failed.
 
     //Args:
     usermode_mem *path_to_file = (usermode_mem *)regs->rdi;
@@ -407,8 +407,9 @@ static void syscall_execute_program(Regs *regs)
         }
     }
 
-    rs = execve(filepath, (const char *const *)argv, scheduler_current_pcb());
-    regs->rax = IS_OK(rs);
+    uint64_t pid = 0;
+    rs = execve(filepath, (const char *const *)argv, scheduler_current_pcb(), &pid);
+    regs->rax = IS_OK(rs) ? pid : -1;
 }
 
 static void syscall_brk(Regs *regs)

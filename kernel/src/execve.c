@@ -7,7 +7,7 @@
 
 static uint64_t id = 1;
 
-res execve(const char *path, const char *const *argv, PCB *parent)
+res execve(const char *path, const char *const *argv, PCB *parent, uint64_t *out_pid)
 {
     const char *empty_argv[] = {path, NULL};
     if (argv == NULL)
@@ -23,6 +23,8 @@ res execve(const char *path, const char *const *argv, PCB *parent)
         return rs;
     }
 
+    if (out_pid) *out_pid = id;
     id++;
+
     return res_OK;
 }

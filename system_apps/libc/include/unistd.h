@@ -15,7 +15,7 @@ ssize_t read(int fd, void *buf, size_t count);
 ssize_t write(int fd, const void *buf, size_t count);
 
 // Similar to execve, but doesn't replace current process.
-int execve_new(const char *path, char *const *argv);
+pid_t execve_new(const char *path, char *const *argv);
 
 void *sbrk(intptr_t increment);
 int brk(void *addr);

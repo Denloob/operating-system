@@ -8,6 +8,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include <sys/wait.h>
+#include <sys/types.h>
 #include <dirent.h>
 #include <sys/syscall.h>
 
@@ -82,11 +83,11 @@ int main()
             continue;
         }
 
-        int fail = -1;
+        pid_t pid = -1;
         bool is_binary_path = strchr(cmd->shell_command[0], '/') != NULL;
         if (is_binary_path)
         {
-            fail = execve_new(cmd->shell_command[0], &cmd->shell_command[0]);
+            pid = execve_new(cmd->shell_command[0], &cmd->shell_command[0]);
         }
         else
         {
@@ -137,19 +138,19 @@ int main()
                 cmd->shell_command[0][path_len] = '/';
                 cmd->shell_command[0][path_len + 1] = '\0';
                 strncat(cmd->shell_command[0], original_command, MAX_PATH_LENGTH);
-                fail = execve_new(cmd->shell_command[0], &cmd->shell_command[0]);
+                pid = execve_new(cmd->shell_command[0], &cmd->shell_command[0]);
             }
-            while (fail == -1);
+            while (pid == -1);
         }
 
-        if (fail)
+        if (pid == -1)
         {
             printf("Unknown command: '%s'\n", cmd->shell_command[0]);
         }
         else if (!cmd->is_async)
         {
             int wstatus;
-            pid_t child_pid = waitpid(-1, &wstatus, 0);
+            pid_t child_pid = waitpid(pid, &wstatus, 0);
             if (child_pid == -1)
             {
                 printf("waitpid: something went wrong\n");
