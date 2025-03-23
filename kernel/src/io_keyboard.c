@@ -72,6 +72,8 @@ char io_keyboard_key_to_char(io_Key key)
         [IO_KEYCODE_X] = 'x', [IO_KEYCODE_V] = 'v', [IO_KEYCODE_C] = 'c',
         [IO_KEYCODE_B] = 'b', [IO_KEYCODE_N] = 'n', [IO_KEYCODE_M] = 'm',
         [IO_KEYCODE_COMMA] = ',', [IO_KEYCODE_PERIOD] = '.', [IO_KEYCODE_SLASH] = '/',
+        [IO_KEYCODE_ARROW_LEFT] = IO_CHAR_ARROW_LEFT, [IO_KEYCODE_ARROW_RIGHT] = IO_CHAR_ARROW_RIGHT,
+        [IO_KEYCODE_ARROW_UP] = IO_CHAR_ARROW_UP, [IO_KEYCODE_ARROW_DOWN] = IO_CHAR_ARROW_DOWN,
     };
 
     static const char with_shift[] = {
@@ -92,6 +94,8 @@ char io_keyboard_key_to_char(io_Key key)
         [IO_KEYCODE_X] = 'X', [IO_KEYCODE_V] = 'V', [IO_KEYCODE_C] = 'C',
         [IO_KEYCODE_B] = 'B', [IO_KEYCODE_N] = 'N', [IO_KEYCODE_M] = 'M',
         [IO_KEYCODE_COMMA] = '<', [IO_KEYCODE_PERIOD] = '>', [IO_KEYCODE_SLASH] = '?',
+        [IO_KEYCODE_ARROW_LEFT] = IO_CHAR_ARROW_LEFT, [IO_KEYCODE_ARROW_RIGHT] = IO_CHAR_ARROW_RIGHT,
+        [IO_KEYCODE_ARROW_UP] = IO_CHAR_ARROW_UP, [IO_KEYCODE_ARROW_DOWN] = IO_CHAR_ARROW_DOWN,
     };
 
     const bool shift = key.modifiers & IO_KEY_MODIFIER_SHIFT;

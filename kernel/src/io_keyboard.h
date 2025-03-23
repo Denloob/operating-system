@@ -98,3 +98,12 @@ char io_keyboard_key_to_char(io_Key key);
 #define IO_KEYCODE_F8           0x42
 #define IO_KEYCODE_F9           0x43
 #define IO_KEYCODE_F10          0x44
+#define IO_KEYCODE_ARROW_LEFT   0x4b
+#define IO_KEYCODE_ARROW_RIGHT  0x4d
+#define IO_KEYCODE_ARROW_UP     0x48
+#define IO_KEYCODE_ARROW_DOWN   0x50
+
+#define IO_CHAR_ARROW_LEFT      0x1b
+#define IO_CHAR_ARROW_RIGHT     0x1a
+#define IO_CHAR_ARROW_UP        0x18
+#define IO_CHAR_ARROW_DOWN      0x19
