@@ -100,7 +100,7 @@ char io_keyboard_key_to_char(io_Key key)
 
     const bool shift = key.modifiers & IO_KEY_MODIFIER_SHIFT;
 
-    _Static_assert(sizeof(with_shift) == sizeof(no_shift));
+    _Static_assert(sizeof(with_shift) == sizeof(no_shift), "Arrays for with and without shift must be of the same size");
     if (key.code > sizeof(with_shift))
     {
         return IO_KEY_UNKNOWN;
