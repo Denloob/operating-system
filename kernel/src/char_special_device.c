@@ -210,8 +210,6 @@ static size_t tty_read_blocking(uint8_t *buffer, uint64_t buffer_size)
 
 static size_t tty_read_nonblocking(uint8_t *buffer, uint64_t buffer_size)
 {
-    assert(io_input_keyboard_key == io_keyboard_wait_key_code && "tty only works with the io_keyboard driver");
-
     PCB *pcb = scheduler_current_pcb();
 
     // We are ok with pcb's window (both text and graphics), or parent's text window (but not graphics).
