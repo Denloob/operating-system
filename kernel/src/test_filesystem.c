@@ -86,6 +86,4 @@ void test_filesystem()
 {
     test_file_creation_and_writing();
     test_getdents();
-    printf("All tests passed successfully press any key to continue");
-    io_wait_key_raw();
 }
