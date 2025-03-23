@@ -27,12 +27,65 @@ void cd(ShellCommand *cmd)
     }
 }
 
+#define MAX_JOB_COUNT 1024
+
+pid_t g_jobs[MAX_JOB_COUNT];
+int g_jobs_cursor;
+
+void jobs_init()
+{
+    for (int i = 0; i < MAX_JOB_COUNT; i++)
+    {
+        g_jobs[i] = -1;
+    }
+}
+
+void jobs_refresh()
+{
+    for (int i = 0; i < MAX_JOB_COUNT; i++)
+    {
+        const pid_t pid = g_jobs[i];
+        if (pid == -1)
+            continue;
+
+        int wstatus;
+        const pid_t res = waitpid(pid, &wstatus, WNOHANG);
+        if (res == pid || res == -1)
+        {
+            g_jobs[i] = -1;
+        }
+    }
+}
+
+__attribute__((warn_unused_result))
+bool jobs_insert(pid_t pid)
+{
+    assert(pid != -1 && g_jobs_cursor < MAX_JOB_COUNT);
+
+    int starting_cursor_pos = g_jobs_cursor;
+    while (g_jobs[g_jobs_cursor] != -1)
+    {
+        g_jobs_cursor++;
+        g_jobs_cursor %= MAX_JOB_COUNT;
+
+        if (g_jobs_cursor == starting_cursor_pos)
+        {
+            return false;
+        }
+    }
+
+    g_jobs[g_jobs_cursor] = pid;
+    return true;
+}
+
 int main()
 {
     int8_t return_code = 0;
 
     syscall(SYS_CreateWindow , 0);
 #define MAX_PATH_LENGTH 512
+
+    jobs_init();
 
 #define INITIAL_PATH_SIZE MAX_PATH_LENGTH
     char *path = calloc(1, INITIAL_PATH_SIZE);
@@ -42,6 +95,8 @@ int main()
     char cwd[CWD_MAX_LEN] = {0};
     while (true)
     {
+        jobs_refresh();
+
         getcwd(cwd, sizeof(cwd));
 
         if (return_code == 0)
@@ -159,6 +214,15 @@ int main()
             {
                 assert(WIFEXITED(wstatus));
                 return_code = WEXITSTATUS(wstatus);
+            }
+        }
+        else
+        {
+            jobs_refresh();
+            bool success = jobs_insert(pid);
+            if (!success)
+            {
+                puts("shcore: warning: jobs list is full, this process will be lost");
             }
         }
     }
