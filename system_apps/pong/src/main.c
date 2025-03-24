@@ -270,9 +270,12 @@ void count_match_as_won()
 bool is_colliding_with_plank(int plank_y, gx_Vec2f ball_pos, bool is_enemy)
 {
     return (
-        ball_pos.y > (plank_y - BALL_RADIUS) && ball_pos.y < (plank_y + PLANK_HEIGHT + BALL_RADIUS)
-        && ((!is_enemy && (ball_pos.x - BALL_RADIUS) <= PLAYER_X_DELTA + PLANK_WIDTH) || (is_enemy && (ball_pos.x + BALL_RADIUS * 2) >= (g_canvas->width - (ENEMY_X_DELTA + PLANK_WIDTH))))
-    );
+        ball_pos.y > (plank_y - (is_enemy ? 0 : BALL_RADIUS * 2)) && ball_pos.y < (plank_y + PLANK_HEIGHT + (is_enemy ? 0 : BALL_RADIUS * 2))
+
+        && ((!is_enemy &&
+                ((ball_pos.x - BALL_RADIUS) <= (PLAYER_X_DELTA + PLANK_WIDTH) && (ball_pos.x - BALL_RADIUS) > (PLAYER_X_DELTA - 5)))
+          || (is_enemy &&
+                (ball_pos.x + BALL_RADIUS) >= (g_canvas->width - (ENEMY_X_DELTA + PLANK_WIDTH)) && (ball_pos.x + BALL_RADIUS) < (g_canvas->width - (ENEMY_X_DELTA - 5)))));
 }
 
 void auto_move_enemy(Game *game)
