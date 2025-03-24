@@ -75,11 +75,15 @@ static void quicksort_recursive(range_Range *arr, uint64_t first_idx,
     // `pivot` has been moved by partition into the middle, between smaller and larger
     //  values. All is left is to complete the sort on the sub arrays.
 
-    assert(new_pivot_idx - 1 <= last_idx);
-    quicksort_recursive(arr, first_idx, new_pivot_idx - 1);
+    if (first_idx < new_pivot_idx)
+    {
+        quicksort_recursive(arr, first_idx, new_pivot_idx - 1);
+    }
 
-    assert(new_pivot_idx + 1 >= first_idx);
-    quicksort_recursive(arr, new_pivot_idx + 1, last_idx);
+    if (new_pivot_idx + 1 < last_idx)
+    {
+        quicksort_recursive(arr, new_pivot_idx + 1, last_idx);
+    }
 }
 
 static void quicksort(range_Range *arr, uint64_t length)
@@ -89,74 +93,55 @@ static void quicksort(range_Range *arr, uint64_t length)
 
 uint64_t range_remove_empty(range_Range *range_arr, uint64_t length)
 {
-    range_Range *last_empty = NULL;
-    for (int i = 0; i < length; i++)
+    if (length == 0) return 0;
+
+    uint64_t write_pos = 0;
+    for (uint64_t i = 0; i < length; i++)
     {
-        if (last_empty == NULL)
+        if (range_arr[i].size != 0)
         {
-            if (range_arr[i].size == 0)
+            if (write_pos != i)
             {
-                last_empty = &range_arr[i];
+                range_arr[write_pos] = range_arr[i];
             }
-            continue;
-        }
-
-        if (range_arr[i].size == 0)
-        {
-            memmove(last_empty, last_empty + 1, (&range_arr[i] - last_empty - 1) * sizeof(range_Range));
-            last_empty = &range_arr[i];
-            length--;
-            i--;
+            write_pos++;
         }
     }
-
-    if (last_empty && last_empty != &range_arr[length - 1])
-    {
-        memmove(last_empty, last_empty + 1, (&range_arr[length - 1] - last_empty - 1) * sizeof(range_Range));
-        length--;
-    }
-
-    return length;
+    return write_pos;
 }
 
 uint64_t merge_adjacent(range_Range *range_arr, uint64_t length)
 {
-    if (length == 1) return length;
+    if (length <= 1) return length;
 
-    range_Range *begin = range_arr;
-    range_Range *end = begin + length;
+    uint64_t write_pos = 0;
+    range_Range current = range_arr[0];
 
-    range_Range *prev = begin;
-    range_Range *cur = begin + 1;
-    while (cur < end)
+    for (uint64_t i = 1; i < length; i++)
     {
-        uint64_t prev_end = prev->begin + prev->size;
-        uint64_t cur_end = cur->begin + cur->size;
-        if (prev_end >= cur->begin)
+        uint64_t current_end = current.begin + current.size;
+        uint64_t next_begin = range_arr[i].begin;
+        uint64_t next_end = range_arr[i].begin + range_arr[i].size;
+
+        if (current_end >= next_begin)
         {
-            if (cur_end > prev_end)
+            if (next_end > current_end)
             {
-                uint64_t leftover_size = cur_end - prev_end;
-                prev->size += leftover_size;
+                current.size = next_end - current.begin;
             }
-
-            const range_Range *last = end - 1;
-            if (cur != last)
-            {
-                memmove(cur, cur + 1, (end - cur - 1) * sizeof(*cur));
-            }
-            length--;
-            end--;
-
-            cur++;
-            continue;
         }
-
-        prev = cur;
-        cur++;
+        else
+        {
+            range_arr[write_pos] = current;
+            write_pos++;
+            current = range_arr[i];
+        }
     }
 
-    return length;
+    range_arr[write_pos] = current;
+    write_pos++;
+
+    return write_pos;
 }
 
 uint64_t range_defragment(range_Range *range_arr, uint64_t length)
