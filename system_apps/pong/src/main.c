@@ -279,7 +279,7 @@ void auto_move_enemy(Game *game)
 {
     if (game->ball_pos.x == 0 || game->ball_velocity.x <= 0) return;
 
-    int final_y = (int)(game->ball_pos.y + (((g_canvas->width - game->ball_pos.x) / game->ball_velocity.x) * game->ball_velocity.y));
+    int final_y = (int)(game->ball_pos.y + (((g_canvas->width - (game->ball_pos.x + ENEMY_X_DELTA + PLANK_WIDTH)) / game->ball_velocity.x) * game->ball_velocity.y));
     final_y = abs(final_y);
 
     if ((final_y / g_canvas->height) % 2 == 0)
