@@ -30,7 +30,11 @@ ShellCommand *parser_parse_shell_expression(const char *expression, size_t lengt
     if (cmd == NULL)
         return NULL;
 
-    bool in_quotes = false;
+    enum {
+        NO_QUOTES,
+        SINGLE_QUOTES,
+        DOUBLE_QUOTES,
+    } quotes_state = NO_QUOTES;
     bool escaped = false;
 
     size_t cmd_capacity = 1;
@@ -64,7 +68,7 @@ ShellCommand *parser_parse_shell_expression(const char *expression, size_t lengt
             cur_token_capacity = 1;
             currently_parsing_token = false;
             *cur_token_ptr = malloc(1);
-            assert(!in_quotes && !escaped && "Unreachable state");
+            assert(quotes_state == NO_QUOTES && !escaped && "Unreachable state");
             if (*cur_token_ptr == NULL)
                 goto fail_oom;
         }
@@ -96,12 +100,13 @@ ShellCommand *parser_parse_shell_expression(const char *expression, size_t lengt
             continue;
         }
 
-        if (in_quotes)
+        if (quotes_state != NO_QUOTES)
         {
             assert(currently_parsing_token && "Unreachable state");
-            if (*it == '\'')
+            char terminator = quotes_state == SINGLE_QUOTES ? '\'' : '"';
+            if (*it == terminator)
             {
-                in_quotes = false;
+                quotes_state = NO_QUOTES;
             }
             else
             {
@@ -135,7 +140,10 @@ ShellCommand *parser_parse_shell_expression(const char *expression, size_t lengt
         switch (*it)
         {
             case '\'':
-                in_quotes = true;
+                quotes_state = SINGLE_QUOTES;
+                continue;
+            case '"':
+                quotes_state = DOUBLE_QUOTES;
                 continue;
             default:
                 (*cur_token_ptr)[cur_token_length] = *it;
@@ -146,7 +154,7 @@ ShellCommand *parser_parse_shell_expression(const char *expression, size_t lengt
         assert(false && "Unreachable");
     }
 
-    if (escaped || in_quotes)
+    if (escaped || quotes_state != NO_QUOTES)
     {
         puts("shcore: invalid syntax");
         goto fail;
