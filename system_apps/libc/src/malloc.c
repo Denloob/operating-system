@@ -307,7 +307,7 @@ _WUR static bool malloc_grow_heap(size_t wanted_size)
     size_t top_size = chunk_size(main_arena.top);
     assert(top_size >= MIN_CHUNK_SIZE);
     top_size -= MIN_CHUNK_SIZE;
-    assert(wanted_size > top_size && "asked to grow heap when the requested size fits already");
+    assert(wanted_size >= top_size && "asked to grow heap when the requested size fits already");
 
     size_t needed_size_left = wanted_size - top_size;
     size_t size_increase = PAGE_ALIGN_UP(needed_size_left);
