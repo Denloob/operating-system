@@ -2,6 +2,7 @@
 #include "assert.h"
 #include <stddef.h>
 #include <stdint.h>
+#include <stdlib.h>
 
 size_t strlen(const char *s)
 {
@@ -237,4 +238,16 @@ int strncmp(const char *s1, const char *s2, size_t n)
 void *memcpy(void *dest, const void *src, size_t n)
 {
     return memmove(dest, src, n);
+}
+
+char *strdup(const char *s)
+{
+    const size_t len = strlen(s);
+    char *new_s = malloc(len);
+    if (new_s == NULL)
+        return NULL;
+
+    memmove(new_s, s, len);
+
+    return new_s;
 }

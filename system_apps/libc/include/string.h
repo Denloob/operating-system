@@ -9,6 +9,8 @@ char* strchrnul(const char* str, char search_str);
 char* strncpy(char *dest, const char *src, size_t n);
 char* strcpy(char *dest, const char *src);
 
+char *strdup(const char *s);
+
 char *strncat(char *s1, const char *s2, size_t n);
 size_t strnlen(const char *s, size_t maxlen);
 char *strcat(char *dest, const char *src);
