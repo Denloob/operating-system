@@ -233,3 +233,8 @@ int strncmp(const char *s1, const char *s2, size_t n)
 
     return result;
 }
+
+void *memcpy(void *dest, const void *src, size_t n)
+{
+    return memmove(dest, src, n);
+}
