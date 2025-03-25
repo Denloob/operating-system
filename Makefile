@@ -23,6 +23,12 @@ $(IMAGE_NAME).img: $(BOOTLOADER) $(KERNEL) sysapps initfat16 kernel.cfg
 	mcopy ./assets/cogs-parallel.bmp a:cogs-par.bmp
 	mcopy ./assets/amongos.bmp a:
 
+	mmd /usr
+	mmd /usr/share && mcd /usr/share
+	mcopy ./assets/win-desktop.bmp a:win-bg.bmp
+	mmd icons && mcd icons
+	mcopy ./assets/app_icons/tetris.bmp a:
+
 	mmd /boot/conf && mcd /boot/conf
 	mcopy kernel.cfg a:
 
@@ -39,6 +45,7 @@ $(IMAGE_NAME).img: $(BOOTLOADER) $(KERNEL) sysapps initfat16 kernel.cfg
 	mcopy ./system_apps/tetris/bin/tetris      	a:
 	mcopy ./system_apps/pong/bin/pong           a:
 	mcopy ./system_apps/paint/bin/paint           a:
+	mcopy ./system_apps/desktop/bin/mdsktop     a:
 
 	mmd a:/dev
 
