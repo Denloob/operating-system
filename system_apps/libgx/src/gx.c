@@ -15,5 +15,5 @@ int gx_init()
 
 int gx_deinit()
 {
-    return gx_screen_mode_text();
+    return syscall(SYS_DestroyWindow);
 }

@@ -16,4 +16,5 @@
 #define SYS_waitpid  1001
 #define SYS_msleep   1002
 #define SYS_pitTime 1003
-#define SYS_CreateWindow 1004
+#define SYS_CreateWindow  1004
+#define SYS_DestroyWindow 1005

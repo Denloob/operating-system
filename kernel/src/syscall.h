@@ -16,7 +16,7 @@ typedef enum {
     SYSCALL_CHDIR   = 80,
 
     SYSCALL_MKDIR   = 83,
-    
+
     SYSCALL_GET_PROCESSES = 90,
 
     SYSCALL_REBOOT  = 169,
@@ -28,8 +28,9 @@ typedef enum {
     SYSCALL_MSLEEP  = 1002,
 
     SYSCALL_GET_PIT_TIME = 1003,
-    SYSCALL_CREATE_WINDOW = 1004,
 
+    SYSCALL_CREATE_WINDOW  = 1004,
+    SYSCALL_DESTROY_WINDOW = 1005,
 } syscall_Number;
 
 typedef enum {

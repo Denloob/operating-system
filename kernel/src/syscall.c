@@ -607,6 +607,22 @@ static void syscall_create_window(Regs *regs)
     regs->rax = 0;
 }
 
+static void syscall_destroy_window(Regs *regs)
+{
+    PCB *pcb = scheduler_current_pcb();
+
+    if (pcb->window == NULL)
+    {
+        regs->rax = -1;
+        return;
+    }
+
+    window_unregister(pcb->window);
+    window_destroy(pcb->window);
+    pcb->window = NULL;
+
+    regs->rax = 0;
+}
 
 static void __attribute__((used, sysv_abi)) syscall_handler(Regs *user_regs)
 {
@@ -689,6 +705,9 @@ static void __attribute__((used, sysv_abi)) syscall_handler(Regs *user_regs)
             break;
         case SYSCALL_CREATE_WINDOW:
             syscall_create_window(user_regs);
+            break;
+        case SYSCALL_DESTROY_WINDOW:
+            syscall_destroy_window(user_regs);
             break;
     }
 
