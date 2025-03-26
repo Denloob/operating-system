@@ -242,7 +242,7 @@ void *memcpy(void *dest, const void *src, size_t n)
 
 char *strdup(const char *s)
 {
-    const size_t len = strlen(s);
+    const size_t len = strlen(s) + 1;
     char *new_s = malloc(len);
     if (new_s == NULL)
         return NULL;
