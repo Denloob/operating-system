@@ -53,21 +53,30 @@ static size_t handle_write(uint8_t *buffer, uint64_t buffer_size, uint64_t file_
         }
         case vga_char_device_MINOR_COLOR_PALETTE:
         {
-            if (vga_current_mode() != VGA_MODE_TYPE_GRAPHICS)
-            {
-                return -2;
-            }
-
             if (file_offset >= COLOR_PALETTE_SIZE)
             {
                 assert(false && "fseek shouldn't ever allow this to happen");
                 return -1;
             }
 
-            const uint64_t palette_length = buffer_size / 3;
-            vga_color_palette(file_offset, buffer, palette_length);
+            PCB *current_process = scheduler_current_pcb();
+            Window *window = PCB_get_window_in_mode(current_process, WINDOW_GRAPHICS);
+            if (window == NULL)
+            {
+                return -1;
+            }
 
-            return palette_length * 3;
+            const int aligned_buffer_size = math_ALIGN_DOWN(buffer_size, 3);
+
+            memmove(&window->color_palette[file_offset * 3], buffer, aligned_buffer_size);
+
+            if (window_is_in_focus(window))
+            {
+                const uint64_t palette_length = buffer_size / 3;
+                vga_color_palette(file_offset, buffer, palette_length);
+            }
+
+            return aligned_buffer_size;
         }
         case vga_char_device_MINOR_CONFIG:
         {

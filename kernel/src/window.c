@@ -33,6 +33,8 @@ Window *window_create(WindowMode mode)
                 assert(false && "Unsupported window mode");
     }
 
+    vga_get_color_palette(window->color_palette);
+
     return window;
 }
 
@@ -98,6 +100,8 @@ void window_switch_focus_to(Window *window)
         default:
             assert(false && "Unreachable");
     }
+
+    vga_color_palette(0, window->color_palette, vga_COLOR_PALETTE_LENGTH);
 
     window_display_focused_window();
 }

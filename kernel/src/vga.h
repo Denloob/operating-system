@@ -1,7 +1,6 @@
 #pragma once
 
 #include <stdint.h>
-#include "pcb.h"
 
 #define VGA_GRAPHICS_BUF1_PHYS 0xa0000
 #define VGA_GRAPHICS_BUF3_PHYS 0xb8000
@@ -68,3 +67,11 @@ void vga_restore_default_color_palette();
  * @see - vga_color_index
  */
 void vga_color_write_color(uint8_t red, uint8_t green, uint8_t blue);
+
+#define vga_COLOR_PALETTE_LENGTH 0x100
+#define vga_COLOR_PALETTE_BUFFER_SIZE (vga_COLOR_PALETTE_LENGTH * 3)
+
+/**
+ * @brief Get the current color palette into `palette`.
+ */
+void vga_get_color_palette(uint8_t palette[static vga_COLOR_PALETTE_BUFFER_SIZE]);

@@ -247,18 +247,22 @@ void vga_color(uint8_t color_index, uint8_t red, uint8_t green, uint8_t blue)
     vga_color_write_color(red, green, blue);
 }
 
-#define COLOR_PALETTE_LENGTH 0x100
-static uint8_t g_default_color_palette[COLOR_PALETTE_LENGTH * 3];
+static uint8_t g_default_color_palette[vga_COLOR_PALETTE_BUFFER_SIZE];
 static bool g_default_color_palette_initialized = false;
 
 static void default_color_palette_initialize()
 {
     g_default_color_palette_initialized = true;
 
+    vga_get_color_palette(g_default_color_palette);
+}
+
+void vga_get_color_palette(uint8_t palette[static vga_COLOR_PALETTE_BUFFER_SIZE])
+{
     vga_color_index(0);
-    for (int i = 0; i < sizeof(g_default_color_palette); i++)
+    for (int i = 0; i < vga_COLOR_PALETTE_BUFFER_SIZE; i++)
     {
-        g_default_color_palette[i] = in_byte(VGA_DAC_DATA) << 2;
+        palette[i] = in_byte(VGA_DAC_DATA) << 2;
     }
 }
 
@@ -283,7 +287,7 @@ void vga_mode_graphics()
 
 void vga_restore_default_color_palette()
 {
-    vga_color_palette(0, g_default_color_palette, COLOR_PALETTE_LENGTH);
+    vga_color_palette(0, g_default_color_palette, vga_COLOR_PALETTE_LENGTH);
 }
 
 void vga_mode_text()

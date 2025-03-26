@@ -3,6 +3,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+#include "vga.h"
 
 typedef enum
 {
@@ -27,6 +28,8 @@ typedef struct Window
         TextBuffer     *text;
     };
     size_t width, height;
+
+    uint8_t color_palette[vga_COLOR_PALETTE_BUFFER_SIZE];
 
     struct Window *next;
     struct Window *prev;
