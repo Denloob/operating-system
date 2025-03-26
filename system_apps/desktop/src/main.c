@@ -18,7 +18,7 @@
 #include <unistd.h>
 
 enum {
-    COLOR__FIRST_COLOR = 251,
+    COLOR__FIRST_COLOR = 254,
     COLOR_WHITE = COLOR__FIRST_COLOR,
     COLOR_BLACK,
 
@@ -188,7 +188,10 @@ void app_display(App *app)
 
     for (int i = 0; i < app->button_count; i++)
     {
-        gx_draw_canvas(g_canvas, app->buttons[i]->pos, app->buttons[i]->texture);
+        if (app->buttons[i]->texture != NULL)
+        {
+            gx_draw_canvas(g_canvas, app->buttons[i]->pos, app->buttons[i]->texture);
+        }
     }
 
     draw_cursor_texture(g_canvas, app->mouse.pos);
@@ -196,42 +199,37 @@ void app_display(App *app)
     gx_canvas_draw(g_canvas);
 }
 
-#define BUTTONS_PAD 10
-#define BUTTONS_PER_ROW 3
-#define BUTTONS_SIZE 32
+#define BUTTONS_SIZE 16
 
 void button_callback(void *arg)
 {
     const char *path = arg;
-    execve_new(path, NULL);
+    int pid = execve_new(path, NULL);
+    printf("%d %s\n", pid, path);
 }
 
-void app_add_button(App *app, gx_Canvas *texture, const char *bin_path)
+void app_add_button(App *app, gx_Canvas *texture, const char *bin_path, gx_Vec2 pos)
 {
     assert(app->button_capacity > app->button_count && "Not supported");
 
     Button *button = calloc(1, sizeof(*button));
     assert(button != NULL);
 
-    int buttons_on_this_row = app->button_count % BUTTONS_PER_ROW;
-    int column = app->button_count / BUTTONS_PER_ROW;
-
-    button->pos.x = (buttons_on_this_row * (BUTTONS_PAD + BUTTONS_SIZE)) + BUTTONS_PAD;
-    button->pos.y = (column + 1) * BUTTONS_PAD;
+    button->pos = pos;
 
     button->callback_arg = strdup(bin_path);
     button->callback = button_callback;
 
     button->texture = texture;
 
-    button->size.x = texture->width;
-    button->size.y = texture->height;
+    button->size.x = texture ? texture->width : BUTTONS_SIZE;
+    button->size.y = texture ? texture->height : BUTTONS_SIZE;
 
     app->buttons[app->button_count] = button;
     app->button_count++;
 }
 
-#define WALLPAPER_COLOR_PALETTE_SIZE 200
+#define WALLPAPER_COLOR_PALETTE_SIZE 254
 #define ICONS_COLOR_PALETTE_SIZE 20
 
 int main(int argc, char **argv)
@@ -262,9 +260,8 @@ int main(int argc, char **argv)
     g_app.assets.wallpaper = load_image(wallpaper_path, WALLPAPER_COLOR_PALETTE_SIZE);
     gx_palette_set(COLOR__FIRST_COLOR, g_color_palette, COLOR_COUNT);
 
-    gx_Canvas *tetris_button = load_image("/usr/share/icons/tetris.bmp", ICONS_COLOR_PALETTE_SIZE);
-
-    app_add_button(&g_app, tetris_button, "/bin/tetris");
+    app_add_button(&g_app, NULL, "/bin/tetris", (gx_Vec2){4, 4});
+    app_add_button(&g_app, NULL, "/bin/pong", (gx_Vec2){4, 24});
 
     while (1)
     {

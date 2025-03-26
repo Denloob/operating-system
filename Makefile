@@ -26,8 +26,6 @@ $(IMAGE_NAME).img: $(BOOTLOADER) $(KERNEL) sysapps initfat16 kernel.cfg
 	mmd /usr
 	mmd /usr/share && mcd /usr/share
 	mcopy ./assets/win-desktop.bmp a:win-bg.bmp
-	mmd icons && mcd icons
-	mcopy ./assets/app_icons/tetris.bmp a:
 
 	mmd /boot/conf && mcd /boot/conf
 	mcopy kernel.cfg a:
