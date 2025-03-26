@@ -149,7 +149,7 @@ void window_unregister(Window *window)
 
     if (window_get_focused_window() == window)
     {
-        window_switch_focus_to(window->next);
+        window_switch_focus_to(window->prev);
     }
 
     window->prev->next = window->next;
