@@ -99,3 +99,6 @@ void scheduler_move_current_process_to_io_queue_and_context_switch(pcb_IORefresh
 PCB *scheduler_find_by_pid(uint64_t pid);
 
 int scheduler_get_all_processes(ProcessInfo *out, int max);
+
+// WARN: DO NOT MODIFY DIRECTLY! Use scheduler_current_pcb and scheduler_context_switch_to. extern only for the scheduler.
+extern PCB *g_current_process;

@@ -61,3 +61,6 @@ void window_display_focused_window();
  *          Otherwise, acts as a nop.
  */
 void window_notify_update(Window *window);
+
+// WARN: DO NOT MODIFY DIRECTLY! Use window_switch_focus_to and window_get_focused_window. extern only for the scheduler.
+extern Window *g_focused_window;

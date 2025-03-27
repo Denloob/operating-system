@@ -2,6 +2,7 @@
 #include "io.h"
 #include "isr.h"
 #include "macro_utils.h"
+#include "window.h"
 #include "scheduler.h"
 #include "smartptr.h"
 #include <stdint.h>
@@ -84,8 +85,21 @@ void __attribute__((naked)) pit_isr_clock()
                 "jnz .regular\n"                                    //      goto .regular
                                                                     // }
 
-                "test %[ms_counter], (2 << 2) - 1\n" // if (ms_counter % 8 == 0)
-                "jz handle_special_time_event\n" // Does not return
+                "test %[ms_counter], (1 << 3) - 1\n" // if (ms_counter % 8 != 0)
+                "jnz .regular\n"                     //      goto .regular
+
+                "push rax\n"
+                "push rbx\n"
+                "mov rax, %[focused_window]\n"
+                "mov rbx, %[current_process]\n"
+
+                "cmp [rbx + 1304], rax\n"
+                "pop rbx\n"
+                "pop rax\n"
+                "jnz handle_special_time_event\n"
+
+                "test %[ms_counter], (1 << 5) - 1\n" // if (ms_counter % 32 == 0)
+                "jz handle_special_time_event\n"     //     handle_special_time_event(); (Does not return)
 
                  ".regular:\n"
                  "push rax\n"
@@ -96,7 +110,9 @@ void __attribute__((naked)) pit_isr_clock()
                  "pop rax\n"
                  "iretq\n"
                  : [ms_counter] "+m"(g_pit_ms_counter),
-                   [special_event_enabled] "+m"(g_special_event_enabled)
+                   [special_event_enabled] "+m"(g_special_event_enabled),
+                   [focused_window] "+m"(g_focused_window),
+                   [current_process] "+m"(g_current_process)
                  :
                  : "memory", "cc");
 }

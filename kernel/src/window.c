@@ -8,7 +8,7 @@
 #include "assert.h"
 
 static Window *g_windows;
-static Window *g_focused_window;
+Window *g_focused_window;
 
 Window *window_create(WindowMode mode)
 {

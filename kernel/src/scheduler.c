@@ -12,7 +12,7 @@
 #include "string.h"
 #include "vga.h"
 
-static PCB *g_current_process; // Process queue head
+PCB *g_current_process; // Process queue head
 static PCB *g_process_queue_tail;
 
 static PCB *g_io_head; // Process IO linked list

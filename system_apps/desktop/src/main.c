@@ -246,8 +246,6 @@ int main(int argc, char **argv)
 
     input_init();
 
-    uint64_t prev_frame = pit_time();
-
     g_app.button_capacity = 128;
     g_app.buttons = calloc(g_app.button_capacity, sizeof(*g_app.buttons));
     assert(g_app.buttons != NULL);
@@ -269,10 +267,5 @@ int main(int argc, char **argv)
         app_update(&g_app);
 
         app_display(&g_app);
-
-        int delta = pit_time() - prev_frame;
-        msleep(MAX(FRAME_DELAY - delta, 0));
-
-        prev_frame = pit_time();
     }
 }
