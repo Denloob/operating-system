@@ -154,10 +154,6 @@ void input_handle(App *app)
 {
     switch (input_check_key())
     {
-        case KEY_Q:
-            gx_deinit();
-            exit(0);
-            assert(false && "Unreachable");
         default:
             break; /* Do nothing */
     }
