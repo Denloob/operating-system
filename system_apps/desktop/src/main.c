@@ -260,8 +260,12 @@ int main(int argc, char **argv)
     g_app.assets.wallpaper = load_image(wallpaper_path, WALLPAPER_COLOR_PALETTE_SIZE);
     gx_palette_set(COLOR__FIRST_COLOR, g_color_palette, COLOR_COUNT);
 
-    app_add_button(&g_app, NULL, "/bin/tetris", (gx_Vec2){4, 4});
-    app_add_button(&g_app, NULL, "/bin/pong", (gx_Vec2){4, 24});
+    int button_y = 1 - 19;
+    app_add_button(&g_app, NULL, "/bin/tetris", (gx_Vec2){1, button_y += 19});
+    app_add_button(&g_app, NULL, "/bin/pong", (gx_Vec2){1, button_y += 18});
+    app_add_button(&g_app, NULL, "/dev/null", (gx_Vec2){1, button_y += 22});
+    app_add_button(&g_app, NULL, "/bin/paint", (gx_Vec2){1, button_y += 18});
+    app_add_button(&g_app, NULL, "/bin/sh", (gx_Vec2){1, button_y += 18});
 
     while (1)
     {
