@@ -6,15 +6,24 @@
 
 #define MAX_PROCESSES 5
 
+typedef enum
+{
+    PCB_STATE_TERMINATED,
+    PCB_STATE_RUNNING,
+    PCB_STATE_WAITING_FOR_IO,
+    PCB_STATE_READY,
+    PCB_STATE_ZOMBIE,
+} pcb_State;
+
 const char *state_to_string(int state)
 {
     switch (state)
     {
-    case 0: return "READY";
-    case 1: return "RUNNING";
-    case 2: return "WAITING";
-    case 3: return "TERMINATED";
-    default: return "UNKNOWN";
+    case PCB_STATE_READY: return "READY     ";
+    case PCB_STATE_RUNNING: return "RUNNING   ";
+    case PCB_STATE_WAITING_FOR_IO: return "WAITING   ";
+    case PCB_STATE_ZOMBIE: return "TERMINATED";
+    default: return "UNKNOWN   ";
     }
 }
 
