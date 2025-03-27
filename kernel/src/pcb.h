@@ -72,6 +72,7 @@ struct PCB
     pcb_State   state;
     int         return_code; // Accessible only if state is PCB_STATE_ZOMBIE
 
+    char exe_path[FS_MAX_FILEPATH_LEN];
     char cwd[FS_MAX_FILEPATH_LEN];
     pcb_IORefresh refresh; // Used only in IO doubly-linked list
     void *refresh_arg;

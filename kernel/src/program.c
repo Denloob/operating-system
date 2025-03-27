@@ -74,6 +74,8 @@ res program_setup_from_drive(uint64_t id,  PCB *parent, mmu_PageMapEntry *kernel
         return res_program_OUT_OF_MEMORY;
     }
 
+    strncpy(program_pcb->exe_path, path_to_file, sizeof(program_pcb->exe_path));
+
     bool should_defer_cleanup_pcb = false; // WARN: set to true if and only if program_pcb will not be ever used and can be safely cleaned up
 
     (void)should_defer_cleanup_pcb; // Used, clang doesn't know that though

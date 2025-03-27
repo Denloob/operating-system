@@ -277,7 +277,7 @@ int scheduler_get_all_processes(ProcessInfo *out, int max)
     while (cur && count < max)
     {
         out[count].pid = cur->id;
-        strncpy(out[count].name, cur->cwd, PROCESS_NAME_MAX_LEN);
+        strncpy(out[count].name, cur->exe_path, PROCESS_NAME_MAX_LEN);
         strncpy(out[count].cwd, cur->cwd, sizeof(out[count].cwd));
         out[count].state = cur->state;
         count++;
@@ -289,7 +289,7 @@ int scheduler_get_all_processes(ProcessInfo *out, int max)
     while (io && count < max)
     {
         out[count].pid = io->id;
-        strncpy(out[count].name, io->cwd, PROCESS_NAME_MAX_LEN);
+        strncpy(out[count].name, io->exe_path, PROCESS_NAME_MAX_LEN);
         strncpy(out[count].cwd, io->cwd, sizeof(out[count].cwd));
         out[count].state = io->state;
         count++;
