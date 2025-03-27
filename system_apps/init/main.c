@@ -5,7 +5,7 @@
 
 int main()
 {
-    execve_new("/bin/sh", NULL);
+    execve_new("/bin/mdsktop", NULL);
 
     return 0;
 }
