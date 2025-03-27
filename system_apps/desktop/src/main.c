@@ -204,8 +204,7 @@ void app_display(App *app)
 void button_callback(void *arg)
 {
     const char *path = arg;
-    int pid = execve_new(path, NULL);
-    printf("%d %s\n", pid, path);
+    execve_new(path, NULL);
 }
 
 void app_add_button(App *app, gx_Canvas *texture, const char *bin_path, gx_Vec2 pos)
