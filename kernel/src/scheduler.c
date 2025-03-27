@@ -199,6 +199,11 @@ void scheduler_move_current_process_to_io_queue_and_context_switch(pcb_IORefresh
         next_pcb = NULL;
     }
 
+    if (target == g_process_queue_tail)
+    {
+        g_process_queue_tail = NULL;
+    }
+
     scheduler_io_push(target, refresh_func);
 
     scheduler_context_switch_to(next_pcb, SCHEDULER_NOT_A_PIC_INTERRUPT);
